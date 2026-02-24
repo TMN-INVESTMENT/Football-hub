@@ -251,7 +251,9 @@ class AuthManager {
                 this.userData.uid = uid;
                 // Ensure balance field exists
                 if (this.userData.balance === undefined) this.userData.balance = 0;
-                loadUserProfile(); 
+                loadUserProfile();
+                loadProfileStats();
+                setTimeout(() => loadProfileStats(), 500);
                 console.log("✅ User data loaded");
                 updateHamburgerMenu();
                 updateUserBalanceDisplay();
@@ -11195,6 +11197,11 @@ const translations = {
 // Current language (default: English)
 let currentLanguage = 'en';
 
+// Store the MutationObserver instance
+let languageObserver = null;
+
+// ==================== MAIN LANGUAGE FUNCTIONS ====================
+
 // Function to toggle language
 function toggleLanguage() {
     // Add transition effect
@@ -11206,21 +11213,21 @@ function toggleLanguage() {
     // Save to localStorage
     localStorage.setItem('preferredLanguage', currentLanguage);
     
-    // Update all text elements
-    updateAllText();
+    console.log(`🔄 Switching language to: ${currentLanguage === 'en' ? 'English' : 'Kiswahili'}`);
     
-    // Update dynamic content (matches, bets, etc.)
-    refreshDynamicContent();
+    // Update all text elements
+    translateAllContent();
+    
+    // Refresh all dynamic content
+    refreshAllDynamicContent();
     
     // Update button text
     updateLanguageButtons();
     
-    // Remove transition effect after a short delay
+    // Remove transition effect
     setTimeout(() => {
         document.body.classList.remove('language-changing');
     }, 200);
-    
-    console.log(`Language switched to: ${currentLanguage === 'en' ? 'English' : 'Kiswahili'}`);
     
     // Show notification
     if (window.NotificationManager) {
@@ -11232,14 +11239,17 @@ function toggleLanguage() {
     }
 }
 
-// Function to get current language
+// Get current language
 function getCurrentLanguage() {
     return currentLanguage;
 }
 
-// Function to get translation
+// Get translation with optional parameters
 function t(key, ...args) {
-    const translation = translations[currentLanguage][key] || translations.en[key] || key;
+    if (!key) return '';
+    
+    // Try to get translation, fallback to English, then return the key itself
+    const translation = translations[currentLanguage]?.[key] || translations.en?.[key] || key;
     
     // Replace placeholders like {0}, {1} with provided arguments
     if (args && args.length > 0) {
@@ -11251,46 +11261,1181 @@ function t(key, ...args) {
     return translation;
 }
 
-// Function to refresh dynamic content after language change
-function refreshDynamicContent() {
-    // Refresh matches if loaded
+// ==================== MUTATION OBSERVER FOR DYNAMIC CONTENT ====================
+
+// Start observing DOM changes
+function startLanguageObserver() {
+    if (languageObserver) return;
+    
+    console.log('👀 Starting language observer...');
+    
+    languageObserver = new MutationObserver((mutations) => {
+        // Only translate if we're not in the middle of a language change
+        if (!document.body.classList.contains('language-changing')) {
+            // Check if new nodes were added
+            let shouldTranslate = false;
+            
+            for (const mutation of mutations) {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    // Check if added nodes contain text elements
+                    for (const node of mutation.addedNodes) {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            // If the added element has text content or is a container
+                            if (node.textContent && node.textContent.trim().length > 0) {
+                                shouldTranslate = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (shouldTranslate) break;
+            }
+            
+            if (shouldTranslate) {
+                // Small delay to ensure DOM is updated
+                setTimeout(() => {
+                    translateDynamicContent();
+                }, 50);
+            }
+        }
+    });
+    
+    // Observe the entire document for changes
+    languageObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: false
+    });
+}
+
+// Stop observing
+function stopLanguageObserver() {
+    if (languageObserver) {
+        languageObserver.disconnect();
+        languageObserver = null;
+        console.log('🛑 Language observer stopped');
+    }
+}
+
+// ==================== COMPREHENSIVE TRANSLATION FUNCTIONS ====================
+
+// Main function to translate all content
+function translateAllContent() {
+    console.log('🔄 Translating all content...');
+    
+    // Translate all static elements with data attributes
+    translateStaticElements();
+    
+    // Translate all dynamic sections
+    translateAuthSection();
+    translateUserDashboard();
+    translateAdminDashboard();
+    translateSuperAdminDashboard();
+    translateAllModals();
+    translateNavigation();
+    translateWalletSection();
+    translateBettingSection();
+    translateProfileSection();
+    translateAboutSection();
+    translateAnnouncements();
+    translateChatSection();
+    translateFooter();
+    
+    // Special handling for tables and lists
+    translateTables();
+    
+    // Special handling for buttons
+    translateButtons();
+    
+    // Special handling for placeholders
+    translatePlaceholders();
+    
+    console.log('✅ Translation complete');
+}
+
+// Translate static elements with data attributes
+function translateStaticElements() {
+    // Elements with data-translate attribute
+    document.querySelectorAll('[data-translate]').forEach(element => {
+        const key = element.getAttribute('data-translate');
+        if (key) {
+            const translation = t(key);
+            if (translation && translation !== key) {
+                // Preserve any child elements (like icons)
+                const icon = element.querySelector('i');
+                if (icon) {
+                    const iconHTML = icon.outerHTML;
+                    element.innerHTML = iconHTML + ' ' + translation;
+                } else {
+                    element.textContent = translation;
+                }
+            }
+        }
+    });
+    
+    // Elements with data-translate-html attribute (for HTML content)
+    document.querySelectorAll('[data-translate-html]').forEach(element => {
+        const key = element.getAttribute('data-translate-html');
+        if (key) {
+            const translation = t(key);
+            if (translation && translation !== key) {
+                element.innerHTML = translation;
+            }
+        }
+    });
+    
+    // Elements with data-translate-title attribute
+    document.querySelectorAll('[data-translate-title]').forEach(element => {
+        const key = element.getAttribute('data-translate-title');
+        if (key) {
+            element.title = t(key);
+        }
+    });
+    
+    // Elements with data-translate-placeholder attribute
+    document.querySelectorAll('[data-translate-placeholder]').forEach(element => {
+        const key = element.getAttribute('data-translate-placeholder');
+        if (key) {
+            element.placeholder = t(key);
+        }
+    });
+    
+    // Elements with data-translate-aria-label attribute
+    document.querySelectorAll('[data-translate-aria]').forEach(element => {
+        const key = element.getAttribute('data-translate-aria');
+        if (key) {
+            element.setAttribute('aria-label', t(key));
+        }
+    });
+    
+    // Labels with for attribute
+    document.querySelectorAll('label[data-translate-for]').forEach(label => {
+        const key = label.getAttribute('data-translate-for');
+        if (key) {
+            const icon = label.querySelector('i');
+            if (icon) {
+                const iconHTML = icon.outerHTML;
+                label.innerHTML = iconHTML + ' ' + t(key);
+            } else {
+                label.textContent = t(key);
+            }
+        }
+    });
+}
+
+// Translate dynamic content (called by MutationObserver)
+function translateDynamicContent() {
+    // Only translate newly added elements
+    translateStaticElements();
+    
+    // Check specific sections that might have been added
+    if (document.querySelector('.match-card')) {
+        translateMatchCards();
+    }
+    
+    if (document.querySelector('.my-bets-table')) {
+        translateBetsTable();
+    }
+    
+    if (document.querySelector('.admin-chat-item')) {
+        translateAdminChat();
+    }
+    
+    if (document.querySelector('.modal-overlay.active')) {
+        translateActiveModals();
+    }
+}
+
+// ==================== SECTION-SPECIFIC TRANSLATION FUNCTIONS ====================
+
+// Translate auth section
+function translateAuthSection() {
+    const authContainer = document.getElementById('authContainer');
+    if (!authContainer || authContainer.style.display === 'none') return;
+    
+    // Form switcher
+    const loginBtn = document.getElementById('login');
+    const signupBtn = document.getElementById('signupSwitch');
+    
+    if (loginBtn) {
+        const span = loginBtn.querySelector('span') || loginBtn;
+        span.textContent = t('signIn');
+    }
+    
+    if (signupBtn) {
+        const span = signupBtn.querySelector('span') || signupBtn;
+        span.textContent = t('signUp');
+    }
+    
+    // Login form
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        const headers = loginForm.querySelectorAll('.form-header h2, .form-header p');
+        if (headers[0]) headers[0].textContent = t('welcomeBack');
+        if (headers[1]) headers[1].textContent = t('signInToDashboard');
+        
+        // Labels
+        const emailLabel = loginForm.querySelector('label[for="loginEmail"]');
+        if (emailLabel) {
+            const icon = emailLabel.querySelector('i');
+            if (icon) emailLabel.innerHTML = icon.outerHTML + ' ' + t('emailAddress');
+        }
+        
+        const passwordLabel = loginForm.querySelector('label[for="loginPassword"]');
+        if (passwordLabel) {
+            const icon = passwordLabel.querySelector('i');
+            if (icon) passwordLabel.innerHTML = icon.outerHTML + ' ' + t('password');
+        }
+        
+        // Placeholders
+        const emailInput = document.getElementById('loginEmail');
+        if (emailInput) emailInput.placeholder = t('enterEmail');
+        
+        const passwordInput = document.getElementById('loginPassword');
+        if (passwordInput) passwordInput.placeholder = t('enterPassword');
+        
+        // Remember me and forgot password
+        const rememberMe = loginForm.querySelector('.remember-me span');
+        if (rememberMe) rememberMe.textContent = t('rememberMe');
+        
+        const forgotPassword = document.getElementById('forgotPassword');
+        if (forgotPassword) forgotPassword.textContent = t('forgotPassword');
+        
+        // Submit button
+        const submitBtn = loginForm.querySelector('button[type="submit"] span');
+        if (submitBtn) submitBtn.textContent = t('signInBtn');
+        
+        // Footer link
+        const footerLink = loginForm.querySelector('.form-footer a');
+        if (footerLink) footerLink.textContent = t('createAccount');
+    }
+    
+    // Signup form
+    const signupForm = document.getElementById('signupForm');
+    if (signupForm) {
+        const headers = signupForm.querySelectorAll('.form-header h2, .form-header p');
+        if (headers[0]) headers[0].textContent = t('createAccount');
+        if (headers[1]) headers[1].textContent = t('joinCommunity');
+        
+        // Translate all labels
+        const labelMappings = {
+            'fullName': 'fullName',
+            'username': 'username',
+            'phone': 'phone',
+            'email': 'emailAddress',
+            'password': 'password',
+            'confirmPassword': 'confirmPassword',
+            'country': 'country',
+            'favoriteTeam': 'favoriteTeam',
+            'referralCodeInput': 'referralCode'
+        };
+        
+        Object.entries(labelMappings).forEach(([inputId, key]) => {
+            const label = signupForm.querySelector(`label[for="${inputId}"]`);
+            if (label) {
+                const icon = label.querySelector('i');
+                if (icon) label.innerHTML = icon.outerHTML + ' ' + t(key);
+            }
+        });
+        
+        // Placeholders
+        document.getElementById('fullName')?.setAttribute('placeholder', t('enterFullName'));
+        document.getElementById('username')?.setAttribute('placeholder', t('chooseUsername'));
+        document.getElementById('phone')?.setAttribute('placeholder', t('enterPhone'));
+        document.getElementById('email')?.setAttribute('placeholder', t('enterEmail'));
+        document.getElementById('password')?.setAttribute('placeholder', t('enterPassword'));
+        document.getElementById('confirmPassword')?.setAttribute('placeholder', t('enterPassword'));
+        document.getElementById('referralCodeInput')?.setAttribute('placeholder', t('enterReferralCode'));
+        
+        // Terms
+        const termsText = signupForm.querySelector('.terms-container span');
+        if (termsText) {
+            termsText.innerHTML = t('agreeToTerms')
+                .replace('Terms & Conditions', `<a href="#" onclick="openModal('termsModal'); return false;">${t('termsAndConditions')}</a>`)
+                .replace('Privacy Policy', `<a href="#" onclick="openModal('privacyModal'); return false;">${t('privacyPolicy')}</a>`);
+        }
+        
+        // Buttons
+        const createBtn = signupForm.querySelector('button[type="submit"] span');
+        if (createBtn) createBtn.textContent = t('createAccountBtn');
+        
+        const signinBtn = signupForm.querySelector('.btn-secondary span');
+        if (signinBtn) signinBtn.textContent = t('signInInstead');
+    }
+}
+
+// Translate user dashboard
+function translateUserDashboard() {
+    const dashboard = document.getElementById('user-dashboard');
+    if (!dashboard || dashboard.style.display === 'none') return;
+    
+    // Welcome message
+    const welcomeName = document.getElementById('welcomeName');
+    if (welcomeName) {
+        const userName = window.authManager?.userData?.fullName?.split(' ')[0] || '';
+        welcomeName.textContent = userName;
+    }
+    
+    const welcomeName1 = document.getElementById('welcomeName1');
+    if (welcomeName1) {
+        const userName = window.authManager?.userData?.fullName?.split(' ')[0] || '';
+        welcomeName1.textContent = userName;
+    }
+    
+    // Balance displays
+    const balanceElements = document.querySelectorAll('#userBalance, #walletBalance, #withdrawCurrentBalance');
+    balanceElements.forEach(el => {
+        if (el && !el.id.includes('userBalance') && !el.classList.contains('balance-amount')) {
+            // These are labels, not the actual balance values
+            if (el.id === 'userBalance' && el.parentElement?.classList.contains('user-balance')) {
+                // Skip - this is the balance value
+            } else if (el.classList.contains('balance-label')) {
+                el.textContent = t('availableBalance');
+            }
+        }
+    });
+    
+    // Wallet header
+    const walletHeader = document.querySelector('#walletSection .dashboard-header h2');
+    if (walletHeader) walletHeader.innerHTML = `<i class="fas fa-wallet"></i> ${t('myWallet')}`;
+    
+    const walletSubheader = document.querySelector('#walletSection .dashboard-header p');
+    if (walletSubheader) walletSubheader.textContent = t('manageWallet');
+    
+    // My bets header
+    const betsHeader = document.querySelector('#mybetSection .dashboard-header h2');
+    if (betsHeader) betsHeader.innerHTML = `<i class="fas fa-history"></i> ${t('myBets')}`;
+    
+    const betsSubheader = document.querySelector('#mybetSection .dashboard-header p');
+    if (betsSubheader) betsSubheader.textContent = t('predictOutcomes');
+    
+    // Matches header
+    const matchesHeader = document.querySelector('#matchesSection .dashboard-header h2');
+    if (matchesHeader) {
+        const icon = matchesHeader.querySelector('i');
+        if (icon) matchesHeader.innerHTML = icon.outerHTML + ' ' + t('matches');
+    }
+    
+    // Profile header
+    const profileHeader = document.querySelector('#profileSection .dashboard-header h2');
+    if (profileHeader) profileHeader.innerHTML = `<i class="fas fa-user-circle"></i> ${t('myProfile')}`;
+    
+    const profileSubheader = document.querySelector('#profileSection .dashboard-header p');
+    if (profileSubheader) profileSubheader.textContent = t('manageAccount');
+    
+    // About header
+    const aboutHeader = document.querySelector('#aboutsection .dashboard-header h2');
+    if (aboutHeader) aboutHeader.innerHTML = `<i class="fas fa-edit"></i> ${t('whatWeDo')}`;
+    
+    const aboutSubheader = document.querySelector('#aboutsection .dashboard-header p');
+    if (aboutSubheader) aboutSubheader.textContent = t('aboutService');
+}
+
+// Translate admin dashboard
+function translateAdminDashboard() {
+    const dashboard = document.getElementById('admin-dashboard');
+    if (!dashboard || dashboard.style.display === 'none') return;
+    
+    // Admin chat header
+    const chatHeader = document.querySelector('#adminChatSection .dashboard-header h2');
+    if (chatHeader) chatHeader.innerHTML = `<i class="fas fa-user-comments"></i> ${t('adminSupport')}`;
+    
+    const chatSubheader = document.querySelector('#adminChatSection .dashboard-header p');
+    if (chatSubheader) chatSubheader.textContent = t('manageUsers');
+    
+    // Add new user button
+    const createUserBtn = document.getElementById('createUserBtn');
+    if (createUserBtn) {
+        const span = createUserBtn.querySelector('span') || createUserBtn;
+        span.textContent = t('addNewUser');
+    }
+    
+    // Admin tabs
+    const adminTabs = document.querySelectorAll('.admin-tab');
+    adminTabs.forEach(tab => {
+        const icon = tab.querySelector('i');
+        const span = tab.querySelector('span');
+        const onclick = tab.getAttribute('onclick');
+        
+        if (icon && span) {
+            if (onclick?.includes('approvals')) {
+                span.textContent = t('approvals');
+            } else if (onclick?.includes('history')) {
+                span.textContent = t('transactionHistory');
+            }
+        }
+    });
+    
+    // Approval filters
+    const filterSelect = document.getElementById('approvalFilter');
+    if (filterSelect) {
+        const options = filterSelect.querySelectorAll('option');
+        if (options[0]) options[0].textContent = t('pending');
+        if (options[1]) options[1].textContent = t('approved');
+        if (options[2]) options[2].textContent = t('rejected');
+    }
+    
+    // Banking settings
+    const bankingHeader = document.querySelector('#adminBankingSettings h2');
+    if (bankingHeader) bankingHeader.innerHTML = `<i class="fas fa-cog"></i> ${t('bankingAdministration')}`;
+}
+
+// Translate super admin dashboard
+function translateSuperAdminDashboard() {
+    const dashboard = document.getElementById('super-admin-dashboard');
+    if (!dashboard || dashboard.style.display === 'none') return;
+    
+    const header = document.querySelector('#superAdminSection .dashboard-header h2');
+    if (header) header.innerHTML = `<i class="fas fa-crown"></i> ${t('superAdminDashboard')}`;
+    
+    const subheader = document.querySelector('#superAdminSection .dashboard-header p');
+    if (subheader) subheader.textContent = t('fullSystemControl');
+    
+    // Super admin tabs
+    const superTabs = document.querySelectorAll('.super-tab');
+    superTabs.forEach(tab => {
+        const icon = tab.querySelector('i');
+        const span = tab.querySelector('span');
+        const onclick = tab.getAttribute('onclick');
+        
+        if (icon && span) {
+            if (onclick?.includes('users')) {
+                span.textContent = t('userManagement');
+            } else if (onclick?.includes('admins')) {
+                span.textContent = t('adminManagement');
+            } else if (onclick?.includes('top')) {
+                span.textContent = t('topUsers');
+            }
+        }
+    });
+}
+
+// Translate navigation
+function translateNavigation() {
+    // Bottom navigation
+    document.querySelectorAll('.nav-item[data-section]').forEach(item => {
+        const label = item.querySelector('.nav-label');
+        const section = item.getAttribute('data-section');
+        
+        if (label && section) {
+            const mapping = {
+                'walletSection': 'myWallet',
+                'mybetSection': 'myBets',
+                'matchesSection': 'matches',
+                'profileSection': 'profile',
+                'aboutsection': 'aboutUs',
+                'adminChatSection': 'support',
+                'adminTransactionApproval': 'approvals',
+                'adminmatchesSection': 'matches',
+                'adminBankingSettings': 'bankingSettings',
+                'announcementAdminSection': 'manageAnnouncements'
+            };
+            
+            if (mapping[section]) {
+                label.textContent = t(mapping[section]);
+            }
+        }
+    });
+    
+    // Logout buttons
+    const logoutButtons = ['userLogoutBtn', 'adminLogoutBtn', 'superAdminLogoutBtn'];
+    logoutButtons.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            const span = btn.querySelector('span') || btn;
+            span.textContent = t('logout');
+        }
+    });
+}
+
+// Translate wallet section
+function translateWalletSection() {
+    // Wallet tabs
+    const walletTabs = document.querySelectorAll('.wallet-tab');
+    walletTabs.forEach(tab => {
+        const icon = tab.querySelector('i');
+        const span = tab.querySelector('span');
+        const onclick = tab.getAttribute('onclick');
+        
+        if (icon && span) {
+            if (onclick?.includes('deposit')) {
+                span.textContent = t('deposit');
+            } else if (onclick?.includes('withdraw')) {
+                span.textContent = t('withdraw');
+            } else if (onclick?.includes('Accounts')) {
+                span.textContent = t('account');
+            }
+        }
+    });
+    
+    // Deposit steps
+    const steps = document.querySelectorAll('.step');
+    steps.forEach((step, index) => {
+        const title = step.querySelector('.step-title');
+        if (title) {
+            if (index === 0) title.textContent = t('choosePaymentMethod');
+            else if (index === 1) title.textContent = t('fillDetails');
+            else if (index === 2) title.textContent = t('confirmTransaction');
+        }
+    });
+    
+    // Deposit step 1
+    const step1Title = document.querySelector('#depositStep1 h3');
+    if (step1Title) step1Title.textContent = t('selectPaymentMethod');
+    
+    // Deposit step 2
+    const step2Title = document.querySelector('#depositStep2 h3');
+    if (step2Title) step2Title.textContent = t('enterYourDetails');
+    
+    const nameLabel = document.querySelector('label[for="depositFullName"]');
+    if (nameLabel) {
+        const icon = nameLabel.querySelector('i');
+        if (icon) nameLabel.innerHTML = icon.outerHTML + ' ' + t('fullNameLabel');
+    }
+    
+    const mobileLabel = document.querySelector('label[for="depositMobile"]');
+    if (mobileLabel) {
+        const icon = mobileLabel.querySelector('i');
+        if (icon) mobileLabel.innerHTML = icon.outerHTML + ' ' + t('mobileNumber');
+    }
+    
+    const amountLabel = document.querySelector('label[for="depositAmount"]');
+    if (amountLabel) {
+        const icon = amountLabel.querySelector('i');
+        if (icon) amountLabel.innerHTML = icon.outerHTML + ' ' + t('amount');
+    }
+    
+    const continueBtn = document.querySelector('#depositStep2 .btn-primary');
+    if (continueBtn) {
+        const span = continueBtn.querySelector('span') || continueBtn;
+        span.textContent = t('continue');
+    }
+    
+    // Deposit step 3
+    const step3Title = document.querySelector('#depositStep3 h3');
+    if (step3Title) step3Title.textContent = t('paymentInstructions');
+    
+    const transLabel = document.querySelector('label[for="transactionId"]');
+    if (transLabel) {
+        const icon = transLabel.querySelector('i');
+        if (icon) transLabel.innerHTML = icon.outerHTML + ' ' + t('transactionId');
+    }
+    
+    const screenshotLabel = document.querySelector('label[for="paymentScreenshot"]');
+    if (screenshotLabel) {
+        const icon = screenshotLabel.querySelector('i');
+        if (icon) screenshotLabel.innerHTML = icon.outerHTML + ' ' + t('uploadScreenshot');
+    }
+    
+    const submitBtn = document.querySelector('#depositStep3 .btn-success');
+    if (submitBtn) {
+        const span = submitBtn.querySelector('span') || submitBtn;
+        span.textContent = t('submitForApproval');
+    }
+    
+    // Withdrawal section
+    const withdrawTitle = document.querySelector('#withdrawSection h3');
+    if (withdrawTitle) withdrawTitle.textContent = t('requestWithdrawal');
+    
+    const balanceInfo = document.querySelector('.current-balance-info');
+    if (balanceInfo) {
+        const span = balanceInfo.querySelector('span');
+        if (span) {
+            balanceInfo.innerHTML = t('currentBalance') + ': <span id="withdrawCurrentBalance">TZS 0.00</span>';
+        }
+    }
+    
+    const amountWithdrawLabel = document.querySelector('label[for="withdrawAmount"]');
+    if (amountWithdrawLabel) {
+        const icon = amountWithdrawLabel.querySelector('i');
+        if (icon) amountWithdrawLabel.innerHTML = icon.outerHTML + ' ' + t('amountToWithdraw');
+    }
+    
+    const accountSelectLabel = document.querySelector('label[for="withdrawBank"]');
+    if (accountSelectLabel) {
+        const icon = accountSelectLabel.querySelector('i');
+        if (icon) accountSelectLabel.innerHTML = icon.outerHTML + ' ' + t('selectAccount');
+    }
+    
+    const nameDisplayLabel = document.querySelector('label[for="withdrawAccountName"]');
+    if (nameDisplayLabel) {
+        const icon = nameDisplayLabel.querySelector('i');
+        if (icon) nameDisplayLabel.innerHTML = icon.outerHTML + ' ' + t('accountFullName');
+    }
+    
+    const numberDisplayLabel = document.querySelector('label[for="withdrawAccountNumber"]');
+    if (numberDisplayLabel) {
+        const icon = numberDisplayLabel.querySelector('i');
+        if (icon) numberDisplayLabel.innerHTML = icon.outerHTML + ' ' + t('accountNumber');
+    }
+    
+    const mobileConfirmLabel = document.querySelector('label[for="withdrawMobile"]');
+    if (mobileConfirmLabel) {
+        const icon = mobileConfirmLabel.querySelector('i');
+        if (icon) mobileConfirmLabel.innerHTML = icon.outerHTML + ' ' + t('mobileNumberConfirm');
+    }
+    
+    const withdrawSubmitBtn = document.querySelector('#withdrawSection .btn-primary');
+    if (withdrawSubmitBtn) {
+        const span = withdrawSubmitBtn.querySelector('span') || withdrawSubmitBtn;
+        span.textContent = t('submitWithdrawalRequest');
+    }
+}
+
+// Translate betting section
+function translateBettingSection() {
+    const matchesContainer = document.getElementById('matchesContainer');
+    if (!matchesContainer) return;
+    
+    translateMatchCards();
+    
+    // VIP bet slip
+    const vipSlip = document.getElementById('vipBetSlipContainer');
+    if (vipSlip && vipSlip.children.length > 0) {
+        const header = vipSlip.querySelector('.vip-bet-title h3');
+        if (header) header.textContent = t('vipMultiBet');
+        
+        const selectionsText = vipSlip.querySelector('.vip-bet-title p');
+        if (selectionsText) {
+            const count = vipSlip.querySelectorAll('.selected-bet-item').length;
+            selectionsText.textContent = `${count} / ∞ ${t('selections')}`;
+        }
+        
+        const stakeLabel = vipSlip.querySelector('label[for="multiStakeAmount"]');
+        if (stakeLabel) stakeLabel.textContent = t('stakeAmount');
+        
+        const oddsLabel = vipSlip.querySelector('.vip-bet-header + div > div:last-child .vip-gold');
+        if (oddsLabel) {
+            const parent = oddsLabel.closest('div');
+            if (parent) {
+                const label = parent.previousElementSibling;
+                if (label) label.textContent = t('combinedOdds');
+            }
+        }
+        
+        const totalStakeLabel = vipSlip.querySelector('.vip-bet-slip > div:nth-last-child(3) span:first-child');
+        if (totalStakeLabel) totalStakeLabel.textContent = t('stake') + ':';
+        
+        const returnLabel = vipSlip.querySelector('.vip-bet-slip > div:nth-last-child(3) span:first-child + div');
+        if (returnLabel) {
+            const parent = returnLabel.closest('div');
+            if (parent) {
+                const label = parent.querySelector('span:first-child');
+                if (label) label.textContent = t('potentialReturn') + ':';
+            }
+        }
+        
+        const profitLabel = vipSlip.querySelector('.vip-bet-slip > div:last-child span:first-child');
+        if (profitLabel) profitLabel.textContent = t('profit') + ':';
+        
+        const placeBtn = document.getElementById('placeMultiBetBtn');
+        if (placeBtn) {
+            const count = vipSlip.querySelectorAll('.selected-bet-item').length;
+            placeBtn.innerHTML = `<i class="fas fa-coins"></i> ${t('placeVipBet', count)}`;
+        }
+    }
+}
+
+// Translate match cards
+function translateMatchCards() {
+    document.querySelectorAll('.match-card').forEach(card => {
+        // Odds types
+        const oddsTypes = card.querySelectorAll('.odds-type');
+        oddsTypes.forEach(el => {
+            const text = el.textContent.trim();
+            if (text.includes('Home')) el.textContent = t('homeWin');
+            else if (text.includes('Draw')) el.textContent = t('draw');
+            else if (text.includes('Away')) el.textContent = t('awayWin');
+        });
+        
+        // Odds percentages (keep numbers, translate text)
+        const oddsPercents = card.querySelectorAll('.odds-percent');
+        oddsPercents.forEach(el => {
+            const percent = el.textContent.match(/\d+/)?.[0] || '';
+            if (percent) {
+                el.textContent = t('winPercent', percent);
+            }
+        });
+        
+        // Place bet button
+        const placeBtn = card.querySelector('.place-bet-btn');
+        if (placeBtn) {
+            const icon = placeBtn.querySelector('i');
+            if (icon) {
+                placeBtn.innerHTML = icon.outerHTML + ' ' + t('singleBet');
+            } else {
+                placeBtn.textContent = t('singleBet');
+            }
+        }
+    });
+}
+
+// Translate bets table
+function translateBetsTable() {
+    const table = document.querySelector('.my-bets-table');
+    if (!table) return;
+    
+    const headers = table.querySelectorAll('thead th');
+    if (headers.length >= 7) {
+        headers[0].textContent = t('matchBet');
+        headers[1].textContent = t('type');
+        headers[2].textContent = t('stakeTzs');
+        headers[3].textContent = t('odds');
+        headers[4].textContent = t('profit');
+        headers[5].textContent = t('status');
+        headers[6].textContent = t('date');
+    }
+    
+    // Translate status badges
+    table.querySelectorAll('.status-badge').forEach(badge => {
+        const status = badge.classList[1] || '';
+        if (status.includes('pending')) badge.textContent = t('pending');
+        else if (status.includes('won')) badge.textContent = t('won');
+        else if (status.includes('lost')) badge.textContent = t('lost');
+        else if (status.includes('refunded')) badge.textContent = t('refunded');
+    });
+}
+
+// Translate profile section
+function translateProfileSection() {
+    const statBoxes = document.querySelectorAll('.stat-box');
+    statBoxes.forEach((box, index) => {
+        const label = box.querySelector('.stat-label');
+        if (label) {
+            if (index === 0) label.textContent = t('daysActive');
+            else if (index === 1) label.textContent = t('correctPredictions');
+            else if (index === 2) label.textContent = t('totalPoints');
+            else if (index === 3) label.textContent = t('winRate');
+        }
+    });
+    
+    const joinDateLabel = document.querySelector('.profile-details p:nth-child(5) i + span');
+    if (joinDateLabel) {
+        const parent = joinDateLabel.closest('p');
+        if (parent) {
+            const icon = parent.querySelector('i');
+            if (icon) {
+                parent.innerHTML = icon.outerHTML + ' ' + t('memberSince') + ': <span id="profileJoinDate">' + (document.getElementById('profileJoinDate')?.textContent || '') + '</span>';
+            }
+        }
+    }
+}
+
+// Translate about section
+function translateAboutSection() {
+    const aboutSection = document.getElementById('aboutsection');
+    if (!aboutSection) return;
+    
+    const tabs = aboutSection.querySelectorAll('.tab-list .tab');
+    if (tabs.length >= 4) {
+        tabs[0].textContent = t('aboutUs');
+        tabs[1].textContent = t('faq');
+        tabs[2].textContent = t('privacyPolicy');
+        tabs[3].textContent = t('termsConditions');
+    }
+    
+    // Panel 1 (About Us)
+    const panel1 = document.getElementById('panel-1');
+    if (panel1) {
+        const headings = panel1.querySelectorAll('h3, h4');
+        if (headings[0]) headings[0].innerHTML = `📋 ${t('welcomeToHub')}`;
+        if (headings[1]) headings[1].textContent = t('ourMission');
+        if (headings[2]) headings[2].textContent = t('whatWeOffer');
+        if (headings[3]) headings[3].textContent = t('ourValues');
+        if (headings[4]) headings[4].textContent = t('ourTeam');
+        
+        const paragraphs = panel1.querySelectorAll('p');
+        if (paragraphs[0]) paragraphs[0].textContent = t('aboutDescription');
+        if (paragraphs[1]) paragraphs[1].textContent = t('missionText');
+        if (paragraphs[2]) paragraphs[2].textContent = t('valuesText');
+        if (paragraphs[3]) paragraphs[3].textContent = t('teamText');
+        
+        const list = panel1.querySelector('ul');
+        if (list) {
+            const items = list.querySelectorAll('li');
+            if (items[0]) items[0].innerHTML = `<strong>${t('livePredictions')}</strong>`;
+            if (items[1]) items[1].innerHTML = `<strong>${t('vipMultiBets')}</strong>`;
+            if (items[2]) items[2].innerHTML = `<strong>${t('secureWallet')}</strong>`;
+            if (items[3]) items[3].innerHTML = `<strong>${t('referralProgram')}</strong>`;
+            if (items[4]) items[4].innerHTML = `<strong>${t('support247')}</strong>`;
+        }
+        
+        const badges = panel1.querySelectorAll('.badge');
+        if (badges[0]) badges[0].textContent = t('ourMission');
+        if (badges[1]) badges[1].textContent = t('ourValues');
+        if (badges[2]) badges[2].textContent = t('ourTeam');
+    }
+    
+    // Panel 2 (FAQ)
+    const panel2 = document.getElementById('panel-2');
+    if (panel2) {
+        const heading = panel2.querySelector('h3');
+        if (heading) heading.textContent = `🔥 ${t('faqTitle')}`;
+    }
+}
+
+// Translate announcements
+function translateAnnouncements() {
+    const sectionTitle = document.querySelector('.announcement-grid .section-title');
+    if (sectionTitle) sectionTitle.textContent = `📢 ${t('latestAnnouncements')}`;
+    
+    const slideshowTitle = document.querySelector('.slideshow-card h1 span');
+    if (slideshowTitle) slideshowTitle.textContent = `⚽ ${t('announcements').toUpperCase()} ⚽`;
+    
+    const footnote = document.querySelector('.footnote');
+    if (footnote) footnote.textContent = `📢 ${t('announcements')}`;
+}
+
+// Translate chat section
+function translateChatSection() {
+    const chatButton = document.querySelector('#chat-button .chat-tooltip');
+    if (chatButton) chatButton.textContent = t('supportChat');
+    
+    const chatModal = document.getElementById('userChatModal');
+    if (chatModal) {
+        const header = chatModal.querySelector('.modal-header h2');
+        if (header) header.innerHTML = `<i class="fas fa-headset"></i> ${t('supportChat')}`;
+    }
+    
+    const chatInput = document.getElementById('userChatInput');
+    if (chatInput) chatInput.placeholder = t('typeMessage');
+    
+    const sendBtn = document.getElementById('userChatSend');
+    if (sendBtn) sendBtn.textContent = t('send');
+    
+    const quickQuestions = document.querySelectorAll('.quick-question');
+    quickQuestions.forEach(btn => {
+        const question = btn.getAttribute('data-question');
+        if (question === 'How to deposit?') btn.textContent = t('howToDeposit');
+        else if (question === 'How to withdraw?') btn.textContent = t('howToWithdraw');
+        else if (question === 'How to stake bet?') btn.textContent = t('howToStake');
+        else if (question === 'Show recent results') btn.textContent = t('recentResults');
+        else if (question === "today's matches") btn.textContent = t('todaysMatches');
+    });
+}
+
+// Translate admin chat
+function translateAdminChat() {
+    const sidebarHeader = document.querySelector('.chat-sidebar .sidebar-header h3');
+    if (sidebarHeader) sidebarHeader.innerHTML = `<i class="fas fa-comments"></i> ${t('activeChats')}`;
+    
+    const noChatSelected = document.querySelector('.no-chat-selected p');
+    if (noChatSelected) noChatSelected.textContent = t('selectUser');
+    
+    const quickResponses = document.querySelectorAll('.quick-response');
+    if (quickResponses.length >= 3) {
+        quickResponses[0].textContent = t('standardReply');
+        quickResponses[1].textContent = t('escalate');
+        quickResponses[2].textContent = t('needMoreInfo');
+    }
+    
+    const adminInput = document.getElementById('adminChatInput');
+    if (adminInput) adminInput.placeholder = t('typeMessage');
+    
+    const adminSend = document.getElementById('adminChatSend');
+    if (adminSend) adminSend.innerHTML = `<i class="fas fa-paper-plane"></i> ${t('send')}`;
+}
+
+// Translate tables
+function translateTables() {
+    // Admin transaction table
+    const adminTable = document.querySelector('.admin-table');
+    if (adminTable) {
+        const headers = adminTable.querySelectorAll('thead th');
+        if (headers.length >= 6) {
+            headers[0].textContent = t('date');
+            headers[1].textContent = t('user');
+            headers[2].textContent = t('type');
+            headers[3].textContent = t('amount');
+            headers[4].textContent = t('status');
+            headers[5].textContent = t('actions');
+        }
+    }
+    
+    // Super admin tables
+    const superTable = document.querySelector('.super-table');
+    if (superTable) {
+        const headers = superTable.querySelectorAll('thead th');
+        if (headers.length >= 7) {
+            headers[0].textContent = t('user');
+            headers[1].textContent = t('emailAddress');
+            headers[2].textContent = t('balance');
+            headers[3].textContent = t('role');
+            headers[4].textContent = t('status');
+            headers[5].textContent = t('joined');
+            headers[6].textContent = t('actions');
+        }
+    }
+}
+
+// Translate buttons
+function translateButtons() {
+    // General buttons
+    document.querySelectorAll('.btn-primary, .btn-secondary, .btn-success, .btn-danger').forEach(btn => {
+        // Skip buttons that have been handled elsewhere
+        if (btn.closest('.wallet-tab')) return;
+        if (btn.closest('.nav-item')) return;
+        
+        const span = btn.querySelector('span');
+        const icon = btn.querySelector('i');
+        const text = btn.textContent.trim().toLowerCase();
+        
+        // Try to match common button texts
+        if (text.includes('save')) {
+            if (span) span.textContent = t('saveAccount');
+            else if (icon) btn.innerHTML = icon.outerHTML + ' ' + t('saveAccount');
+        } else if (text.includes('cancel')) {
+            if (span) span.textContent = t('cancel');
+            else if (icon) btn.innerHTML = icon.outerHTML + ' ' + t('cancel');
+        } else if (text.includes('close')) {
+            if (span) span.textContent = t('close');
+            else if (icon) btn.innerHTML = icon.outerHTML + ' ' + t('close');
+        } else if (text.includes('reset')) {
+            if (span) span.textContent = t('reset');
+            else if (icon) btn.innerHTML = icon.outerHTML + ' ' + t('reset');
+        }
+    });
+}
+
+// Translate placeholders
+function translatePlaceholders() {
+    // Common placeholders
+    const placeholderMappings = {
+        'searchUser': 'searchUser',
+        'depositAmount': 'amount',
+        'withdrawAmount': 'amount',
+        'transactionId': 'transactionId',
+        'withdrawMobile': 'eg0712345678'
+    };
+    
+    Object.entries(placeholderMappings).forEach(([id, key]) => {
+        const input = document.getElementById(id);
+        if (input) input.placeholder = t(key);
+    });
+}
+
+// Translate all modals
+function translateAllModals() {
+    const modals = [
+        'depositModal', 'withdrawalModal', 'bankAccountModal', 'betSlipModal',
+        'setResultModal', 'addAccountModal', 'receiptModal', 'forgotPasswordModal',
+        'termsModal', 'privacyModal', 'aboutModal', 'faqModal', 'announcementModal',
+        'userChatModal', 'referralsModal', 'historyModal', 'bankCardsModal',
+        'userDetailsModal', 'editUserModal', 'adjustBalanceModal', 'resetPasswordModal',
+        'addUserModal', 'addAdminModal'
+    ];
+    
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            translateModal(modalId);
+        }
+    });
+    
+    translateActiveModals();
+}
+
+// Translate specific modal by ID
+function translateModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    
+    const header = modal.querySelector('.modal-header h2, .modal-header h3');
+    if (!header) return;
+    
+    const icon = header.querySelector('i');
+    const mapping = {
+        'depositModal': { icon: 'fa-arrow-down', key: 'makeDeposit' },
+        'withdrawalModal': { icon: 'fa-arrow-up', key: 'requestWithdrawal' },
+        'bankAccountModal': { icon: 'fa-university', key: 'addBankAccount' },
+        'betSlipModal': { icon: null, key: 'placeYourBet' },
+        'setResultModal': { icon: 'fa-clipboard-check', key: 'setMatchResults' },
+        'addAccountModal': { icon: 'fa-plus-circle', key: 'addNewAccount' },
+        'forgotPasswordModal': { icon: 'fa-key', key: 'resetPassword' },
+        'termsModal': { icon: 'fa-file-contract', key: 'termsAndConditions' },
+        'privacyModal': { icon: 'fa-shield-alt', key: 'privacyPolicy' },
+        'aboutModal': { icon: 'fa-info-circle', key: 'aboutUs' },
+        'faqModal': { icon: 'fa-question-circle', key: 'faq' },
+        'userChatModal': { icon: 'fa-headset', key: 'supportChat' },
+        'referralsModal': { icon: 'fa-users', key: 'myReferrals' },
+        'historyModal': { icon: 'fa-history', key: 'transactionHistory' },
+        'bankCardsModal': { icon: 'fa-credit-card', key: 'myBankCards' },
+        'editUserModal': { icon: 'fa-edit', key: 'edit' },
+        'adjustBalanceModal': { icon: 'fa-coins', key: 'adjustBalance' },
+        'resetPasswordModal': { icon: 'fa-key', key: 'resetPassword' },
+        'addUserModal': { icon: 'fa-user-plus', key: 'addNewUser' },
+        'addAdminModal': { icon: 'fa-user-shield', key: 'addNewUser' }
+    };
+    
+    if (mapping[modalId]) {
+        const { icon: iconClass, key } = mapping[modalId];
+        if (iconClass && icon) {
+            header.innerHTML = `<i class="fas ${iconClass}"></i> ${t(key)}`;
+        } else {
+            header.textContent = t(key);
+        }
+    }
+    
+    // Translate modal buttons
+    modal.querySelectorAll('.btn-primary, .btn-secondary, .btn-success, .btn-danger').forEach(btn => {
+        const span = btn.querySelector('span');
+        const btnIcon = btn.querySelector('i');
+        const text = btn.textContent.trim().toLowerCase();
+        
+        if (text.includes('cancel') || btn.classList.contains('btn-secondary')) {
+            if (span) span.textContent = t('cancel');
+            else if (btnIcon) btn.innerHTML = btnIcon.outerHTML + ' ' + t('cancel');
+        } else if (text.includes('save')) {
+            if (span) span.textContent = t('saveAccount');
+            else if (btnIcon) btn.innerHTML = btnIcon.outerHTML + ' ' + t('saveAccount');
+        } else if (text.includes('submit') || text.includes('request')) {
+            if (span) span.textContent = t('submitForApproval');
+            else if (btnIcon) btn.innerHTML = btnIcon.outerHTML + ' ' + t('submitForApproval');
+        }
+    });
+}
+
+// Translate active modals
+function translateActiveModals() {
+    document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+        const modalId = modal.id;
+        if (modalId) {
+            translateModal(modalId);
+        }
+    });
+}
+
+// Translate referrals modal
+function translateReferralsModal() {
+    const modal = document.getElementById('referralsModal');
+    if (!modal) return;
+    
+    const infoBanner = modal.querySelector('.modal-body > div:first-child');
+    if (infoBanner) {
+        const title = infoBanner.querySelector('h4');
+        const desc = infoBanner.querySelector('p');
+        if (title) title.textContent = t('earnCommission');
+        if (desc) desc.textContent = t('referralDescription');
+    }
+    
+    const statLabels = modal.querySelectorAll('.stat-item .stat-label');
+    if (statLabels.length >= 3) {
+        statLabels[0].textContent = t('totalReferrals').toUpperCase();
+        statLabels[1].textContent = t('activeReferrals').toUpperCase();
+        statLabels[2].textContent = t('totalEarnings').toUpperCase();
+    }
+    
+    const codeLabel = modal.querySelector('.modal-body label[for="modalReferralCode"]');
+    if (codeLabel) codeLabel.textContent = t('yourReferralCode');
+    
+    const linkLabel = modal.querySelector('.modal-body label[for="modalReferralLink"]');
+    if (linkLabel) linkLabel.textContent = t('yourReferralLink');
+    
+    const historyHeader = modal.querySelector('.modal-body h4');
+    if (historyHeader) historyHeader.innerHTML = `<i class="fas fa-list"></i> ${t('referralHistory')}`;
+    
+    const filterSelect = document.getElementById('referralFilter');
+    if (filterSelect) {
+        const options = filterSelect.querySelectorAll('option');
+        if (options[0]) options[0].textContent = t('allReferrals');
+        if (options[1]) options[1].textContent = t('activeEarned');
+        if (options[2]) options[2].textContent = t('pendingDeposit');
+    }
+    
+    const tableHeaders = modal.querySelectorAll('#referralsTable thead th');
+    if (tableHeaders.length >= 4) {
+        tableHeaders[0].textContent = t('userReferred');
+        tableHeaders[1].textContent = t('dateJoined');
+        tableHeaders[2].textContent = t('status');
+        tableHeaders[3].textContent = t('earnings');
+    }
+    
+    const infoFooter = modal.querySelector('.modal-body .info-row, .modal-body .referral-info-box');
+    if (infoFooter) {
+        const text = infoFooter.querySelector('span') || infoFooter;
+        text.textContent = t('earningsInfo');
+    }
+}
+
+// Translate bank cards modal
+function translateBankCardsModal() {
+    const modal = document.getElementById('bankCardsModal');
+    if (!modal) return;
+    
+    const addBtn = modal.querySelector('.add-card-btn');
+    if (addBtn) {
+        const icon = addBtn.querySelector('i');
+        const span = addBtn.querySelector('span');
+        if (icon && span) {
+            span.textContent = t('addNewCard');
+        } else {
+            addBtn.innerHTML = `<i class="fas fa-plus-circle"></i> ${t('addNewCard')}`;
+        }
+    }
+}
+
+// Translate footer
+function translateFooter() {
+    const footer = document.querySelector('.menu-footer p');
+    if (footer) {
+        footer.textContent = `Football Canvas Hub ${t('version')}`;
+    }
+}
+
+// ==================== DYNAMIC CONTENT REFRESH ====================
+
+// Refresh all dynamic content
+function refreshAllDynamicContent() {
+    console.log('🔄 Refreshing dynamic content...');
+    
+    // Refresh matches
     if (window.bettingSystem && typeof window.bettingSystem.loadMatches === 'function') {
         window.bettingSystem.loadMatches();
     }
     
-    // Refresh my bets if loaded
+    // Refresh my bets
     if (window.bettingSystem && typeof window.bettingSystem.loadMyBets === 'function') {
         window.bettingSystem.loadMyBets();
     }
     
-    // Refresh admin matches if loaded
+    // Refresh admin matches
     if (window.bettingSystem && typeof window.bettingSystem.loadAdminMatches === 'function') {
         window.bettingSystem.loadAdminMatches();
     }
     
-    // Refresh transaction history if loaded
+    // Refresh refund matches
+    if (window.bettingSystem && typeof window.bettingSystem.loadRefundMatches === 'function') {
+        window.bettingSystem.loadRefundMatches();
+    }
+    
+    // Refresh transaction history
     if (window.bankingSystem && typeof window.bankingSystem.loadTransactionHistory === 'function') {
         window.bankingSystem.loadTransactionHistory();
     }
     
-    // Refresh admin transaction history if loaded
+    // Refresh admin transaction history
     if (window.bankingSystem && typeof window.bankingSystem.loadAdminTransactionHistory === 'function') {
         window.bankingSystem.loadAdminTransactionHistory();
     }
     
-    // Refresh pending approvals if loaded
+    // Refresh pending approvals
     if (window.bankingSystem && typeof window.bankingSystem.loadPendingApprovals === 'function') {
         window.bankingSystem.loadPendingApprovals();
     }
     
-    // Refresh accounts if loaded
+    // Refresh user accounts
     if (window.userBankManager && typeof window.userBankManager.loadAccounts === 'function') {
         window.userBankManager.loadAccounts();
     }
     
-    // Refresh admin accounts if loaded
+    // Refresh admin accounts
     if (window.adminBankManager && typeof window.adminBankManager.loadAccounts === 'function') {
         window.adminBankManager.loadAccounts();
+    }
+    
+    // Refresh VIP bet slip
+    if (typeof updateVIPBetSlip === 'function') {
+        updateVIPBetSlip();
     }
     
     // Refresh referrals if modal is open
@@ -11308,385 +12453,25 @@ function refreshDynamicContent() {
     }
 }
 
-// Function to update all text on the page
-function updateAllText() {
-    // Update all elements with data-translate attribute
-    document.querySelectorAll('[data-translate]').forEach(element => {
-        const key = element.getAttribute('data-translate');
-        if (key && translations[currentLanguage][key]) {
-            element.textContent = t(key);
-        }
-    });
-    
-    // Update placeholders
-    document.querySelectorAll('[data-translate-placeholder]').forEach(element => {
-        const key = element.getAttribute('data-translate-placeholder');
-        if (key && translations[currentLanguage][key]) {
-            element.placeholder = t(key);
-        }
-    });
-    
-    // Update titles
-    document.querySelectorAll('[data-translate-title]').forEach(element => {
-        const key = element.getAttribute('data-translate-title');
-        if (key && translations[currentLanguage][key]) {
-            element.title = t(key);
-        }
-    });
-    
-    // Update aria labels
-    document.querySelectorAll('[data-translate-aria]').forEach(element => {
-        const key = element.getAttribute('data-translate-aria');
-        if (key && translations[currentLanguage][key]) {
-            element.setAttribute('aria-label', t(key));
-        }
-    });
-    
-    // Update labels by for attribute
-    document.querySelectorAll('label[data-translate-for]').forEach(label => {
-        const key = label.getAttribute('data-translate-for');
-        if (key && translations[currentLanguage][key]) {
-            // Preserve any icons
-            const icon = label.querySelector('i');
-            if (icon) {
-                const iconHTML = icon.outerHTML;
-                label.innerHTML = iconHTML + ' ' + t(key);
-            } else {
-                label.textContent = t(key);
-            }
-        }
-    });
-    
-    // Update buttons with nested spans
-    document.querySelectorAll('button[data-translate-btn]').forEach(button => {
-        const key = button.getAttribute('data-translate-btn');
-        if (key && translations[currentLanguage][key]) {
-            const span = button.querySelector('span');
-            if (span) {
-                span.textContent = t(key);
-            } else {
-                // Handle icon-only buttons
-                const icon = button.querySelector('i');
-                if (icon) {
-                    const iconHTML = icon.outerHTML;
-                    button.innerHTML = iconHTML + ' ' + t(key);
-                } else {
-                    button.textContent = t(key);
-                }
-            }
-        }
-    });
-    
-    // Update select options
-    document.querySelectorAll('select[data-translate-options]').forEach(select => {
-        const optionsKey = select.getAttribute('data-translate-options');
-        if (optionsKey) {
-            // This would need custom handling based on your select structure
-        }
-    });
-    
-    // Update specific sections by ID
-    updateDocumentTitle();
-    updateFormSwitcher();
-    updateDashboardHeaders();
-    updateWalletTabs();
-    updateDepositSteps();
-    updateNavigationLabels();
-    updateMatchCardLabels();
-    updateBetSlipLabels();
-    updateMyBetsLabels();
-    updateProfileLabels();
-    updateAboutSection();
-    updateAnnouncements();
-    updateChatSection();
-    updateAdminSection();
-    updateSuperAdminSection();
-    updateModals();
-    updateReferralsModal();
-    updateBankCardsModal();
+// ==================== UTILITY FUNCTIONS ====================
+
+// Format number based on locale
+function formatNumber(number, options = {}) {
+    return new Intl.NumberFormat(currentLanguage === 'en' ? 'en-US' : 'sw-TZ', options).format(number);
 }
 
-// Helper function to update document title
-function updateDocumentTitle() {
-    document.title = t('appTitle');
+// Format currency
+function formatCurrency(amount) {
+    return `TZS ${formatNumber(amount, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-// Update form switcher
-function updateFormSwitcher() {
-    const loginBtn = document.getElementById('login');
-    const signupBtn = document.getElementById('signupSwitch');
-    
-    if (loginBtn) {
-        const loginSpan = loginBtn.querySelector('span') || loginBtn;
-        if (loginSpan.tagName === 'SPAN') {
-            loginSpan.textContent = t('signIn');
-        } else {
-            loginBtn.textContent = t('signIn');
-        }
-    }
-    
-    if (signupBtn) {
-        const signupSpan = signupBtn.querySelector('span') || signupBtn;
-        if (signupSpan.tagName === 'SPAN') {
-            signupSpan.textContent = t('signUp');
-        } else {
-            signupBtn.textContent = t('signUp');
-        }
-    }
+// Format date
+function formatDate(date, options = {}) {
+    const locale = currentLanguage === 'en' ? 'en-US' : 'sw-TZ';
+    return new Intl.DateTimeFormat(locale, options).format(date);
 }
 
-// Update dashboard headers
-function updateDashboardHeaders() {
-    // User dashboard
-    const welcomeName = document.getElementById('welcomeName');
-    if (welcomeName) {
-        const userName = window.authManager?.userData?.fullName?.split(' ')[0] || t('welcome');
-        welcomeName.textContent = userName;
-    }
-    
-    const welcomeName1 = document.getElementById('welcomeName1');
-    if (welcomeName1) {
-        const userName = window.authManager?.userData?.fullName?.split(' ')[0] || t('welcome');
-        welcomeName1.textContent = userName;
-    }
-    
-    // Section headers
-    const walletHeader = document.querySelector('#walletSection .dashboard-header h2');
-    if (walletHeader) {
-        walletHeader.innerHTML = `<i class="fas fa-wallet"></i> ${t('myWallet')}`;
-    }
-    
-    const walletSubheader = document.querySelector('#walletSection .dashboard-header p');
-    if (walletSubheader) {
-        walletSubheader.textContent = t('manageWallet');
-    }
-}
-
-// Update wallet tabs
-function updateWalletTabs() {
-    const tabs = document.querySelectorAll('.wallet-tab');
-    tabs.forEach(tab => {
-        const icon = tab.querySelector('i');
-        const span = tab.querySelector('span');
-        if (icon && span) {
-            const onclick = tab.getAttribute('onclick');
-            if (onclick?.includes('deposit')) {
-                span.textContent = t('deposit');
-            } else if (onclick?.includes('withdraw')) {
-                span.textContent = t('withdraw');
-            } else if (onclick?.includes('Accounts')) {
-                span.textContent = t('account');
-            }
-        }
-    });
-}
-
-// Update deposit steps
-function updateDepositSteps() {
-    const stepTitles = document.querySelectorAll('.step-title');
-    if (stepTitles.length >= 3) {
-        stepTitles[0].textContent = t('choosePaymentMethod');
-        stepTitles[1].textContent = t('fillDetails');
-        stepTitles[2].textContent = t('confirmTransaction');
-    }
-}
-
-// Update navigation labels
-function updateNavigationLabels() {
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        const span = item.querySelector('.nav-label');
-        const section = item.getAttribute('data-section');
-        if (span && section) {
-            if (section === 'walletSection') span.textContent = t('myWallet');
-            else if (section === 'mybetSection') span.textContent = t('myBets');
-            else if (section === 'matchesSection') span.textContent = t('matches');
-            else if (section === 'profileSection') span.textContent = t('profile');
-            else if (section === 'aboutsection') span.textContent = t('aboutUs');
-        }
-    });
-}
-
-// Update match card labels
-function updateMatchCardLabels() {
-    document.querySelectorAll('.odds-box .odds-type').forEach(el => {
-        const text = el.textContent.trim();
-        if (text.includes('Home')) el.textContent = t('homeWin');
-        else if (text.includes('Draw')) el.textContent = t('draw');
-        else if (text.includes('Away')) el.textContent = t('awayWin');
-    });
-    
-    document.querySelectorAll('.place-bet-btn').forEach(el => {
-        const span = el.querySelector('span') || el;
-        if (span.tagName === 'SPAN') {
-            span.textContent = t('singleBet');
-        } else {
-            el.innerHTML = `<i class="fas fa-coins"></i> ${t('singleBet')}`;
-        }
-    });
-}
-
-// Update bet slip labels
-function updateBetSlipLabels() {
-    // This will be called when bet slip is opened
-}
-
-// Update my bets table
-function updateMyBetsLabels() {
-    const tableHeaders = document.querySelectorAll('.my-bets-table th');
-    if (tableHeaders.length >= 7) {
-        tableHeaders[0].textContent = t('matchBet');
-        tableHeaders[1].textContent = t('type');
-        tableHeaders[2].textContent = t('stakeTzs');
-        tableHeaders[3].textContent = t('odds');
-        tableHeaders[4].textContent = t('profit');
-        tableHeaders[5].textContent = t('status');
-        tableHeaders[6].textContent = t('date');
-    }
-}
-
-// Update profile section
-function updateProfileLabels() {
-    const statLabels = document.querySelectorAll('.stat-box .stat-label');
-    if (statLabels.length >= 4) {
-        statLabels[0].textContent = t('daysActive');
-        statLabels[1].textContent = t('correctPredictions');
-        statLabels[2].textContent = t('totalPoints');
-        statLabels[3].textContent = t('winRate');
-    }
-}
-
-// Update about section
-function updateAboutSection() {
-    const tabButtons = document.querySelectorAll('.tab-list .tab');
-    if (tabButtons.length >= 4) {
-        tabButtons[0].textContent = t('aboutUs');
-        tabButtons[1].textContent = t('faq');
-        tabButtons[2].textContent = t('privacyPolicy');
-        tabButtons[3].textContent = t('termsConditions');
-    }
-}
-
-// Update announcements
-function updateAnnouncements() {
-    const sectionTitle = document.querySelector('.announcement-grid .section-title');
-    if (sectionTitle) {
-        sectionTitle.textContent = t('latestAnnouncements');
-    }
-}
-
-// Update chat section
-function updateChatSection() {
-    const chatInput = document.getElementById('userChatInput');
-    if (chatInput) {
-        chatInput.placeholder = t('typeMessage');
-    }
-    
-    const sendBtn = document.getElementById('userChatSend');
-    if (sendBtn) {
-        sendBtn.textContent = t('send');
-    }
-    
-    const quickQuestions = document.querySelectorAll('.quick-question');
-    quickQuestions.forEach(btn => {
-        const question = btn.getAttribute('data-question');
-        if (question === 'How to deposit?') btn.textContent = t('howToDeposit');
-        else if (question === 'How to withdraw?') btn.textContent = t('howToWithdraw');
-        else if (question === 'How to stake bet?') btn.textContent = t('howToStake');
-        else if (question === 'Show recent results') btn.textContent = t('recentResults');
-        else if (question === "today's matches") btn.textContent = t('todaysMatches');
-    });
-}
-
-// Update admin section
-function updateAdminSection() {
-    const adminTabs = document.querySelectorAll('.admin-tab');
-    adminTabs.forEach(tab => {
-        const onclick = tab.getAttribute('onclick');
-        const span = tab.querySelector('span');
-        if (span) {
-            if (onclick?.includes('approvals')) span.textContent = t('approvals');
-            else if (onclick?.includes('history')) span.textContent = t('transactionHistory');
-        }
-    });
-}
-
-// Update super admin section
-function updateSuperAdminSection() {
-    const superTabs = document.querySelectorAll('.super-tab');
-    superTabs.forEach(tab => {
-        const onclick = tab.getAttribute('onclick');
-        const span = tab.querySelector('span');
-        if (span) {
-            if (onclick?.includes('users')) span.textContent = t('userManagement');
-            else if (onclick?.includes('admins')) span.textContent = t('adminManagement');
-            else if (onclick?.includes('top')) span.textContent = t('topUsers');
-        }
-    });
-}
-
-// Update modals
-function updateModals() {
-    // Deposit modal
-    const depositModalHeader = document.querySelector('#depositModal .modal-header h3');
-    if (depositModalHeader) {
-        depositModalHeader.innerHTML = `<i class="fas fa-arrow-down"></i> ${t('makeDeposit')}`;
-    }
-    
-    // Withdrawal modal
-    const withdrawModalHeader = document.querySelector('#withdrawalModal .modal-header h3');
-    if (withdrawModalHeader) {
-        withdrawModalHeader.innerHTML = `<i class="fas fa-arrow-up"></i> ${t('requestWithdrawal')}`;
-    }
-}
-
-// Update referrals modal
-function updateReferralsModal() {
-    const modalHeader = document.querySelector('#referralsModal .modal-header h3');
-    if (modalHeader) {
-        modalHeader.innerHTML = `<i class="fas fa-users"></i> ${t('myReferrals')}`;
-    }
-}
-
-// Update bank cards modal
-function updateBankCardsModal() {
-    const modalHeader = document.querySelector('#bankCardsModal .modal-header h3');
-    if (modalHeader) {
-        modalHeader.innerHTML = `<i class="fas fa-credit-card"></i> ${t('myBankCards')}`;
-    }
-}
-
-// Helper function to update element by ID
-function updateElementById(id, key) {
-    const element = document.getElementById(id);
-    if (element) {
-        // Check if it's a button with nested structure
-        if (element.tagName === 'BUTTON' && element.querySelector('span')) {
-            const span = element.querySelector('span');
-            if (span) span.textContent = t(key);
-        } else {
-            element.textContent = t(key);
-        }
-    }
-}
-
-// Helper function to update element by selector
-function updateElementBySelector(selector, key) {
-    const element = document.querySelector(selector);
-    if (element) {
-        element.textContent = t(key);
-    }
-}
-
-// Helper function to update placeholder
-function updatePlaceholder(inputId, key) {
-    const input = document.getElementById(inputId);
-    if (input) {
-        input.placeholder = t(key);
-    }
-}
-
-// Function to update language buttons
+// Update language buttons
 function updateLanguageButtons() {
     const langText = document.getElementById('langText');
     const dashboardLangText = document.getElementById('dashboardLangText');
@@ -11700,34 +12485,30 @@ function updateLanguageButtons() {
     }
 }
 
-// Function to format numbers based on locale
-function formatNumber(number, options = {}) {
-    return new Intl.NumberFormat(currentLanguage === 'en' ? 'en-US' : 'sw-TZ', options).format(number);
-}
-
-// Function to format currency
-function formatCurrency(amount) {
-    return `TZS ${formatNumber(amount, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-// Function to format date
-function formatDate(date, options = {}) {
-    const locale = currentLanguage === 'en' ? 'en-US' : 'sw-TZ';
-    return new Intl.DateTimeFormat(locale, options).format(date);
-}
-
 // Initialize language from localStorage
 function initLanguage() {
+    console.log('🚀 Initializing language system...');
+    
     const savedLang = localStorage.getItem('preferredLanguage');
     if (savedLang && (savedLang === 'en' || savedLang === 'sw')) {
         currentLanguage = savedLang;
     }
     
-    updateAllText();
+    // Start observing DOM changes
+    startLanguageObserver();
+    
+    // Translate all content
+    translateAllContent();
+    
+    // Update buttons
     updateLanguageButtons();
+    
+    console.log(`✅ Language initialized: ${currentLanguage === 'en' ? 'English' : 'Kiswahili'}`);
 }
 
-// Load translations when DOM is ready
+// ==================== EVENT LISTENERS ====================
+
+// Listen for DOM content loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Small delay to ensure all elements are loaded
     setTimeout(initLanguage, 500);
@@ -11735,20 +12516,76 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Listen for section changes
 document.addEventListener('sectionChanged', function(e) {
-    setTimeout(updateAllText, 100);
+    setTimeout(() => {
+        translateAllContent();
+        
+        // If the new section is about section, ensure tabs are translated
+        if (e.detail?.sectionId === 'aboutsection') {
+            translateAboutSection();
+        }
+        
+        // If the new section is wallet section
+        if (e.detail?.sectionId === 'walletSection') {
+            translateWalletSection();
+        }
+        
+        // If the new section is admin section
+        if (e.detail?.dashboard?.includes('admin')) {
+            translateAdminDashboard();
+            translateAdminChat();
+        }
+        
+        // If the new section is super admin section
+        if (e.detail?.dashboard?.includes('super-admin')) {
+            translateSuperAdminDashboard();
+        }
+    }, 100);
 });
 
-// Listen for dynamic content loading
+// Listen for matches loaded
 document.addEventListener('matchesLoaded', function() {
-    setTimeout(updateAllText, 100);
+    setTimeout(() => {
+        translateBettingSection();
+    }, 100);
 });
 
+// Listen for bets loaded
 document.addEventListener('betsLoaded', function() {
-    setTimeout(updateAllText, 100);
+    setTimeout(() => {
+        translateBetsTable();
+    }, 100);
 });
 
+// Listen for transactions loaded
 document.addEventListener('transactionsLoaded', function() {
-    setTimeout(updateAllText, 100);
+    setTimeout(() => {
+        translateTables();
+    }, 100);
+});
+
+// Listen for modal opened
+document.addEventListener('modalOpened', function(e) {
+    setTimeout(() => {
+        if (e.detail?.modalId) {
+            translateModal(e.detail.modalId);
+        } else {
+            translateActiveModals();
+        }
+    }, 100);
+});
+
+// Override openModal function to dispatch event
+const originalOpenModal = window.openModal;
+if (originalOpenModal) {
+    window.openModal = function(modalId) {
+        originalOpenModal(modalId);
+        document.dispatchEvent(new CustomEvent('modalOpened', { detail: { modalId } }));
+    };
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    stopLanguageObserver();
 });
 
 // ==================== WELCOME ANIMATION ====================
@@ -11764,3 +12601,330 @@ function showWelcomeAnimation() {
         overlay.classList.remove('active');
     }, 3000); // 3 seconds total
 }
+
+// ==================== PROFILE STATS FUNCTIONALITY ====================
+
+/**
+ * Load and display user profile statistics
+ * - Days Active: Time since account creation
+ * - Correct Predictions: Number of won bets
+ * - Total Points: Sum of points from user data
+ * - Win Rate: Percentage of won bets out of total bets
+ */
+async function loadProfileStats() {
+    const userData = window.authManager?.userData;
+    const userId = window.authManager?.user?.uid;
+    
+    if (!userData || !userId) {
+        console.log('No user data available for stats');
+        return;
+    }
+
+    // Get DOM elements
+    const daysEl = document.getElementById('profileDaysActive');
+    const correctEl = document.getElementById('profileCorrectPredictions');
+    const pointsEl = document.getElementById('profileTotalPoints');
+    const winRateEl = document.getElementById('profileWinRate');
+
+    // Check if elements exist
+    if (!daysEl || !correctEl || !pointsEl || !winRateEl) {
+        console.error('Profile stats elements not found in DOM');
+        return;
+    }
+
+    try {
+        // 1. Calculate Days Active
+        if (userData.createdAt) {
+            let createdDate;
+            if (userData.createdAt.toDate) {
+                createdDate = userData.createdAt.toDate(); // Firestore timestamp
+            } else if (userData.createdAt instanceof Date) {
+                createdDate = userData.createdAt;
+            } else {
+                createdDate = new Date(userData.createdAt);
+            }
+
+            const now = new Date();
+            const diffTime = Math.abs(now - createdDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            daysEl.textContent = diffDays;
+        } else {
+            daysEl.textContent = 'N/A';
+        }
+
+        // 2. Fetch bets to calculate correct predictions and total bets
+        const betsSnapshot = await db.collection('bets')
+            .where('userId', '==', userId)
+            .get();
+
+        let totalBets = 0;
+        let correctBets = 0;
+
+        betsSnapshot.forEach(doc => {
+            const bet = doc.data();
+            totalBets++;
+            if (bet.status === 'won') {
+                correctBets++;
+            }
+        });
+
+        // Update correct predictions
+        correctEl.textContent = correctBets;
+
+        // 3. Total Points – from user data
+        const points = userData.points || 0;
+        pointsEl.textContent = points;
+
+        // 4. Calculate Win Rate
+        const winRate = totalBets > 0 ? ((correctBets / totalBets) * 100).toFixed(1) : 0;
+        winRateEl.textContent = winRate + '%';
+
+        console.log('Profile stats updated:', {
+            daysActive: diffDays,
+            correctPredictions: correctBets,
+            totalPoints: points,
+            winRate: winRate + '%'
+        });
+
+    } catch (error) {
+        console.error('Error loading profile stats:', error);
+        
+        // Set error state
+        daysEl.textContent = 'Error';
+        correctEl.textContent = 'Error';
+        pointsEl.textContent = 'Error';
+        winRateEl.textContent = 'Error';
+    }
+}
+
+/**
+ * Alternative implementation if you have points stored per bet
+ * This version calculates total points from all won bets
+ */
+async function loadProfileStatsWithPoints() {
+    const userData = window.authManager?.userData;
+    const userId = window.authManager?.user?.uid;
+    
+    if (!userData || !userId) return;
+
+    // Get DOM elements
+    const daysEl = document.getElementById('profileDaysActive');
+    const correctEl = document.getElementById('profileCorrectPredictions');
+    const pointsEl = document.getElementById('profileTotalPoints');
+    const winRateEl = document.getElementById('profileWinRate');
+
+    try {
+        // Days Active
+        if (userData.createdAt) {
+            const createdDate = userData.createdAt.toDate ? 
+                userData.createdAt.toDate() : new Date(userData.createdAt);
+            const diffDays = Math.ceil(Math.abs(new Date() - createdDate) / (1000 * 60 * 60 * 24));
+            daysEl.textContent = diffDays;
+        }
+
+        // Fetch all bets
+        const betsSnapshot = await db.collection('bets')
+            .where('userId', '==', userId)
+            .get();
+
+        let totalBets = 0;
+        let correctBets = 0;
+        let totalPoints = 0;
+
+        betsSnapshot.forEach(doc => {
+            const bet = doc.data();
+            totalBets++;
+            
+            if (bet.status === 'won') {
+                correctBets++;
+                // Add points from this bet if you store them
+                totalPoints += bet.pointsEarned || 0;
+            }
+        });
+
+        correctEl.textContent = correctBets;
+        pointsEl.textContent = totalPoints || userData.points || 0;
+        
+        const winRate = totalBets > 0 ? ((correctBets / totalBets) * 100).toFixed(1) : 0;
+        winRateEl.textContent = winRate + '%';
+
+    } catch (error) {
+        console.error('Error loading profile stats:', error);
+    }
+}
+
+/**
+ * Reset profile stats (useful for testing or when user logs out)
+ */
+function resetProfileStats() {
+    const daysEl = document.getElementById('profileDaysActive');
+    const correctEl = document.getElementById('profileCorrectPredictions');
+    const pointsEl = document.getElementById('profileTotalPoints');
+    const winRateEl = document.getElementById('profileWinRate');
+
+    if (daysEl) daysEl.textContent = '0';
+    if (correctEl) correctEl.textContent = '0';
+    if (pointsEl) pointsEl.textContent = '0';
+    if (winRateEl) winRateEl.textContent = '0%';
+}
+
+/**
+ * Initialize profile stats (call this when user logs in)
+ */
+function initProfileStats() {
+    // Check if user is logged in
+    if (window.authManager?.userData) {
+        loadProfileStats();
+    } else {
+        resetProfileStats();
+    }
+}
+
+// ---------- Event Listeners ----------
+
+// Listen for auth changes
+document.addEventListener('authStateChanged', (e) => {
+    if (e.detail.user) {
+        loadProfileStats();
+    } else {
+        resetProfileStats();
+    }
+});
+
+// Listen for section changes (load stats when profile section becomes active)
+document.addEventListener('sectionChanged', (e) => {
+    if (e.detail.sectionId === 'profileSection' || 
+        e.detail.sectionId === 'accountSettingsSection') {
+        setTimeout(() => loadProfileStats(), 100); // Small delay to ensure DOM is ready
+    }
+});
+
+// Also load stats when user data changes (e.g., after a bet is placed)
+document.addEventListener('userDataUpdated', () => {
+    loadProfileStats();
+});
+
+// If you don't have custom events, you can manually call initProfileStats()
+// from your AuthManager after loading user data
+
+// After a bet is placed, you can trigger a stats refresh
+function onBetPlaced() {
+    loadProfileStats();
+    
+    // Also dispatch a custom event if other parts need to know
+    document.dispatchEvent(new CustomEvent('userDataUpdated'));
+}
+
+async function loadProfileStatsWithLoading() {
+    // Show loading state
+    document.querySelectorAll('.stat-value').forEach(el => {
+        el.classList.add('loading');
+        el.textContent = '...';
+    });
+
+    await loadProfileStats();
+
+    // Remove loading state
+    document.querySelectorAll('.stat-value').forEach(el => {
+        el.classList.remove('loading');
+    });
+}
+
+async function loadProfileStats() {
+    try {
+        const userData = window.authManager?.userData;
+        const userId = window.authManager?.user?.uid;
+        
+        if (!userData || !userId) {
+            console.log('No user data available');
+            return;
+        }
+
+        // Get DOM elements with fallback values
+        const daysEl = document.getElementById('profileDaysActive');
+        const correctEl = document.getElementById('profileCorrectPredictions');
+        const pointsEl = document.getElementById('profileTotalPoints');
+        const winRateEl = document.getElementById('profileWinRate');
+
+        // If elements don't exist, exit silently (they might be on a different page)
+        if (!daysEl || !correctEl || !pointsEl || !winRateEl) {
+            console.log('Profile stats elements not in current view');
+            return;
+        }
+
+        // 1. Days Active
+        if (userData.createdAt) {
+            try {
+                const createdDate = userData.createdAt.toDate ? 
+                    userData.createdAt.toDate() : new Date(userData.createdAt);
+                const days = Math.ceil((Date.now() - createdDate) / (1000 * 60 * 60 * 24));
+                daysEl.textContent = Math.max(1, days); // At least 1 day
+            } catch (e) {
+                daysEl.textContent = '1';
+            }
+        } else {
+            daysEl.textContent = '1';
+        }
+
+        // 2. Fetch bets with error handling
+        let correctBets = 0;
+        let totalBets = 0;
+
+        try {
+            const betsSnapshot = await db.collection('bets')
+                .where('userId', '==', userId)
+                .get();
+
+            betsSnapshot.forEach(doc => {
+                const bet = doc.data();
+                totalBets++;
+                // Check multiple possible status fields
+                if (bet.status === 'won' || bet.result === 'won' || bet.outcome === 'won') {
+                    correctBets++;
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching bets:', error);
+            // If index missing, show a friendly message
+            if (error.code === 'failed-precondition') {
+                correctEl.textContent = '0';
+                winRateEl.textContent = '0%';
+            }
+        }
+
+        correctEl.textContent = correctBets;
+
+        // 3. Points
+        pointsEl.textContent = userData.points || 0;
+
+        // 4. Win Rate
+        const winRate = totalBets > 0 ? ((correctBets / totalBets) * 100).toFixed(1) : 0;
+        winRateEl.textContent = winRate + '%';
+
+    } catch (error) {
+        console.error('Profile stats error:', error);
+        // Don't show "Error" in UI – keep existing values or use defaults
+    }
+}
+
+document.addEventListener('sectionChanged', (e) => {
+    if (e.detail.sectionId === 'profileSection') {
+        loadProfileStats();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.querySelector('.my-bets-table');
+    if (table) {
+        const checkScrollable = () => {
+            if (table.scrollWidth > table.clientWidth) {
+                table.classList.add('scrollable');
+            } else {
+                table.classList.remove('scrollable');
+            }
+        };
+        
+        checkScrollable();
+        window.addEventListener('resize', checkScrollable);
+    }
+});
