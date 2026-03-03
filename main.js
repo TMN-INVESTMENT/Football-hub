@@ -1105,8 +1105,8 @@ handleForgotPassword() {
             country: formData.country,
             favoriteTeam: formData.favoriteTeam,
             role: 'user',
-            balance: 50000, // TZS starting balance for betting
-            points: 100,
+            balance: 0, // TZS starting balance for betting
+            points: 0,
             status: 'active',
             referralCode: this.generateReferralCode(formData.fullName),
             referredBy: null,
@@ -1608,111 +1608,58 @@ const bettingSystem = {
         container.innerHTML = matches.map(match => this.createMatchCard(match, isVIP)).join('');
     },
 
-    createMatchCard(match, isVIP = false) {
-        let matchDate;
-        let dateStr = "Date not set";
-        let timeStr = "Time not set";
-        
-        if (match.date && match.date.toDate) {
-            matchDate = match.date.toDate();
-            dateStr = matchDate.toLocaleDateString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric'
-            });
-            timeStr = matchDate.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-        
-        const homeOdds = match.odds?.home || 45;
-        const drawOdds = match.odds?.draw || 30;
-        const awayOdds = match.odds?.away || 25;
-        
-        const isHomeSelected = multiBetSelections.some(s => s.matchId === match.id && s.type === 'home');
-        const isDrawSelected = multiBetSelections.some(s => s.matchId === match.id && s.type === 'draw');
-        const isAwaySelected = multiBetSelections.some(s => s.matchId === match.id && s.type === 'away');
-        
-        const matchSelectedClass = (isHomeSelected || isDrawSelected || isAwaySelected) ? 'selected-for-vip' : '';
-        
-        return `
-            <div class="match-card ${matchSelectedClass}" data-match-id="${match.id}">
-                <div class="match-header">
-                    <div class="competition-info">
-                        <div class="competition-name">${match.competition}</div>
-                        <div class="match-time">
-                            <i class="far fa-calendar"></i> ${dateStr} • ${timeStr}
-                        </div>
-                    </div>
+createMatchCard(match, isVIP = false) {
+    let matchDate;
+    let dateStr = "Date not set";
+    let timeStr = "Time not set";
+    
+    if (match.date && match.date.toDate) {
+        matchDate = match.date.toDate();
+        dateStr = matchDate.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+        });
+        timeStr = matchDate.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+    
+    // Determine if this match is already in the VIP multi-bet
+    const isSelectedInVIP = multiBetSelections.some(s => s.matchId === match.id);
+    
+    return `
+        <div class="match-row ${isSelectedInVIP ? 'selected-for-vip' : ''}" 
+             data-match-id="${match.id}"
+             onclick="bettingSystem.openMatchDetails('${match.id}')">
+            <!-- Left: competition + date/time -->
+            <div class="match-info-compact">
+                <span class="match-competition">${match.competition}</span>
+                <span class="match-datetime">
+                    <i class="far fa-calendar"></i> ${dateStr} • ${timeStr}
+                </span>
+                <span class="match-venue">
+                    <i class="fas fa-map-marker-alt"></i> ${match.venue}
+                </span>
+            </div>
+            <!-- Middle: teams (abbreviated) -->
+            <div class="match-teams-compact">
+                <div class="team-compact home">
+                    <span class="team-abbr">${match.homeTeam.substring(0, 2).toUpperCase()}</span>
+                    <span class="team-name">${match.homeTeam}</span>
                 </div>
-                
-                <div class="teams-section">
-                    <div class="teams-row">
-                         <div class="team home">
-                            <div class="team-name">${match.homeTeam}</div>
-                            <div class="team-logo">
-                                ${match.homeTeam.substring(0, 2).toUpperCase()}
-                            </div>
-                        </div>
-                        
-                        <div class="vs-divider">VS</div>
-                        
-                        <div class="team away">
-                            <div class="team-logo">
-                                ${match.awayTeam.substring(0, 2).toUpperCase()}
-                            </div>
-                            <div class="team-name">${match.awayTeam}</div>
-                        </div>
-                    </div>
-                    
-                    <div style="color: var(--gray-color); font-size: 0.85rem; margin-top: 0.5rem;">
-                        <i class="fas fa-map-marker-alt"></i> ${match.venue}
-                    </div>
-                </div>
-                
-                <div class="betting-section">
-                    <div class="custom-odds">
-                        <div style="color: var(--gray-color); font-size: 0.85rem;">Winning Percentages</div>
-                        <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 0.5rem;">
-                            <div><span style="color: white;">H:</span> <span style="color: var(--accent-color);">${homeOdds}%</span></div>
-                            <div><span style="color: white;">D:</span> <span style="color: var(--accent-color);">${drawOdds}%</span></div>
-                            <div><span style="color: white;">A:</span> <span style="color: var(--accent-color);">${awayOdds}%</span></div>
-                        </div>
-                    </div>
-                    
-                    <div class="odds-grid">
-                        <div class="odds-box ${isHomeSelected ? 'selected-for-vip' : ''}" 
-                             onclick="${isVIP ? `bettingSystem.toggleMultiBet('${match.id}', 'home', '${match.homeTeam}', ${homeOdds}, '${match.homeTeam} vs ${match.awayTeam}', '${match.competition}')` : `bettingSystem.selectOdd('${match.id}', 'home', '${match.homeTeam}')`}">
-                            <div class="odds-type">Home Win</div>
-                            <div class="odds-value">${homeOdds}%</div>
-                            <div class="odds-percent">Win ${homeOdds}%</div>
-                        </div>
-                        
-                        <div class="odds-box ${isDrawSelected ? 'selected-for-vip' : ''}" 
-                             onclick="${isVIP ? `bettingSystem.toggleMultiBet('${match.id}', 'draw', 'Draw', ${drawOdds}, '${match.homeTeam} vs ${match.awayTeam}', '${match.competition}')` : `bettingSystem.selectOdd('${match.id}', 'draw', 'Draw')`}">
-                            <div class="odds-type">Draw</div>
-                            <div class="odds-value">${drawOdds}%</div>
-                            <div class="odds-percent">Win ${drawOdds}%</div>
-                        </div>
-                        
-                        <div class="odds-box ${isAwaySelected ? 'selected-for-vip' : ''}" 
-                             onclick="${isVIP ? `bettingSystem.toggleMultiBet('${match.id}', 'away', '${match.awayTeam}', ${awayOdds}, '${match.homeTeam} vs ${match.awayTeam}', '${match.competition}')` : `bettingSystem.selectOdd('${match.id}', 'away', '${match.awayTeam}')`}">
-                            <div class="odds-type">Away Win</div>
-                            <div class="odds-value">${awayOdds}%</div>
-                            <div class="odds-percent">Win ${awayOdds}%</div>
-                        </div>
-                    </div>
-                    
-                    ${!isVIP ? `
-                        <button class="place-bet-btn" onclick="bettingSystem.openBetSlip('${match.id}')">
-                            <i class="fas fa-coins"></i> Single Bet (TZS)
-                        </button>
-                    ` : ''}
+                <span class="vs-compact">VS</span>
+                <div class="team-compact away">
+                    <span class="team-abbr">${match.awayTeam.substring(0, 2).toUpperCase()}</span>
+                    <span class="team-name">${match.awayTeam}</span>
                 </div>
             </div>
-        `;
-    },
+            <!-- Optional indicator for VIP selected matches -->
+            ${isSelectedInVIP ? '<span class="vip-indicator"><i class="fas fa-crown"></i></span>' : ''}
+        </div>
+    `;
+},
 
     // Toggle Multi-Bet Selection (VIP)
     toggleMultiBet(matchId, type, teamName, percentage, matchTitle, competition) {
@@ -2003,6 +1950,327 @@ const bettingSystem = {
             }
         }
     },
+    
+    // Add to bettingSystem object - Edit Match Functions
+async openEditMatchModal(matchId) {
+        try {
+            const matchDoc = await db.collection('matches').doc(matchId).get();
+            if (!matchDoc.exists) {
+                showNotification("Match not found", "error");
+                return;
+            }
+            
+            const match = { id: matchId, ...matchDoc.data() };
+            
+            // Format date for input
+            let dateStr = '';
+            if (match.date && match.date.toDate) {
+                const d = match.date.toDate();
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const hours = String(d.getHours()).padStart(2, '0');
+                const minutes = String(d.getMinutes()).padStart(2, '0');
+                dateStr = `${year}-${month}-${day}T${hours}:${minutes}`;
+            }
+            
+            const odds = match.odds || { home: 45, draw: 30, away: 25 };
+            
+            document.getElementById('editMatchId').value = matchId;
+            document.getElementById('editHomeTeam').value = match.homeTeam || '';
+            document.getElementById('editAwayTeam').value = match.awayTeam || '';
+            document.getElementById('editCompetition').value = match.competition || '';
+            document.getElementById('editMatchDate').value = dateStr;
+            document.getElementById('editVenue').value = match.venue || '';
+            document.getElementById('editMatchStatus').value = match.status || 'upcoming';
+            document.getElementById('editHomePercentage').value = odds.home || 45;
+            document.getElementById('editDrawPercentage').value = odds.draw || 30;
+            document.getElementById('editAwayPercentage').value = odds.away || 25;
+            
+            // Update odds total display
+            validateEditOdds();
+            
+            openModal('editMatchModal');
+            
+        } catch (error) {
+            console.error("Error opening edit match modal:", error);
+            showNotification(`Error: ${error.message}`, "error");
+        }
+    },
+    
+    async saveEditedMatch(e) {
+        e.preventDefault();
+        
+        if (!validateEditOdds()) {
+            showNotification("Please check odds values", "error");
+            return;
+        }
+        
+        const matchId = document.getElementById('editMatchId').value;
+        const homeTeam = document.getElementById('editHomeTeam').value;
+        const awayTeam = document.getElementById('editAwayTeam').value;
+        const competition = document.getElementById('editCompetition').value;
+        const matchDate = document.getElementById('editMatchDate').value;
+        const venue = document.getElementById('editVenue').value;
+        const status = document.getElementById('editMatchStatus').value;
+        
+        const homePercentage = parseInt(document.getElementById('editHomePercentage').value);
+        const drawPercentage = parseInt(document.getElementById('editDrawPercentage').value);
+        const awayPercentage = parseInt(document.getElementById('editAwayPercentage').value);
+        
+        const matchData = {
+            homeTeam,
+            awayTeam,
+            competition,
+            date: new Date(matchDate),
+            venue,
+            status,
+            odds: {
+                home: homePercentage,
+                draw: drawPercentage,
+                away: awayPercentage
+            },
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        try {
+            showLoading('Updating match...');
+            
+            await db.collection('matches').doc(matchId).update(matchData);
+            
+            showNotification('Match updated successfully!', 'success');
+            closeModal('editMatchModal');
+            
+            // Refresh match displays
+            this.loadMatches();
+            this.loadAdminMatches();
+            
+        } catch (error) {
+            console.error("Error updating match:", error);
+            showNotification(`Error: ${error.message}`, 'error');
+        } finally {
+            hideLoading();
+        }
+    },
+    
+// Add this method to your bettingSystem object
+async openMatchDetails(matchId) {
+    try {
+        const matchDoc = await db.collection('matches').doc(matchId).get();
+        if (!matchDoc.exists) {
+            showNotification('Match not found', 'error');
+            return;
+        }
+        const match = { id: matchDoc.id, ...matchDoc.data() };
+
+        const userData = this.getUserData();
+        const isVIP = userData ? this.getUserVIPTier(userData.balance) !== 'regular' : false;
+
+        // Format date nicely
+        let dateStr = '', timeStr = '';
+        if (match.date && match.date.toDate) {
+            const d = match.date.toDate();
+            dateStr = d.toLocaleDateString();
+            timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        const odds = match.odds || { home: 45, draw: 30, away: 25 };
+
+        let oddsHtml = '';
+        if (isVIP) {
+            // VIP: each odd has "Add to Multi-Bet" button
+            oddsHtml = `
+                <div class="odds-grid">
+                    <div class="odds-box" data-type="home">
+                        <span class="odds-type">HOME</span>
+                        <span class="odds-value">${odds.home}%</span>
+                        <button class="btn-add-multi" onclick="bettingSystem.addToMultiBet('${match.id}', 'home', '${match.homeTeam}', ${odds.home}, '${match.homeTeam} vs ${match.awayTeam}', '${match.competition}')">
+                            <i class="fas fa-plus-circle"></i> Add to Multi
+                        </button>
+                    </div>
+                    <div class="odds-box" data-type="draw">
+                        <span class="odds-type">DRAW</span>
+                        <span class="odds-value">${odds.draw}%</span>
+                        <button class="btn-add-multi" onclick="bettingSystem.addToMultiBet('${match.id}', 'draw', 'Draw', ${odds.draw}, '${match.homeTeam} vs ${match.awayTeam}', '${match.competition}')">
+                            <i class="fas fa-plus-circle"></i> Add to Multi
+                        </button>
+                    </div>
+                    <div class="odds-box" data-type="away">
+                        <span class="odds-type">AWAY</span>
+                        <span class="odds-value">${odds.away}%</span>
+                        <button class="btn-add-multi" onclick="bettingSystem.addToMultiBet('${match.id}', 'away', '${match.awayTeam}', ${odds.away}, '${match.homeTeam} vs ${match.awayTeam}', '${match.competition}')">
+                            <i class="fas fa-plus-circle"></i> Add to Multi
+                        </button>
+                    </div>
+                </div>
+                <p class="multi-note">Added selections will appear in the VIP slip below.</p>
+            `;
+        } else {
+            // Regular user: select an odd first
+            oddsHtml = `
+                <div class="odds-grid">
+                    <div class="odds-box selectable" onclick="bettingSystem.selectOddForDetails(this, '${match.id}', 'home', '${match.homeTeam}')">
+                        <span class="odds-type">HOME</span>
+                        <span class="odds-value">${odds.home}%</span>
+                    </div>
+                    <div class="odds-box selectable" onclick="bettingSystem.selectOddForDetails(this, '${match.id}', 'draw', 'Draw')">
+                        <span class="odds-type">DRAW</span>
+                        <span class="odds-value">${odds.draw}%</span>
+                    </div>
+                    <div class="odds-box selectable" onclick="bettingSystem.selectOddForDetails(this, '${match.id}', 'away', '${match.awayTeam}')">
+                        <span class="odds-type">AWAY</span>
+                        <span class="odds-value">${odds.away}%</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="placeBetFromDetails" disabled onclick="bettingSystem.placeBetFromDetails()">
+                    <i class="fas fa-coins"></i> Place Bet
+                </button>
+            `;
+        }
+        
+        // Create or get match details modal
+        let modal = document.getElementById('matchDetailsModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'matchDetailsModal';
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-container" style="max-width: 500px;">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-futbol"></i> Match Details</h3>
+                        <button class="close-modal" onclick="closeModal('matchDetailsModal')">&times;</button>
+                    </div>
+                    <div class="modal-body" id="matchDetailsContent"></div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        const content = `
+            <div class="match-details">
+                <h4>${match.homeTeam} vs ${match.awayTeam}</h4>
+                <p class="match-meta">${match.competition || 'Friendly'} • ${dateStr} ${timeStr} • ${match.venue || 'TBD'}</p>
+                <div class="odds-container">
+                    ${oddsHtml}
+                </div>
+            </div>
+        `;
+
+        document.getElementById('matchDetailsContent').innerHTML = content;
+        modal.classList.add('active');
+
+        // For regular users, store match data temporarily
+        if (!isVIP) {
+            window._currentMatch = match;
+        }
+
+    } catch (error) {
+        console.error('Error opening match details:', error);
+        showNotification('Could not load match details', 'error');
+    }
+},
+
+// Add selectOddForDetails method
+selectOddForDetails(element, matchId, type, teamName) {
+    // Remove selected class from all odds boxes
+    document.querySelectorAll('#matchDetailsModal .odds-box').forEach(box => {
+        box.classList.remove('selected');
+    });
+    // Add selected class to the clicked element
+    element.classList.add('selected');
+    
+    // Store selection
+    window._selectedOdds = { matchId, type, teamName };
+    
+    // Enable the place bet button
+    const btn = document.getElementById('placeBetFromDetails');
+    if (btn) btn.disabled = false;
+},
+
+// Add placeBetFromDetails method
+placeBetFromDetails() {
+    if (!window._currentMatch || !window._selectedOdds) {
+        showNotification('Please select an outcome first', 'error');
+        return;
+    }
+
+    // Use existing single bet flow
+    selectedMatch = window._currentMatch;
+    selectedOdd = window._selectedOdds;
+
+    // Open the bet slip modal
+    this.openBetSlip(window._currentMatch.id);
+
+    // Close details modal
+    closeModal('matchDetailsModal');
+},
+
+// Add addToMultiBet method
+addToMultiBet(matchId, type, teamName, percentage, matchTitle, competition) {
+    this.toggleMultiBet(matchId, type, teamName, percentage, matchTitle, competition);
+    // Optionally close the details modal after adding
+    closeModal('matchDetailsModal');
+},
+
+// Called when regular user clicks an odds box inside the details modal
+selectOddForDetails(element, matchId, type, teamName) {
+    // Remove selected class from all odds boxes
+    document.querySelectorAll('#matchDetailsModal .odds-box').forEach(box => {
+        box.classList.remove('selected');
+    });
+    // Add selected class to the clicked element
+    element.classList.add('selected');
+    
+    // Store selection
+    window._selectedOdds = { matchId, type, teamName };
+    
+    // Enable the place bet button
+    const btn = document.getElementById('placeBetFromDetails');
+    if (btn) btn.disabled = false;
+},
+
+// Called when regular user clicks "Place Bet" inside the details modal
+placeBetFromDetails() {
+    if (!window._currentMatch || !window._selectedOdds) {
+        showNotification('Please select an outcome first', 'error');
+        return;
+    }
+
+    // Use existing single bet flow
+    selectedMatch = window._currentMatch;
+    selectedOdd = window._selectedOdds;
+
+    // Open the bet slip modal
+    this.openBetSlip(window._currentMatch.id);
+
+    // Close details modal
+    closeModal('matchDetailsModal');
+},
+
+// Called when regular user clicks "Place Bet" inside the details modal
+placeBetFromDetails() {
+    if (!window._currentMatch || !window._selectedOdds) {
+        showNotification('Please select an outcome first', 'error');
+        return;
+    }
+
+    // Use existing single bet flow
+    selectedMatch = window._currentMatch;
+    selectedOdd = window._selectedOdds;
+
+    // Open the bet slip modal
+    this.openBetSlip(window._currentMatch.id);
+
+    // Close details modal
+    closeModal('matchDetailsModal');
+},
+
+// For VIP: add to multi-bet (wrapper around toggleMultiBet)
+addToMultiBet(matchId, type, teamName, percentage, matchTitle, competition) {
+    this.toggleMultiBet(matchId, type, teamName, percentage, matchTitle, competition);
+    // Optionally close the details modal after adding
+    closeModal('matchDetailsModal');
+},
 
     // Single bet functions
     async selectOdd(matchId, type, teamName) {
@@ -2023,6 +2291,7 @@ const bettingSystem = {
             console.error("Error selecting odd:", error);
         }
     },
+
 
     async openBetSlip(matchId) {
         if (isPlacingBet) return;
@@ -2376,24 +2645,41 @@ const bettingSystem = {
                 let matchDate = match.date?.toDate ? match.date.toDate() : null;
                 const odds = match.odds || { home: 45, draw: 30, away: 25 };
                 
-                html += `
-                    <div class="admin-card">
-                        <h4 style="color: white; margin-bottom: 1rem;">${match.homeTeam} vs ${match.awayTeam}</h4>
-                        <div style="color: var(--gray-color); font-size: 0.9rem; margin-bottom: 0.5rem;">
-                            ${match.competition} • ${matchDate ? matchDate.toLocaleDateString() : ''}
-                        </div>
-                        <div style="color: var(--gray-color); font-size: 0.9rem; margin-bottom: 0.5rem;">
-                            Odds: H:${odds.home}% D:${odds.draw}% A:${odds.away}%
-                        </div>
-                        <div style="color: var(--gray-color); font-size: 0.9rem; margin-bottom: 1rem;">
-                            <i class="fas fa-map-marker-alt"></i> ${match.venue}
-                        </div>
-                        <button class="btn btn-primary" style="width: 100%;" 
-                                onclick="bettingSystem.openSetResultModal('${match.id}')">
-                            <i class="fas fa-clipboard-check"></i> Set Result
-                        </button>
-                    </div>
-                `;
+html += `
+    <div class="admin-card">
+        <h4 style="color: white; margin-bottom: 1rem;">${match.homeTeam} vs ${match.awayTeam}</h4>
+        <div style="color: var(--gray-color); font-size: 0.9rem; margin-bottom: 0.5rem;">
+            ${match.competition} • ${matchDate ? matchDate.toLocaleDateString() : ''}
+        </div>
+        <div style="color: var(--gray-color); font-size: 0.9rem; margin-bottom: 0.5rem;">
+            Odds: H:${odds.home}% D:${odds.draw}% A:${odds.away}%
+        </div>
+        <div style="color: var(--gray-color); font-size: 0.9rem; margin-bottom: 1rem;">
+            <i class="fas fa-map-marker-alt"></i> ${match.venue}
+        </div>
+        
+        <!-- BUTTON GROUP WITH 3 BUTTONS -->
+        <div style="display: flex; gap: 0.5rem;">
+            <!-- Edit Button (new) -->
+            <button class="btn btn-secondary" style="flex: 1;" 
+                    onclick="bettingSystem.openEditMatchModal('${match.id}')">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+            
+            <!-- Set Result Button (existing) -->
+            <button class="btn btn-primary" style="flex: 1;" 
+                    onclick="bettingSystem.openSetResultModal('${match.id}')">
+                <i class="fas fa-clipboard-check"></i> Result
+            </button>
+            
+            <!-- Delete Button (new) - This is where you add it -->
+            <button class="btn btn-danger" style="flex: 0 0 auto;" 
+                    onclick="bettingSystem.deleteMatch('${match.id}')">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </div>
+`;
             });
             
             container.innerHTML = html;
@@ -2683,354 +2969,6 @@ const bettingSystem = {
         }
     },
 
-    // Refund functions
-    async loadRefundMatches() {
-        try {
-            const container = document.getElementById('refundMatchesContainer');
-            if (!container) return;
-            
-            const matchesRef = db.collection('matches');
-            const matchesSnapshot = await matchesRef
-                .where('status', '==', 'finished')
-                .orderBy('date', 'desc')
-                .get();
-            
-            if (matchesSnapshot.empty) {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 3rem; color: var(--gray-color);">
-                        <i class="fas fa-futbol" style="font-size: 4rem; opacity: 0.5;"></i>
-                        <h3 style="margin-top: 1rem; color: white;">No finished matches</h3>
-                    </div>
-                `;
-                return;
-            }
-            
-            let html = '';
-            let hasAnyLostBets = false;
-            
-            for (const matchDoc of matchesSnapshot.docs) {
-                const match = { id: matchDoc.id, ...matchDoc.data() };
-                
-                const lostBetsSnapshot = await db.collection('bets')
-                    .where('matchId', '==', match.id)
-                    .where('status', '==', 'lost')
-                    .get();
-                
-                const multiBetsSnapshot = await db.collection('bets')
-                    .where('status', '==', 'lost')
-                    .where('type', '==', 'multi')
-                    .get();
-                
-                const affectedMultiBets = [];
-                multiBetsSnapshot.forEach(doc => {
-                    const bet = { id: doc.id, ...doc.data() };
-                    if (bet.selections && Array.isArray(bet.selections)) {
-                        const hasThisMatch = bet.selections.some(s => s.matchId === match.id);
-                        if (hasThisMatch) affectedMultiBets.push(bet);
-                    }
-                });
-                
-                const refundedBetsSnapshot = await db.collection('bets')
-                    .where('matchId', '==', match.id)
-                    .where('status', '==', 'refunded')
-                    .get();
-                
-                const refundedMultiBetsSnapshot = await db.collection('bets')
-                    .where('status', '==', 'refunded')
-                    .where('type', '==', 'multi')
-                    .get();
-                
-                const refundedMultiBets = [];
-                refundedMultiBetsSnapshot.forEach(doc => {
-                    const bet = { id: doc.id, ...doc.data() };
-                    if (bet.selections && Array.isArray(bet.selections)) {
-                        const hasThisMatch = bet.selections.some(s => s.matchId === match.id);
-                        if (hasThisMatch) refundedMultiBets.push(bet);
-                    }
-                });
-                
-                const totalLostBets = lostBetsSnapshot.size + affectedMultiBets.length;
-                const totalRefundedBets = refundedBetsSnapshot.size + refundedMultiBets.length;
-                
-                if (totalLostBets === 0) continue;
-                
-                hasAnyLostBets = true;
-                
-                const userLostBets = {};
-                let totalLostStake = 0;
-                
-                // Single lost bets
-                lostBetsSnapshot.forEach(doc => {
-                    const bet = doc.data();
-                    if (!userLostBets[bet.userId]) {
-                        userLostBets[bet.userId] = { totalStake: 0, bets: [] };
-                    }
-                    userLostBets[bet.userId].totalStake += bet.stake;
-                    userLostBets[bet.userId].bets.push({
-                        ...bet,
-                        type: 'single',
-                        matchTitle: `${match.homeTeam} vs ${match.awayTeam}`
-                    });
-                    totalLostStake += bet.stake;
-                });
-                
-                // Multi lost bets
-                affectedMultiBets.forEach(bet => {
-                    const selection = bet.selections.find(s => s.matchId === match.id);
-                    if (!userLostBets[bet.userId]) {
-                        userLostBets[bet.userId] = { totalStake: 0, bets: [] };
-                    }
-                    const proportionalStake = bet.stake / bet.selections.length;
-                    userLostBets[bet.userId].totalStake += proportionalStake;
-                    userLostBets[bet.userId].bets.push({
-                        ...bet,
-                        type: 'multi',
-                        matchTitle: `${match.homeTeam} vs ${match.awayTeam}`,
-                        betAgainst: selection?.betAgainst || selection?.teamName || 'Unknown',
-                        percentage: selection?.percentage || 0,
-                        stake: proportionalStake,
-                        originalStake: bet.stake,
-                        totalSelections: bet.selections.length
-                    });
-                    totalLostStake += proportionalStake;
-                });
-                
-                let matchDate = match.date?.toDate ? match.date.toDate().toLocaleDateString() : '';
-                let resultText = 'No result';
-                if (match.result) {
-                    if (match.result.home > match.result.away) resultText = `${match.homeTeam} ${match.result.home}-${match.result.away} ${match.awayTeam}`;
-                    else if (match.result.away > match.result.home) resultText = `${match.awayTeam} ${match.result.away}-${match.result.home} ${match.homeTeam}`;
-                    else resultText = `${match.homeTeam} ${match.result.home}-${match.result.away} ${match.awayTeam} (Draw)`;
-                }
-                
-                html += `
-                    <div class="refund-match-card" data-match-id="${match.id}">
-                        <div class="refund-match-header">
-                            <div>
-                                <h4 style="color: white; margin-bottom: 0.5rem;">${match.homeTeam} vs ${match.awayTeam}</h4>
-                                <div style="color: var(--gray-color); font-size: 0.9rem;">${match.competition} • ${matchDate}</div>
-                                <div style="color: var(--accent-color); font-weight: bold; margin-top: 0.25rem;">Result: ${resultText}</div>
-                                <div style="color: var(--gray-color); font-size: 0.85rem; margin-top: 0.25rem;">Win condition: Result must be OPPOSITE of bet</div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="color: var(--gray-color);">Lost Bets</div>
-                                <div style="font-size: 1.5rem; font-weight: bold; color: var(--danger-color);">${totalLostBets}</div>
-                                <div style="color: var(--gray-color); font-size: 0.8rem;">(${lostBetsSnapshot.size} single, ${affectedMultiBets.length} multi)</div>
-                            </div>
-                        </div>
-                        <div class="refund-stats">
-                            <div class="refund-stat-box">
-                                <div style="color: var(--gray-color);">Total Lost Stake</div>
-                                <div style="font-size: 1.25rem; font-weight: bold; color: var(--accent-color);">TZS ${totalLostStake.toFixed(2)}</div>
-                            </div>
-                            <div class="refund-stat-box">
-                                <div style="color: var(--gray-color);">Affected Users</div>
-                                <div style="font-size: 1.25rem; font-weight: bold; color: var(--accent-color);">${Object.keys(userLostBets).length}</div>
-                            </div>
-                            <div class="refund-stat-box">
-                                <div style="color: var(--gray-color);">Already Refunded</div>
-                                <div style="font-size: 1.25rem; font-weight: bold; color: var(--success-color);">${totalRefundedBets}</div>
-                            </div>
-                        </div>
-                        <div style="margin-top: 1rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                                <span style="color: var(--gray-color);">Users who lost (${Object.keys(userLostBets).length})</span>
-                                <button class="btn btn-primary" onclick="bettingSystem.processMatchRefund('${match.id}')">
-                                    <i class="fas fa-hand-holding-usd"></i> Refund All (TZS ${totalLostStake.toFixed(2)})
-                                </button>
-                            </div>
-                            <div class="refund-user-list">
-                                ${Object.entries(userLostBets).slice(0, 5).map(([userId, data]) => `
-                                    <div class="refund-user-item">
-                                        <div>
-                                            <div style="font-weight: bold;">User: ${userId.substring(0, 8)}...</div>
-                                            <div style="color: var(--gray-color); font-size: 0.85rem;">${data.bets.length} bet(s) • Total: TZS ${data.totalStake.toFixed(2)}</div>
-                                            <div style="color: var(--accent-color); font-size: 0.8rem;">
-                                                ${data.bets.map(b => {
-                                                    if (b.type === 'multi') {
-                                                        return `${b.matchTitle} (Multi: ${b.betAgainst}, ${b.percentage}%) - TZS ${b.stake.toFixed(2)}`;
-                                                    } else {
-                                                        return `${b.matchTitle} - Against ${b.betAgainst} (${b.percentage}%) - TZS ${b.stake.toFixed(2)}`;
-                                                    }
-                                                }).join(', ')}
-                                            </div>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                                ${Object.keys(userLostBets).length > 5 ? 
-                                    `<div style="color: var(--gray-color); text-align: center; padding: 0.5rem;">And ${Object.keys(userLostBets).length - 5} more users...</div>` : ''
-                                }
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            if (!hasAnyLostBets) {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 3rem; color: var(--gray-color);">
-                        <i class="fas fa-check-circle" style="font-size: 4rem; opacity: 0.5;"></i>
-                        <h3 style="margin-top: 1rem; color: white;">No lost bets to refund</h3>
-                        <p style="margin-top: 0.5rem;">All bets have been won or already refunded</p>
-                    </div>
-                `;
-            } else {
-                container.innerHTML = html;
-            }
-            
-        } catch (error) {
-            console.error("Error loading refund matches:", error);
-            const container = document.getElementById('refundMatchesContainer');
-            if (container) {
-                container.innerHTML = `
-                    <div class="error-container">
-                        <i class="fas fa-database" style="font-size: 3rem; color: var(--accent-color);"></i>
-                        <h3 style="margin: 1rem 0; color: white;">Firestore Index Required</h3>
-                        <p style="color: var(--gray-color); margin-bottom: 1rem;">${error.message}</p>
-                        <a href="https://console.firebase.google.com/v1/r/project/football-canvas-hub/firestore/indexes" 
-                           target="_blank" class="btn btn-primary" style="display: inline-block; text-decoration: none;">
-                            <i class="fas fa-external-link-alt"></i> Create Indexes
-                        </a>
-                    </div>
-                `;
-            }
-        }
-    },
-
-    async processMatchRefund(matchId) {
-        const refundBtn = event.target;
-        refundBtn.disabled = true;
-        refundBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-        
-        try {
-            const lostSingleBetsSnapshot = await db.collection('bets')
-                .where('matchId', '==', matchId)
-                .where('status', '==', 'lost')
-                .where('type', '==', 'single')
-                .get();
-            
-            const lostMultiBetsSnapshot = await db.collection('bets')
-                .where('status', '==', 'lost')
-                .where('type', '==', 'multi')
-                .get();
-            
-            const affectedMultiBets = [];
-            lostMultiBetsSnapshot.forEach(doc => {
-                const bet = { id: doc.id, ...doc.data() };
-                if (bet.selections && Array.isArray(bet.selections)) {
-                    const hasThisMatch = bet.selections.some(s => s.matchId === matchId);
-                    if (hasThisMatch) affectedMultiBets.push(bet);
-                }
-            });
-            
-            if (lostSingleBetsSnapshot.empty && affectedMultiBets.length === 0) {
-                showNotification("No lost bets found for this match", "warning");
-                refundBtn.disabled = false;
-                refundBtn.innerHTML = '<i class="fas fa-hand-holding-usd"></i> Refund All';
-                return;
-            }
-            
-            const batch = db.batch();
-            const userRefunds = {};
-            
-            // Single bets
-            lostSingleBetsSnapshot.forEach(doc => {
-                const bet = doc.data();
-                const betRef = db.collection('bets').doc(doc.id);
-                batch.update(betRef, {
-                    status: 'refunded',
-                    refundedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                if (!userRefunds[bet.userId]) userRefunds[bet.userId] = 0;
-                userRefunds[bet.userId] += bet.stake;
-            });
-            
-            // Multi bets
-            for (const bet of affectedMultiBets) {
-                const betRef = db.collection('bets').doc(bet.id);
-                let updatedSelections = [...bet.selections];
-                let refundAmount = 0;
-                
-                for (let i = 0; i < updatedSelections.length; i++) {
-                    const selection = updatedSelections[i];
-                    if (selection.matchId === matchId) {
-                        selection.status = 'refunded';
-                        selection.refundedAt = new Date().toISOString();
-                        refundAmount = bet.stake / bet.selections.length;
-                    }
-                }
-                
-                const allRefunded = updatedSelections.every(s => s.status === 'refunded' || s.status === 'won');
-                const hasPending = updatedSelections.some(s => s.status === 'pending' || s.status === 'lost');
-                
-                batch.update(betRef, {
-                    selections: updatedSelections,
-                    ...(!hasPending && { status: allRefunded ? 'refunded' : bet.status }),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                if (!userRefunds[bet.userId]) userRefunds[bet.userId] = 0;
-                userRefunds[bet.userId] += refundAmount;
-            }
-            
-            const matchDoc = await db.collection('matches').doc(matchId).get();
-            const match = matchDoc.data();
-            
-            for (const [userId, amount] of Object.entries(userRefunds)) {
-                const userRef = db.collection('users').doc(userId);
-                batch.update(userRef, {
-                    balance: firebase.firestore.FieldValue.increment(amount),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                const transactionRef = db.collection('transactions').doc();
-                batch.set(transactionRef, {
-                    userId: userId,
-                    type: 'refund',
-                    amount: amount,
-                    description: `Refund for match: ${match.homeTeam} vs ${match.awayTeam}`,
-                    matchId: matchId,
-                    date: firebase.firestore.FieldValue.serverTimestamp(),
-                    adminId: this.getUserId() || 'system'
-                });
-            }
-            
-            await batch.commit();
-            
-            const totalRefunded = Object.values(userRefunds).reduce((a, b) => a + b, 0);
-            const usersRefunded = Object.keys(userRefunds).length;
-            
-            showNotification(`✅ Refunded TZS ${totalRefunded.toFixed(2)} to ${usersRefunded} users`, "success");
-            
-            const refundCard = refundBtn.closest('.refund-match-card');
-            if (refundCard) {
-                refundCard.style.transition = 'all 0.3s ease';
-                refundCard.style.opacity = '0';
-                refundCard.style.transform = 'translateX(20px)';
-                setTimeout(() => refundCard.remove(), 300);
-            }
-            
-            setTimeout(() => {
-                this.loadRefundMatches();
-                this.loadRefundHistory();
-                this.loadMyBets();
-            }, 500);
-            
-            if (window.authManager?.user && userRefunds[window.authManager.user.uid]) {
-                window.authManager.userData.balance += userRefunds[window.authManager.user.uid];
-                this.updateBalanceDisplay();
-                this.updateVIPStatus();
-            }
-            
-        } catch (error) {
-            console.error("Error processing refund:", error);
-            showNotification(`Error: ${error.message}`, "error");
-            refundBtn.disabled = false;
-            refundBtn.innerHTML = '<i class="fas fa-hand-holding-usd"></i> Refund All';
-        }
-    },
-
     async loadRefundHistory() {
         try {
             const container = document.getElementById('refundHistoryContainer');
@@ -3129,8 +3067,30 @@ const bettingSystem = {
             console.error("Error adding funds:", error);
             showNotification(`Error: ${error.message}`, "error");
         }
+    },
+    
+    // Add to bettingSystem object if you want delete functionality
+async deleteMatch(matchId) {
+    if (!confirm('Are you sure you want to delete this match? This action cannot be undone.')) {
+        return;
     }
+    
+    showLoading('Deleting match...');
+    try {
+        await db.collection('matches').doc(matchId).delete();
+        showNotification('Match deleted successfully', 'success');
+        this.loadMatches();
+        this.loadAdminMatches();
+    } catch (error) {
+        console.error("Error deleting match:", error);
+        showNotification(`Error: ${error.message}`, 'error');
+    } finally {
+        hideLoading();
+    }
+}
 };
+
+
 
 // ==================== UTILITY FUNCTIONS ====================
 // Validate odds (no 100% requirement)
@@ -3344,6 +3304,27 @@ function hideLoading() {
     const loadingOverlay = document.getElementById('loadingOverlay');
     if (loadingOverlay) loadingOverlay.style.display = 'none';
 }
+
+// Validate edit odds (no 100% requirement)
+function validateEditOdds() {
+    const home = parseInt(document.getElementById('editHomePercentage').value) || 0;
+    const draw = parseInt(document.getElementById('editDrawPercentage').value) || 0;
+    const away = parseInt(document.getElementById('editAwayPercentage').value) || 0;
+    const total = home + draw + away;
+    
+    const oddsTotal = document.getElementById('editOddsTotal');
+    if (oddsTotal) {
+        oddsTotal.innerHTML = `Total: ${total}%`;
+        oddsTotal.style.color = total === 100 ? 'var(--success-color)' : 'var(--gray-color)';
+    }
+    return true;
+}
+
+// Add this to your DOMContentLoaded event listener or initialization code
+['editHomePercentage', 'editDrawPercentage', 'editAwayPercentage'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', validateEditOdds);
+});
 
 // ==================== MAIN INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', async () => {
@@ -5322,6 +5303,39 @@ async loadAdminTransactionHistory() {
     createRequiredIndex() {
         window.open('https://console.firebase.google.com/v1/r/project/football-canvas-hub/firestore/indexes', '_blank');
     }
+}
+
+function renderMatchesGroupedByLeague(matches) {
+  const container = document.getElementById('matchesContainer');
+  container.innerHTML = ''; // clear old grid
+
+  // Group matches by competition
+  const groups = matches.reduce((acc, match) => {
+    const league = match.competition;
+    if (!acc[league]) acc[league] = [];
+    acc[league].push(match);
+    return acc;
+  }, {});
+
+  // Create HTML for each league group
+  let html = '<div class="match-list-container">';
+  for (const [league, leagueMatches] of Object.entries(groups)) {
+    html += `
+      <div class="league-group">
+        <div class="league-header">
+          <h3><i class="fas fa-trophy"></i> ${league}</h3>
+          <span class="match-count">${leagueMatches.length} match${leagueMatches.length > 1 ? 'es' : ''}</span>
+        </div>
+        <div class="league-matches">
+    `;
+    leagueMatches.forEach(match => {
+      // Generate match row using your template function
+      html += generateMatchRow(match); // your existing function that returns the row HTML
+    });
+    html += '</div></div>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
 }
 
 // ========== UI FUNCTIONS ==========
@@ -12928,3 +12942,3811 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('resize', checkScrollable);
     }
 });
+
+// ==================== MATCH SEARCH AND FILTER FUNCTIONALITY ====================
+
+// Store all matches for filtering
+let allMatches = [];
+
+// Override the bettingSystem.loadMatches to store all matches
+const originalLoadMatches = bettingSystem.loadMatches;
+bettingSystem.loadMatches = async function() {
+    try {
+        const container = document.getElementById('matchesContainer');
+        if (!container) return;
+        
+        const matchesRef = db.collection('matches');
+        const snapshot = await matchesRef
+            .where('status', '==', 'upcoming')
+            .orderBy('date', 'asc')
+            .get();
+        
+        if (snapshot.empty) {
+            allMatches = [];
+            updateMatchesDisplay([]);
+            return;
+        }
+        
+        allMatches = [];
+        snapshot.forEach(doc => {
+            allMatches.push({ id: doc.id, ...doc.data() });
+        });
+        
+        // Populate filter dropdowns
+        populateFilterDropdowns(allMatches);
+        
+        // Apply any existing filters
+        filterMatches();
+        
+    } catch (error) {
+        console.error("Error loading matches:", error);
+        const container = document.getElementById('matchesContainer');
+        if (container) {
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--danger-color);">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 4rem;"></i>
+                    <h3 style="margin-top: 1rem; color: white;">Error loading matches</h3>
+                    <p style="margin-top: 0.5rem;">${error.message}</p>
+                </div>
+            `;
+        }
+    }
+};
+
+// Populate filter dropdowns with unique values
+function populateFilterDropdowns(matches) {
+    // Get unique venues
+    const venues = [...new Set(matches.map(m => m.venue).filter(Boolean))];
+    const venueSelect = document.getElementById('venueFilter');
+    if (venueSelect) {
+        venueSelect.innerHTML = '<option value="all">All Venues</option>' + 
+            venues.sort().map(v => `<option value="${v}">${v}</option>`).join('');
+    }
+    
+    // Get unique teams
+    const teams = [...new Set(matches.flatMap(m => [m.homeTeam, m.awayTeam]).filter(Boolean))];
+    const teamSelect = document.getElementById('teamFilter');
+    if (teamSelect) {
+        teamSelect.innerHTML = '<option value="all">All Teams</option>' + 
+            teams.sort().map(t => `<option value="${t}">${t}</option>`).join('');
+    }
+    
+    // Get unique leagues
+    const leagues = [...new Set(matches.map(m => m.competition).filter(Boolean))];
+    const leagueSelect = document.getElementById('leagueFilter');
+    if (leagueSelect) {
+        // Preserve the first "All Leagues" option and add dynamic ones
+        const currentOptions = leagueSelect.innerHTML;
+        const newOptions = leagues.sort().map(l => `<option value="${l}">${l}</option>`).join('');
+        leagueSelect.innerHTML = '<option value="all">All Leagues</option>' + newOptions;
+    }
+}
+
+// Filter matches based on all criteria
+function filterMatches() {
+    const searchTerm = document.getElementById('matchSearchInput')?.value.toLowerCase() || '';
+    const league = document.getElementById('leagueFilter')?.value || 'all';
+    const venue = document.getElementById('venueFilter')?.value || 'all';
+    const team = document.getElementById('teamFilter')?.value || 'all';
+    const dateFilter = document.getElementById('dateFilter')?.value || 'all';
+    
+    let filteredMatches = [...allMatches];
+    const activeFilters = [];
+    
+    // Apply text search
+    if (searchTerm) {
+        filteredMatches = filteredMatches.filter(match => 
+            (match.homeTeam && match.homeTeam.toLowerCase().includes(searchTerm)) ||
+            (match.awayTeam && match.awayTeam.toLowerCase().includes(searchTerm)) ||
+            (match.competition && match.competition.toLowerCase().includes(searchTerm)) ||
+            (match.venue && match.venue.toLowerCase().includes(searchTerm))
+        );
+        if (filteredMatches.length !== allMatches.length) {
+            activeFilters.push(`Search: "${searchTerm}"`);
+        }
+    }
+    
+    // Apply league filter
+    if (league !== 'all') {
+        filteredMatches = filteredMatches.filter(match => match.competition === league);
+        activeFilters.push(`League: ${league}`);
+    }
+    
+    // Apply venue filter
+    if (venue !== 'all') {
+        filteredMatches = filteredMatches.filter(match => match.venue === venue);
+        activeFilters.push(`Venue: ${venue}`);
+    }
+    
+    // Apply team filter
+    if (team !== 'all') {
+        filteredMatches = filteredMatches.filter(match => 
+            match.homeTeam === team || match.awayTeam === team
+        );
+        activeFilters.push(`Team: ${team}`);
+    }
+    
+    // Apply date filter
+    if (dateFilter !== 'all') {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const nextWeek = new Date(today);
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        
+        filteredMatches = filteredMatches.filter(match => {
+            if (!match.date || !match.date.toDate) return true;
+            const matchDate = match.date.toDate();
+            const matchDay = new Date(matchDate.getFullYear(), matchDate.getMonth(), matchDate.getDate());
+            
+            switch(dateFilter) {
+                case 'today':
+                    return matchDay.getTime() === today.getTime();
+                case 'tomorrow':
+                    return matchDay.getTime() === tomorrow.getTime();
+                case 'week':
+                    // Current week (Monday to Sunday)
+                    const startOfWeek = new Date(today);
+                    startOfWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+                    const endOfWeek = new Date(startOfWeek);
+                    endOfWeek.setDate(startOfWeek.getDate() + 6);
+                    return matchDay >= startOfWeek && matchDay <= endOfWeek;
+                case 'weekend':
+                    // Saturday and Sunday
+                    return matchDay.getDay() === 0 || matchDay.getDay() === 6;
+                case 'next7':
+                    return matchDay >= today && matchDay <= nextWeek;
+                default:
+                    return true;
+            }
+        });
+        
+        let dateText = '';
+        switch(dateFilter) {
+            case 'today': dateText = 'Today'; break;
+            case 'tomorrow': dateText = 'Tomorrow'; break;
+            case 'week': dateText = 'This Week'; break;
+            case 'weekend': dateText = 'This Weekend'; break;
+            case 'next7': dateText = 'Next 7 Days'; break;
+        }
+        if (dateText) activeFilters.push(`Date: ${dateText}`);
+    }
+    
+    // Update active filters display
+    updateActiveFilters(activeFilters);
+    
+    // Update matches count
+    document.getElementById('matchesCount').innerHTML = 
+        `<i class="fas fa-futbol"></i> Found ${filteredMatches.length} match${filteredMatches.length !== 1 ? 'es' : ''}`;
+    
+    // Display matches
+    displayFilteredMatches(filteredMatches);
+}
+
+// Display filtered matches using the betting system's display method
+function displayFilteredMatches(matches) {
+    const container = document.getElementById('matchesContainer');
+    if (!container) return;
+    
+    if (matches.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 2rem; color: var(--gray-color); background: rgba(255,255,255,0.05); border-radius: 30px;">
+                <i class="fas fa-search" style="font-size: 5rem; opacity: 0.3; margin-bottom: 1.5rem;"></i>
+                <h3 style="color: white; margin-bottom: 0.5rem;">No matches found</h3>
+                <p style="margin-bottom: 1.5rem;">Try adjusting your filters or search terms</p>
+                <button class="btn btn-primary" onclick="clearFilters()">
+                    <i class="fas fa-times"></i> Clear All Filters
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    const userData = window.authManager?.userData;
+    const tier = userData ? bettingSystem.getUserVIPTier(userData.balance) : 'regular';
+    const isVIP = tier !== 'regular';
+    
+    // Group matches by competition
+    const groups = matches.reduce((acc, match) => {
+        const league = match.competition || 'Other';
+        if (!acc[league]) acc[league] = [];
+        acc[league].push(match);
+        return acc;
+    }, {});
+    
+    let html = '<div class="match-list-container">';
+    
+    for (const [league, leagueMatches] of Object.entries(groups)) {
+        html += `
+            <div class="league-group">
+                <div class="league-header">
+                    <h3><i class="fas fa-trophy"></i> ${league}</h3>
+                    <span class="match-count">${leagueMatches.length} match${leagueMatches.length !== 1 ? 'es' : ''}</span>
+                </div>
+                <div class="league-matches">
+        `;
+        
+        leagueMatches.forEach(match => {
+            html += createMatchRow(match, isVIP);
+        });
+        
+        html += '</div></div>';
+    }
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Create a match row (extracted from bettingSystem.displayMatches)
+function createMatchRow(match, isVIP = false) {
+    let matchDate;
+    let dateStr = "Date not set";
+    let timeStr = "Time not set";
+    
+    if (match.date && match.date.toDate) {
+        matchDate = match.date.toDate();
+        dateStr = matchDate.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+        });
+        timeStr = matchDate.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+    
+    const isSelectedInVIP = multiBetSelections.some(s => s.matchId === match.id);
+    const odds = match.odds || { home: 45, draw: 30, away: 25 };
+    
+    return `
+        <div class="match-row ${isSelectedInVIP ? 'selected-for-vip' : ''}" 
+             data-match-id="${match.id}"
+             onclick="bettingSystem.openMatchDetails('${match.id}')">
+            <div class="match-info-compact">
+                <span class="match-competition">${match.competition}</span>
+                <span class="match-datetime">
+                    <i class="far fa-calendar"></i> ${dateStr} • ${timeStr}
+                </span>
+                <span class="match-venue">
+                    <i class="fas fa-map-marker-alt"></i> ${match.venue || 'TBD'}
+                </span>
+            </div>
+            <div class="match-teams-compact">
+                <div class="team-compact home">
+                    <span class="team-abbr">${match.homeTeam.substring(0, 2).toUpperCase()}</span>
+                    <span class="team-name">${match.homeTeam}</span>
+                </div>
+                <span class="vs-compact">VS</span>
+                <div class="team-compact away">
+                    <span class="team-abbr">${match.awayTeam.substring(0, 2).toUpperCase()}</span>
+                    <span class="team-name">${match.awayTeam}</span>
+                </div>
+            </div>
+            <div class="match-odds-compact">
+                <div class="odds-group-compact">
+                    <div class="odds-box-compact" data-type="home">
+                        <span class="odds-label">H</span>
+                        <span class="odds-value">${odds.home}%</span>
+                    </div>
+                    <div class="odds-box-compact" data-type="draw">
+                        <span class="odds-label">D</span>
+                        <span class="odds-value">${odds.draw}%</span>
+                    </div>
+                    <div class="odds-box-compact" data-type="away">
+                        <span class="odds-label">A</span>
+                        <span class="odds-value">${odds.away}%</span>
+                    </div>
+                </div>
+            </div>
+            ${isSelectedInVIP ? '<span class="vip-indicator"><i class="fas fa-crown"></i></span>' : ''}
+        </div>
+    `;
+}
+
+// Update active filters display
+function updateActiveFilters(filters) {
+    const container = document.getElementById('activeFilters');
+    if (!container) return;
+    
+    if (filters.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    container.innerHTML = filters.map(filter => `
+        <span style="background: var(--accent-color); color: white; padding: 0.25rem 1rem; border-radius: 30px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-filter"></i> ${filter}
+        </span>
+    `).join('');
+}
+
+// Clear all filters
+function clearFilters() {
+    // Reset inputs
+    document.getElementById('matchSearchInput').value = '';
+    document.getElementById('leagueFilter').value = 'all';
+    document.getElementById('venueFilter').value = 'all';
+    document.getElementById('teamFilter').value = 'all';
+    document.getElementById('dateFilter').value = 'all';
+    
+    // Clear active filters display
+    document.getElementById('activeFilters').innerHTML = '';
+    
+    // Reset count
+    document.getElementById('matchesCount').innerHTML = `<i class="fas fa-futbol"></i> Showing all ${allMatches.length} matches`;
+    
+    // Show all matches
+    displayFilteredMatches(allMatches);
+}
+
+// Search as you type with debounce - REMOVE THE SECOND DECLARATION
+// Just use this event listener setup without redeclaring searchTimeout
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('matchSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(filterMatches, 300);
+        });
+    }
+    
+    // Initialize date filter with some options
+    const dateSelect = document.getElementById('dateFilter');
+    if (dateSelect) {
+        dateSelect.innerHTML = `
+            <option value="all">All Dates</option>
+            <option value="today">Today</option>
+            <option value="tomorrow">Tomorrow</option>
+            <option value="week">This Week</option>
+            <option value="weekend">This Weekend</option>
+            <option value="next7">Next 7 Days</option>
+        `;
+    }
+});
+
+// Mobile Menu Toggle Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const mobileToggle = document.getElementById('mobileMenuToggle');
+    const userMenu = document.getElementById('userMenuWrapper');
+    
+    if (mobileToggle && userMenu) {
+        mobileToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.classList.toggle('active');
+            userMenu.classList.toggle('active');
+            
+            // Prevent body scroll when menu is open
+            if (userMenu.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 767) {
+                if (!userMenu.contains(e.target) && !mobileToggle.contains(e.target)) {
+                    userMenu.classList.remove('active');
+                    mobileToggle.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 767) {
+                userMenu.classList.remove('active');
+                mobileToggle.classList.remove('active');
+                document.body.style.overflow = '';
+                
+                // Reset display style
+                userMenu.style.display = '';
+            } else {
+                // On mobile, ensure menu is hidden by default
+                userMenu.classList.remove('active');
+                mobileToggle.classList.remove('active');
+            }
+        });
+    }
+    
+    // Handle escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if (window.innerWidth <= 767 && userMenu?.classList.contains('active')) {
+                userMenu.classList.remove('active');
+                mobileToggle?.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+    });
+});
+
+// Mobile Menu Toggle - Preserves all original functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const mobileToggle = document.getElementById('mobileMenuToggle');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+    const desktopLogoutBtn = document.getElementById('userLogoutBtn');
+    const mobileAvatar = document.getElementById('mobileUserAvatar');
+    const desktopAvatar = document.getElementById('userAvatar');
+    
+    // Toggle mobile menu
+    if (mobileToggle && mobileMenu) {
+        mobileToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.classList.toggle('active');
+            mobileMenu.classList.toggle('active');
+            
+            // Prevent body scroll when menu is open
+            if (mobileMenu.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 767) {
+                if (!mobileMenu.contains(e.target) && !mobileToggle.contains(e.target)) {
+                    mobileMenu.classList.remove('active');
+                    mobileToggle.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 767) {
+                mobileMenu.classList.remove('active');
+                mobileToggle.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+    }
+    
+    // Handle logout for both buttons
+    if (desktopLogoutBtn) {
+        desktopLogoutBtn.addEventListener('click', function() {
+            if (window.authManager) {
+                window.authManager.auth.signOut();
+            }
+        });
+    }
+    
+    if (mobileLogoutBtn) {
+        mobileLogoutBtn.addEventListener('click', function() {
+            if (window.authManager) {
+                window.authManager.auth.signOut();
+            }
+        });
+    }
+    
+    // Handle escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if (window.innerWidth <= 767 && mobileMenu?.classList.contains('active')) {
+                mobileMenu.classList.remove('active');
+                mobileToggle?.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+    });
+});
+
+// Update all user data elements - Preserves original behavior
+function updateAllUserData() {
+    const userData = window.authManager?.userData;
+    if (!userData) return;
+    
+    const firstName = userData.fullName ? userData.fullName.split(' ')[0] : 'User';
+    const initials = userData.fullName ? userData.fullName.charAt(0).toUpperCase() : 'U';
+    
+    // Update desktop elements
+    const desktopUserName = document.getElementById('userName');
+    const desktopUserRole = document.getElementById('userRoleBadge');
+    const desktopUserBalance = document.getElementById('userBalance');
+    const desktopUserAvatar = document.getElementById('userAvatar');
+    
+    if (desktopUserName) desktopUserName.textContent = firstName;
+    if (desktopUserRole) desktopUserRole.textContent = userData.role || 'User';
+    if (desktopUserBalance) desktopUserBalance.textContent = `Tsh ${(userData.balance || 0).toFixed(2)}`;
+    if (desktopUserAvatar) {
+        desktopUserAvatar.textContent = initials;
+        desktopUserAvatar.style.background = userData.avatarColor || getRandomColor();
+    }
+    
+    // Update mobile elements
+    const mobileUserName = document.getElementById('mobileUserName');
+    const mobileUserRole = document.getElementById('mobileUserRoleBadge');
+    const mobileUserBalance = document.getElementById('mobileUserBalance');
+    const mobileUserAvatar = document.getElementById('mobileUserAvatar');
+    const mobileLangText = document.getElementById('mobileLangText');
+    const dashboardLangText = document.getElementById('dashboardLangText');
+    
+    if (mobileUserName) mobileUserName.textContent = firstName;
+    if (mobileUserRole) mobileUserRole.textContent = userData.role || 'User';
+    if (mobileUserBalance) mobileUserBalance.textContent = `Tsh ${(userData.balance || 0).toFixed(2)}`;
+    if (mobileUserAvatar) {
+        mobileUserAvatar.textContent = initials;
+        mobileUserAvatar.style.background = userData.avatarColor || getRandomColor();
+    }
+    
+    // Update language text
+    if (mobileLangText) {
+        mobileLangText.textContent = window.currentLanguage === 'en' ? 'Kiswahili' : 'English';
+    }
+    if (dashboardLangText) {
+        dashboardLangText.textContent = window.currentLanguage === 'en' ? 'Kiswahili' : 'English';
+    }
+}
+
+// Helper function for random colors
+function getRandomColor() {
+    const colors = ['#4A6FA5', '#16697A', '#FFA62B', '#2E8B57', '#DC143C', '#6A5ACD', '#20B2AA', '#FF6347', '#4682B4', '#32CD32'];
+    return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// Call update function when user data loads
+document.addEventListener('userDataLoaded', updateAllUserData);
+document.addEventListener('authStateChanged', function(e) {
+    if (e.detail.user) {
+        setTimeout(updateAllUserData, 100);
+    }
+});
+
+// ==================== UPDATE BALANCE ON HAMBURGER OPEN ====================
+
+// Function to update all balance displays (desktop and mobile)
+function updateAllBalanceDisplays() {
+    const userData = window.authManager?.userData;
+    if (!userData) return;
+    
+    const balance = userData.balance || 0;
+    const balanceFormatted = `Tsh ${balance.toFixed(2)}`;
+    
+    // Update desktop balance
+    const desktopBalance = document.getElementById('userBalance');
+    if (desktopBalance) {
+        desktopBalance.textContent = balanceFormatted;
+    }
+    
+    // Update mobile balance in hamburger menu
+    const mobileBalance = document.getElementById('mobileUserBalance');
+    if (mobileBalance) {
+        mobileBalance.textContent = balanceFormatted;
+    }
+    
+    // Update any other balance displays
+    const walletBalance = document.getElementById('walletBalance');
+    if (walletBalance) {
+        walletBalance.textContent = balanceFormatted;
+    }
+    
+    const withdrawBalance = document.getElementById('withdrawCurrentBalance');
+    if (withdrawBalance) {
+        withdrawBalance.textContent = balanceFormatted;
+    }
+    
+    console.log("💰 All balances updated:", balanceFormatted);
+}
+
+// Enhanced mobile menu toggle with balance update
+function initMobileMenuWithBalance() {
+    const mobileToggle = document.getElementById('mobileMenuToggle');
+    const mobileMenu = document.getElementById('mobileMenu');
+    
+    if (mobileToggle && mobileMenu) {
+        // Remove any existing listeners to avoid duplicates
+        const newToggle = mobileToggle.cloneNode(true);
+        mobileToggle.parentNode.replaceChild(newToggle, mobileToggle);
+        
+        newToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.classList.toggle('active');
+            mobileMenu.classList.toggle('active');
+            
+            // UPDATE BALANCE WHEN MENU OPENS
+            if (mobileMenu.classList.contains('active')) {
+                updateAllBalanceDisplays(); // Update balance on open
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 767) {
+                if (!mobileMenu.contains(e.target) && !newToggle.contains(e.target)) {
+                    mobileMenu.classList.remove('active');
+                    newToggle.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 767) {
+                mobileMenu.classList.remove('active');
+                newToggle.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+    }
+}
+
+// Alternative: Update balance when any modal or menu opens
+function setupBalanceUpdateOnOpen() {
+    // Watch for hamburger menu open
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.attributeName === 'class') {
+                const menu = document.getElementById('mobileMenu');
+                if (menu && menu.classList.contains('active')) {
+                    updateAllBalanceDisplays();
+                }
+            }
+        });
+    });
+    
+    const menu = document.getElementById('mobileMenu');
+    if (menu) {
+        observer.observe(menu, { attributes: true });
+    }
+}
+
+// Update balance when any modal opens
+function setupModalBalanceUpdate() {
+    const originalOpenModal = window.openModal;
+    if (originalOpenModal) {
+        window.openModal = function(modalId) {
+            originalOpenModal(modalId);
+            // Update balance when certain modals open
+            const balanceModals = ['walletModal', 'depositModal', 'withdrawalModal', 'bankCardsModal'];
+            if (balanceModals.includes(modalId)) {
+                setTimeout(updateAllBalanceDisplays, 100);
+            }
+        };
+    }
+}
+
+// Real-time balance updates
+function setupRealtimeBalanceUpdates() {
+    // Update every 30 seconds as a fallback
+    setInterval(updateAllBalanceDisplays, 30000);
+    
+    // Update on focus (when user returns to tab)
+    window.addEventListener('focus', updateAllBalanceDisplays);
+    
+    // Update on visibility change
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            updateAllBalanceDisplays();
+        }
+    });
+}
+
+// Initialize everything
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize mobile menu with balance update
+    setTimeout(() => {
+        initMobileMenuWithBalance();
+        setupBalanceUpdateOnOpen();
+        setupModalBalanceUpdate();
+        setupRealtimeBalanceUpdates();
+    }, 1000);
+});
+
+// Override the original updateUserBalanceDisplay function
+window.updateUserBalanceDisplay = function() {
+    updateAllBalanceDisplays();
+};
+
+// Listen for auth state changes
+document.addEventListener('authStateChanged', function(e) {
+    if (e.detail.user) {
+        setTimeout(updateAllBalanceDisplays, 500);
+    }
+});
+
+// Listen for user data updates
+document.addEventListener('userDataUpdated', updateAllBalanceDisplays);
+
+// Listen for transactions
+document.addEventListener('transactionCompleted', updateAllBalanceDisplays);
+
+// Manual trigger function (can be called from anywhere)
+function refreshBalance() {
+    updateAllBalanceDisplays();
+    if (typeof showNotification === 'function') {
+        showNotification('Balance updated', 'info');
+    }
+}
+
+// Make it globally available
+window.refreshBalance = refreshBalance;
+
+// ==================== UPDATE MOBILE DISPLAY ELEMENTS ====================
+
+// Function to update all mobile display elements
+function updateMobileDisplay() {
+    const userData = window.authManager?.userData;
+    if (!userData) {
+        console.log("No user data available for mobile display");
+        return;
+    }
+    
+    console.log("Updating mobile display with user data:", userData);
+    
+    // 1. Update Mobile User Name
+    const mobileUserName = document.getElementById('mobileUserName');
+    if (mobileUserName) {
+        // Display full name or email or fallback
+        const displayName = userData.fullName || userData.username || userData.email || 'User';
+        mobileUserName.textContent = displayName;
+        console.log("Mobile user name updated:", displayName);
+    } else {
+        console.warn("mobileUserName element not found");
+    }
+    
+    // 2. Update Mobile User Email
+    const mobileUserEmail = document.getElementById('mobileUserEmail');
+    if (mobileUserEmail) {
+        mobileUserEmail.textContent = userData.email || 'No email';
+    }
+    
+    // 3. Update Mobile User Avatar
+    const mobileUserAvatar = document.getElementById('mobileUserAvatar');
+    if (mobileUserAvatar) {
+        // Get initials from full name
+        let initials = 'U';
+        if (userData.fullName) {
+            const nameParts = userData.fullName.split(' ');
+            if (nameParts.length >= 2) {
+                initials = (nameParts[0].charAt(0) + nameParts[1].charAt(0)).toUpperCase();
+            } else {
+                initials = userData.fullName.charAt(0).toUpperCase();
+            }
+        } else if (userData.username) {
+            initials = userData.username.charAt(0).toUpperCase();
+        } else if (userData.email) {
+            initials = userData.email.charAt(0).toUpperCase();
+        }
+        
+        mobileUserAvatar.textContent = initials;
+        
+        // Set background color (use stored color or generate random)
+        const colors = ['#4A6FA5', '#16697A', '#FFA62B', '#2E8B57', '#DC143C', '#6A5ACD', '#20B2AA', '#FF6347'];
+        mobileUserAvatar.style.background = userData.avatarColor || colors[Math.floor(Math.random() * colors.length)];
+        
+        console.log("Mobile avatar updated with initials:", initials);
+    }
+    
+    // 4. Update Mobile User Balance
+    const mobileUserBalance = document.getElementById('mobileUserBalance');
+    if (mobileUserBalance) {
+        const balance = userData.balance || 0;
+        const formattedBalance = `TZS ${balance.toFixed(2)}`;
+        mobileUserBalance.textContent = formattedBalance;
+        
+        // Add animation class
+        mobileUserBalance.classList.add('balance-updated');
+        setTimeout(() => {
+            mobileUserBalance.classList.remove('balance-updated');
+        }, 500);
+        
+        console.log("Mobile balance updated:", formattedBalance);
+    }
+    
+    // 5. Update Referral Count
+    const menuReferralCount = document.getElementById('menuReferralCount');
+    const menuReferralBadge = document.getElementById('menuReferralBadge');
+    const referralCount = userData.referralCount || 0;
+    
+    if (menuReferralCount) {
+        menuReferralCount.textContent = referralCount;
+    }
+    
+    if (menuReferralBadge) {
+        menuReferralBadge.textContent = referralCount;
+        menuReferralBadge.style.display = referralCount > 0 ? 'inline-block' : 'none';
+    }
+}
+
+// Function to update mobile display when hamburger opens
+function setupMobileDisplayOnHamburgerOpen() {
+    const hamburgerTrigger = document.getElementById('hamburgerTrigger');
+    const hamburgerMenu = document.getElementById('hamburgerMenu');
+    
+    if (hamburgerTrigger && hamburgerMenu) {
+        hamburgerTrigger.addEventListener('click', function() {
+            // Update mobile display when hamburger menu is about to open
+            setTimeout(() => {
+                updateMobileDisplay();
+            }, 100); // Small delay to ensure menu is visible
+        });
+    }
+}
+
+// Function to update mobile display on auth change
+function setupAuthListenerForMobile() {
+    // Listen for auth state changes
+    if (window.authManager) {
+        // Check every 500ms until user data is available
+        const checkInterval = setInterval(() => {
+            if (window.authManager.userData) {
+                clearInterval(checkInterval);
+                updateMobileDisplay();
+            }
+        }, 500);
+    }
+}
+
+// Function to refresh mobile display manually
+function refreshMobileDisplay() {
+    updateMobileDisplay();
+    if (typeof showNotification === 'function') {
+        showNotification('Display updated', 'success');
+    }
+}
+
+// Initialize all mobile display functionality
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("Initializing mobile display system...");
+    
+    // Initial update
+    setTimeout(updateMobileDisplay, 1000);
+    
+    // Setup hamburger open listener
+    setupMobileDisplayOnHamburgerOpen();
+    
+    // Setup auth listener
+    setupAuthListenerForMobile();
+    
+    // Update on focus (when user returns to tab)
+    window.addEventListener('focus', updateMobileDisplay);
+    
+    // Update on visibility change
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            updateMobileDisplay();
+        }
+    });
+    
+    // Listen for custom events
+    document.addEventListener('userDataUpdated', updateMobileDisplay);
+    document.addEventListener('authStateChanged', function(e) {
+        if (e.detail.user) {
+            setTimeout(updateMobileDisplay, 500);
+        }
+    });
+    document.addEventListener('balanceUpdated', updateMobileDisplay);
+    
+    console.log("Mobile display system initialized");
+});
+
+// Make functions globally available
+window.updateMobileDisplay = updateMobileDisplay;
+window.refreshMobileDisplay = refreshMobileDisplay;
+
+// Override the original updateHamburgerMenu function
+const originalUpdateHamburgerMenu = window.updateHamburgerMenu;
+window.updateHamburgerMenu = function() {
+    if (originalUpdateHamburgerMenu) {
+        originalUpdateHamburgerMenu();
+    }
+    updateMobileDisplay();
+};
+
+// ==================== REFUND TAB LOADING ====================
+// Load refund data when refund tab is opened
+
+// Method 1: Using the existing showSection function
+// Modify your existing showSection function or add this check
+function showSection(sectionId) {
+    // All possible section IDs (matches, my-bets, admin, refund)
+    const sections = ['matches', 'my-bets', 'admin', 'refund'];
+    
+    // 1. Hide all sections
+    sections.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+    
+    // 2. Show the selected section
+    const activeSection = document.getElementById(sectionId);
+    if (activeSection) activeSection.style.display = 'block';
+    
+    // 3. Update active state on every .tab‑btn (works across both nav-tabs blocks)
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach(btn => {
+        btn.classList.remove('active');
+        const onclickAttr = btn.getAttribute('onclick');
+        if (onclickAttr && onclickAttr.includes(`'${sectionId}'`)) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // 4. Load refund data if refund section is shown
+    if (sectionId === 'refund' && window.bettingSystem && typeof window.bettingSystem.loadRefundMatches === 'function') {
+        console.log('🔄 Loading refund data...');
+        window.bettingSystem.loadRefundMatches();
+    }
+}
+
+// Method 2: Event listener for section changes (more reliable)
+// Add this to your existing event listeners
+document.addEventListener('sectionChanged', (e) => {
+    const { sectionId, dashboard } = e.detail;
+    
+    // Load refund data when refund section becomes active
+    if (sectionId === 'refund' || sectionId === 'refundSection') {
+        console.log('🔄 Refund tab opened - loading refund data');
+        
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+            if (window.bettingSystem && typeof window.bettingSystem.loadRefundMatches === 'function') {
+                window.bettingSystem.loadRefundMatches();
+            }
+            
+            // Also load refund history
+            if (window.bettingSystem && typeof window.bettingSystem.loadRefundHistory === 'function') {
+                window.bettingSystem.loadRefundHistory();
+            }
+        }, 200);
+    }
+    
+    // Load refund data when admin matches section with refund tab is opened
+    if (sectionId === 'adminmatchesSection' || sectionId === 'adminMatchesSection') {
+        // Check if refund tab is active within the admin matches section
+        setTimeout(() => {
+            const refundSection = document.getElementById('refund');
+            if (refundSection && refundSection.style.display !== 'none') {
+                console.log('🔄 Admin refund tab opened - loading refund data');
+                if (window.bettingSystem && typeof window.bettingSystem.loadRefundMatches === 'function') {
+                    window.bettingSystem.loadRefundMatches();
+                }
+                if (window.bettingSystem && typeof window.bettingSystem.loadRefundHistory === 'function') {
+                    window.bettingSystem.loadRefundHistory();
+                }
+            }
+        }, 200);
+    }
+});
+
+// Method 3: Direct click handler for refund tab buttons
+// Add this after DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Find all refund tab buttons and attach click handlers
+    const refundTabButtons = document.querySelectorAll('[onclick*="showSection(\'refund\'"]');
+    refundTabButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            console.log('🔄 Refund tab clicked - loading refund data');
+            setTimeout(() => {
+                if (window.bettingSystem && typeof window.bettingSystem.loadRefundMatches === 'function') {
+                    window.bettingSystem.loadRefundMatches();
+                }
+                if (window.bettingSystem && typeof window.bettingSystem.loadRefundHistory === 'function') {
+                    window.bettingSystem.loadRefundHistory();
+                }
+            }, 300);
+        });
+    });
+    
+    // Also handle any other refund-related buttons
+    const refundNavItems = document.querySelectorAll('.nav-item[data-section="refund"], .nav-item[data-section="refundSection"]');
+    refundNavItems.forEach(item => {
+        item.addEventListener('click', function() {
+            console.log('🔄 Refund navigation clicked - loading refund data');
+            setTimeout(() => {
+                if (window.bettingSystem && typeof window.bettingSystem.loadRefundMatches === 'function') {
+                    window.bettingSystem.loadRefundMatches();
+                }
+                if (window.bettingSystem && typeof window.bettingSystem.loadRefundHistory === 'function') {
+                    window.bettingSystem.loadRefundHistory();
+                }
+            }, 300);
+        });
+    });
+});
+
+// Method 4: For the admin panel's refund tab specifically
+// Add to your existing tab switching function for admin
+function switchAdminTab(tabName) {
+    // Your existing tab switching code...
+    
+    // If switching to refund tab, load refund data
+    if (tabName === 'refund') {
+        setTimeout(() => {
+            if (window.bettingSystem && typeof window.bettingSystem.loadRefundMatches === 'function') {
+                console.log('🔄 Admin refund tab activated - loading refund data');
+                window.bettingSystem.loadRefundMatches();
+            }
+            if (window.bettingSystem && typeof window.bettingSystem.loadRefundHistory === 'function') {
+                window.bettingSystem.loadRefundHistory();
+            }
+        }, 200);
+    }
+}
+
+// Method 5: Manual refresh function for refund data
+// This can be called from anywhere
+function refreshRefundData() {
+    console.log('🔄 Manually refreshing refund data');
+    if (window.bettingSystem && typeof window.bettingSystem.loadRefundMatches === 'function') {
+        window.bettingSystem.loadRefundMatches();
+    }
+    if (window.bettingSystem && typeof window.bettingSystem.loadRefundHistory === 'function') {
+        window.bettingSystem.loadRefundHistory();
+    }
+}
+
+// Make refresh function globally available
+window.refreshRefundData = refreshRefundData;
+
+// Method 6: For the nav-tabs buttons specifically
+// Add this to handle clicks on the refund tab in admin panel
+document.addEventListener('click', function(e) {
+    // Check if clicked element is a tab button that activates refund
+    if (e.target.closest('.tab-btn') && e.target.closest('.tab-btn').textContent.includes('Refund')) {
+        console.log('🔄 Refund tab button clicked via delegation');
+        setTimeout(() => {
+            if (window.bettingSystem && typeof window.bettingSystem.loadRefundMatches === 'function') {
+                window.bettingSystem.loadRefundMatches();
+            }
+        }, 300);
+    }
+    
+    // Check for refund navigation items
+    if (e.target.closest('[data-section="refund"]') || e.target.closest('[data-section="refundSection"]')) {
+        console.log('🔄 Refund navigation clicked via delegation');
+        setTimeout(() => {
+            if (window.bettingSystem && typeof window.bettingSystem.loadRefundMatches === 'function') {
+                window.bettingSystem.loadRefundMatches();
+            }
+        }, 300);
+    }
+});
+
+// Also load refund data when user data changes (e.g., after a bet is settled)
+document.addEventListener('userDataUpdated', function() {
+    // Check if refund section is currently visible
+    const refundSection = document.getElementById('refund');
+    const adminRefundSection = document.getElementById('refund') || document.querySelector('.refund-tab.active');
+    
+    if (refundSection && refundSection.style.display !== 'none') {
+        console.log('🔄 User data updated - refreshing refund data');
+        setTimeout(() => {
+            if (window.bettingSystem && typeof window.bettingSystem.loadRefundMatches === 'function') {
+                window.bettingSystem.loadRefundMatches();
+            }
+        }, 500);
+    }
+});
+
+console.log('✅ Refund tab loader initialized');
+
+// ==================== COMPLETE REFUND SYSTEM WITH DELETE & CANCEL ====================
+
+class RefundSystem {
+    constructor() {
+        this.currentMatchRefunds = [];
+        this.deletedRefunds = [];
+        this.cancelledRefunds = [];
+        this.isLoading = false;
+        this.autoRefreshInterval = null;
+        this.init();
+    }
+
+    async init() {
+        console.log("🔄 Initializing Complete Refund System with Delete & Cancel...");
+        await this.loadDeletedRefunds();
+        await this.loadCancelledRefunds();
+        this.setupEventListeners();
+        this.setupAutoRefresh();
+    }
+
+    setupEventListeners() {
+        // Listen for section changes
+        document.addEventListener('sectionChanged', (e) => {
+            if (e.detail.sectionId === 'refund') {
+                console.log('📢 Refund section opened');
+                this.loadRefundMatches();
+                this.loadRefundHistory();
+            }
+        });
+
+        // Listen for manual refresh button
+        const refreshBtn = document.getElementById('refreshRefundBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.quickRefresh();
+            });
+        }
+
+        // Listen for keyboard shortcut (Ctrl+R) when in refund section
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'r') {
+                const refundSection = document.getElementById('refund');
+                if (refundSection && refundSection.classList.contains('active')) {
+                    e.preventDefault();
+                    this.quickRefresh();
+                }
+            }
+        });
+    }
+
+    setupAutoRefresh() {
+        // Auto refresh every 30 seconds if refund section is active
+        if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+        }
+
+        this.autoRefreshInterval = setInterval(() => {
+            const refundSection = document.getElementById('refund');
+            if (refundSection && refundSection.classList.contains('active') && !this.isLoading) {
+                console.log('🔄 Auto-refreshing refund data...');
+                this.loadRefundMatches(false);
+            }
+        }, 30000); // 30 seconds
+    }
+
+    // ========== QUICK REFRESH ==========
+    async quickRefresh() {
+        console.log('⚡ Quick refresh triggered');
+        
+        // Show visual feedback
+        const refreshBtn = document.getElementById('refreshRefundBtn');
+        if (refreshBtn) {
+            refreshBtn.classList.add('refreshing');
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+        }
+
+        await this.loadRefundMatches(true);
+        await this.loadRefundHistory();
+
+        // Show success message
+        showNotification('Refund data refreshed successfully', 'success');
+
+        // Reset button
+        if (refreshBtn) {
+            setTimeout(() => {
+                refreshBtn.classList.remove('refreshing');
+                refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> <span>Refresh Data</span>';
+            }, 500);
+        }
+    }
+
+    // ========== LOAD REFUND MATCHES ==========
+    async loadRefundMatches(showLoading = true) {
+        if (this.isLoading) {
+            console.log('⏳ Already loading...');
+            return;
+        }
+
+        this.isLoading = true;
+        
+        const container = document.getElementById('refundMatchesContainer');
+        const lastUpdatedEl = document.getElementById('refundLastUpdated');
+        
+        if (!container) {
+            console.error('Refund container not found');
+            this.isLoading = false;
+            return;
+        }
+
+        if (showLoading) {
+            container.innerHTML = `
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-pulse"></i>
+                    <p>Loading refund data...</p>
+                    <small>Fetching matches and calculating lost bets...</small>
+                </div>
+            `;
+        }
+
+        try {
+            // Get all finished matches
+            const matchesSnapshot = await db.collection('matches')
+                .where('status', '==', 'finished')
+                .orderBy('date', 'desc')
+                .get();
+
+            console.log(`📊 Found ${matchesSnapshot.size} finished matches`);
+
+            if (matchesSnapshot.empty) {
+                container.innerHTML = this.getEmptyStateHTML();
+                this.updateSummaryStats(0, 0, 0, 0, 0, 0, 0);
+                this.updateLastUpdated();
+                this.isLoading = false;
+                return;
+            }
+
+            let html = '';
+            let hasAnyRefundable = false;
+            let totalStats = {
+                matches: 0,
+                lostBets: 0,
+                users: new Set(),
+                stake: 0,
+                refundedMatches: 0,
+                pendingRefunds: 0,
+                cancelledRefunds: 0
+            };
+
+            // Process each match in parallel for better performance
+            const matchPromises = [];
+            matchesSnapshot.docs.forEach(matchDoc => {
+                matchPromises.push(this.processMatchForRefund(matchDoc));
+            });
+
+            const matchResults = await Promise.all(matchPromises);
+
+            // Sort matches: pending first, then refunded, then cancelled
+            matchResults.sort((a, b) => {
+                if (a.status === 'pending' && b.status !== 'pending') return -1;
+                if (a.status !== 'pending' && b.status === 'pending') return 1;
+                if (a.status === 'refunded' && b.status === 'cancelled') return -1;
+                if (a.status === 'cancelled' && b.status === 'refunded') return 1;
+                return 0;
+            });
+
+            matchResults.forEach(result => {
+                if (result.hasData) {
+                    hasAnyRefundable = true;
+                    totalStats.matches++;
+                    totalStats.lostBets += result.lostData.totalLostBets;
+                    totalStats.stake += result.lostData.totalLostStake;
+                    
+                    if (result.status === 'refunded') {
+                        totalStats.refundedMatches++;
+                    } else if (result.status === 'cancelled') {
+                        totalStats.cancelledRefunds++;
+                    } else {
+                        totalStats.pendingRefunds++;
+                    }
+                    
+                    Object.keys(result.lostData.userLostBets).forEach(userId => {
+                        totalStats.users.add(userId);
+                    });
+                    
+                    html += result.cardHtml;
+                }
+            });
+
+            // Update summary stats
+            this.updateSummaryStats(
+                totalStats.matches,
+                totalStats.lostBets,
+                totalStats.users.size,
+                totalStats.stake,
+                totalStats.refundedMatches,
+                totalStats.pendingRefunds,
+                totalStats.cancelledRefunds
+            );
+
+            if (!hasAnyRefundable) {
+                container.innerHTML = this.getEmptyStateHTML();
+            } else {
+                container.innerHTML = `
+                    <div class="refund-filters">
+                        <button class="filter-btn active" data-filter="all">All (${totalStats.matches})</button>
+                        <button class="filter-btn" data-filter="pending">Pending (${totalStats.pendingRefunds})</button>
+                        <button class="filter-btn" data-filter="refunded">Refunded (${totalStats.refundedMatches})</button>
+                        <button class="filter-btn" data-filter="cancelled">Cancelled (${totalStats.cancelledRefunds})</button>
+                    </div>
+                    <div class="refund-matches-grid">
+                        ${html}
+                    </div>
+                `;
+
+                // Add filter functionality
+                this.setupFilterButtons();
+            }
+
+            this.updateLastUpdated();
+            console.log(`✅ Refund data loaded: ${totalStats.matches} matches`);
+
+        } catch (error) {
+            console.error("Error loading refund matches:", error);
+            container.innerHTML = this.getErrorStateHTML(error);
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    async processMatchForRefund(matchDoc) {
+        const match = { id: matchDoc.id, ...matchDoc.data() };
+        
+        // Get lost bets for this match
+        const lostData = await this.getLostBetsForMatch(match.id);
+        
+        // Check refund status
+        const refundStatus = await this.getMatchRefundStatus(match.id);
+        const hasRefunds = refundStatus.hasRefunds;
+        const isCancelled = refundStatus.isCancelled;
+        const refundDetails = refundStatus.details;
+        
+        let status = 'pending';
+        if (hasRefunds) status = 'refunded';
+        else if (isCancelled) status = 'cancelled';
+        
+        if (lostData.totalLostStake > 0 || hasRefunds || isCancelled) {
+            const cardHtml = this.createRefundMatchCard(match, lostData, status, refundDetails);
+            return { hasData: true, lostData, cardHtml, status };
+        }
+        
+        return { hasData: false };
+    }
+
+    // ========== CHECK MATCH REFUND STATUS ==========
+    async getMatchRefundStatus(matchId) {
+        try {
+            const refundTransactions = await db.collection('transactions')
+                .where('matchId', '==', matchId)
+                .where('type', '==', 'refund')
+                .get();
+
+            const hasRefunds = !refundTransactions.empty;
+            
+            const details = {
+                totalRefunded: 0,
+                usersRefunded: new Set(),
+                transactions: [],
+                refundDate: null
+            };
+
+            refundTransactions.forEach(doc => {
+                const trans = doc.data();
+                details.totalRefunded += trans.amount || 0;
+                details.usersRefunded.add(trans.userId);
+                details.transactions.push({
+                    id: doc.id,
+                    ...trans
+                });
+                if (trans.date && !details.refundDate) {
+                    details.refundDate = trans.date;
+                }
+            });
+
+            // Check if refund was cancelled
+            const cancelledCheck = await db.collection('cancelledRefunds')
+                .where('matchId', '==', matchId)
+                .get();
+
+            const isCancelled = !cancelledCheck.empty;
+
+            // Check if refund was deleted
+            const deletedCheck = await db.collection('deletedRefunds')
+                .where('matchId', '==', matchId)
+                .get();
+
+            const isDeleted = !deletedCheck.empty;
+
+            return {
+                hasRefunds,
+                isCancelled,
+                isDeleted,
+                details: {
+                    ...details,
+                    usersCount: details.usersRefunded.size,
+                    cancelledAt: isCancelled ? cancelledCheck.docs[0]?.data().cancelledAt : null,
+                    deletedAt: isDeleted ? deletedCheck.docs[0]?.data().deletedAt : null
+                }
+            };
+
+        } catch (error) {
+            console.error("Error checking refund status:", error);
+            return { hasRefunds: false, isCancelled: false, isDeleted: false, details: null };
+        }
+    }
+
+    // ========== GET LOST BETS FOR A MATCH ==========
+    async getLostBetsForMatch(matchId) {
+        try {
+            // Get lost single bets
+            const lostSingleSnapshot = await db.collection('bets')
+                .where('matchId', '==', matchId)
+                .where('status', '==', 'lost')
+                .where('type', '==', 'single')
+                .get();
+
+            // Get lost multi-bets (filter in memory)
+            const lostMultiSnapshot = await db.collection('bets')
+                .where('status', '==', 'lost')
+                .where('type', '==', 'multi')
+                .get();
+
+            const affectedMultiBets = [];
+            const userLostBets = {};
+            let totalLostStake = 0;
+
+            // Process single bets
+            lostSingleSnapshot.forEach(doc => {
+                const bet = doc.data();
+                const userId = bet.userId;
+                
+                if (!userLostBets[userId]) {
+                    userLostBets[userId] = { totalStake: 0, bets: [] };
+                }
+                
+                userLostBets[userId].totalStake += bet.stake || 0;
+                userLostBets[userId].bets.push({
+                    id: doc.id,
+                    ...bet,
+                    type: 'single'
+                });
+                totalLostStake += bet.stake || 0;
+            });
+
+            // Process multi bets
+            lostMultiSnapshot.forEach(doc => {
+                const bet = { id: doc.id, ...doc.data() };
+                if (bet.selections && Array.isArray(bet.selections)) {
+                    const hasThisMatch = bet.selections.some(s => s.matchId === matchId);
+                    if (hasThisMatch) {
+                        affectedMultiBets.push(bet);
+                        
+                        const userId = bet.userId;
+                        if (!userLostBets[userId]) {
+                            userLostBets[userId] = { totalStake: 0, bets: [] };
+                        }
+                        
+                        const proportionalStake = (bet.stake || 0) / bet.selections.length;
+                        userLostBets[userId].totalStake += proportionalStake;
+                        userLostBets[userId].bets.push({
+                            ...bet,
+                            type: 'multi',
+                            proportionalStake
+                        });
+                        totalLostStake += proportionalStake;
+                    }
+                }
+            });
+
+            return {
+                lostSingleCount: lostSingleSnapshot.size,
+                lostMultiCount: affectedMultiBets.length,
+                totalLostBets: lostSingleSnapshot.size + affectedMultiBets.length,
+                totalLostStake,
+                userLostBets,
+                affectedMultiBets
+            };
+
+        } catch (error) {
+            console.error("Error getting lost bets:", error);
+            return {
+                lostSingleCount: 0,
+                lostMultiCount: 0,
+                totalLostBets: 0,
+                totalLostStake: 0,
+                userLostBets: {},
+                affectedMultiBets: []
+            };
+        }
+    }
+
+    // ========== CREATE REFUND MATCH CARD ==========
+    createRefundMatchCard(match, lostData, status, refundDetails) {
+        const matchDate = match.date?.toDate ? match.date.toDate() : new Date();
+        const formattedDate = matchDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+
+        const resultText = match.result ? 
+            `${match.homeTeam || 'Home'} ${match.result.home || 0} - ${match.result.away || 0} ${match.awayTeam || 'Away'}` : 
+            'No result set';
+
+        const userCount = Object.keys(lostData.userLostBets).length;
+        const refundedAmount = refundDetails?.totalRefunded || 0;
+        const refundedUsers = refundDetails?.usersCount || 0;
+        const refundDate = refundDetails?.refundDate?.toDate ? 
+            refundDetails.refundDate.toDate().toLocaleString() : '';
+        const cancelledDate = refundDetails?.cancelledAt?.toDate ? 
+            refundDetails.cancelledAt.toDate().toLocaleString() : '';
+
+        const statusClass = status;
+        let statusIcon = 'fa-clock';
+        let statusText = 'Pending Refund';
+        
+        if (status === 'refunded') {
+            statusIcon = 'fa-check-circle';
+            statusText = 'Refunded';
+        } else if (status === 'cancelled') {
+            statusIcon = 'fa-times-circle';
+            statusText = 'Cancelled';
+        }
+
+        return `
+            <div class="refund-match-card ${statusClass}" data-match-id="${match.id}" data-status="${status}">
+                <div class="refund-match-header">
+                    <div class="match-info">
+                        <div class="match-title">
+                            <h4><i class="fas fa-futbol"></i> ${match.homeTeam || 'Home'} vs ${match.awayTeam || 'Away'}</h4>
+                            <span class="status-badge ${statusClass}">
+                                <i class="fas ${statusIcon}"></i>
+                                ${statusText}
+                            </span>
+                        </div>
+                        <div class="match-meta">
+                            <span><i class="far fa-calendar"></i> ${formattedDate}</span>
+                            <span><i class="fas fa-trophy"></i> ${match.competition || 'Friendly'}</span>
+                            <span><i class="fas fa-map-marker-alt"></i> ${match.venue || 'TBD'}</span>
+                        </div>
+                        <div class="match-result">
+                            <i class="fas fa-flag-checkered"></i> Result: ${resultText}
+                        </div>
+                    </div>
+                    
+                    <div class="match-stats">
+                        <div class="stat-badge lost">
+                            <span class="stat-label">Lost Bets</span>
+                            <span class="stat-value">${lostData.totalLostBets}</span>
+                        </div>
+                        <div class="stat-badge users">
+                            <span class="stat-label">Affected Users</span>
+                            <span class="stat-value">${userCount}</span>
+                        </div>
+                        <div class="stat-badge amount">
+                            <span class="stat-label">Total Stake</span>
+                            <span class="stat-value">TZS ${lostData.totalLostStake.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="refund-details">
+                    <div class="bets-breakdown">
+                        <div class="breakdown-item">
+                            <i class="fas fa-ticket-alt"></i>
+                            <span>Single Bets: ${lostData.lostSingleCount}</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <i class="fas fa-layer-group"></i>
+                            <span>Multi-Bets: ${lostData.lostMultiCount}</span>
+                        </div>
+                    </div>
+
+                    ${userCount > 0 ? `
+                        <div class="users-list-preview">
+                            <h5>Affected Users:</h5>
+                            <div class="user-preview-items">
+                                ${Object.entries(lostData.userLostBets).slice(0, 3).map(([userId, data]) => `
+                                    <div class="user-preview-item">
+                                        <i class="fas fa-user-circle"></i>
+                                        <span>${userId.substring(0, 8)}... - TZS ${data.totalStake.toFixed(2)}</span>
+                                    </div>
+                                `).join('')}
+                                ${userCount > 3 ? `<div class="more-users">+${userCount - 3} more users</div>` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${status === 'refunded' ? `
+                        <div class="refund-summary">
+                            <h5><i class="fas fa-check-circle"></i> Refund Summary</h5>
+                            <div class="summary-details">
+                                <div class="summary-item">
+                                    <span>Amount Refunded:</span>
+                                    <strong class="positive">TZS ${refundedAmount.toFixed(2)}</strong>
+                                </div>
+                                <div class="summary-item">
+                                    <span>Users Refunded:</span>
+                                    <strong>${refundedUsers}</strong>
+                                </div>
+                                ${refundDate ? `
+                                <div class="summary-item">
+                                    <span>Refund Date:</span>
+                                    <strong>${refundDate}</strong>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${status === 'cancelled' ? `
+                        <div class="cancelled-summary">
+                            <h5><i class="fas fa-times-circle"></i> Refund Cancelled</h5>
+                            <div class="summary-details">
+                                ${cancelledDate ? `
+                                <div class="summary-item">
+                                    <span>Cancelled Date:</span>
+                                    <strong>${cancelledDate}</strong>
+                                </div>
+                                ` : ''}
+                                <div class="summary-item">
+                                    <span>Status:</span>
+                                    <strong class="cancelled">Cancelled</strong>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="refund-actions">
+                    ${status === 'pending' ? `
+                        <button class="btn-refund" onclick="refundSystem.processRefund('${match.id}')" 
+                                ${lostData.totalLostStake === 0 ? 'disabled' : ''}>
+                            <i class="fas fa-hand-holding-usd"></i>
+                            Process Refund (TZS ${lostData.totalLostStake.toFixed(2)})
+                        </button>
+                        <button class="btn-cancel" onclick="refundSystem.cancelRefund('${match.id}')">
+                            <i class="fas fa-times-circle"></i>
+                            Cancel Refund
+                        </button>
+                    ` : status === 'refunded' ? `
+                        <button class="btn-delete" onclick="refundSystem.deleteRefund('${match.id}')">
+                            <i class="fas fa-trash-alt"></i>
+                            Delete Refund
+                        </button>
+                    ` : status === 'cancelled' ? `
+                        <button class="btn-reinstate" onclick="refundSystem.reinstateRefund('${match.id}')">
+                            <i class="fas fa-undo-alt"></i>
+                            Reinstate Refund
+                        </button>
+                        <button class="btn-delete" onclick="refundSystem.deleteRefund('${match.id}')">
+                            <i class="fas fa-trash-alt"></i>
+                            Delete Permanently
+                        </button>
+                    ` : ''}
+                    
+                    <button class="btn-details" onclick="refundSystem.viewRefundDetails('${match.id}')">
+                        <i class="fas fa-eye"></i>
+                        View Details
+                    </button>
+                </div>
+
+                ${status === 'refunded' ? `
+                    <div class="refund-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Refund has been processed. Click "Delete Refund" to remove this record.</span>
+                    </div>
+                ` : status === 'cancelled' ? `
+                    <div class="cancelled-warning">
+                        <i class="fas fa-info-circle"></i>
+                        <span>This refund was cancelled. Click "Reinstate" to make it available again or "Delete" to remove permanently.</span>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    // ========== PROCESS REFUND ==========
+    async processRefund(matchId) {
+        if (!confirm('Are you sure you want to process refunds for all lost bets in this match?')) {
+            return;
+        }
+
+        const btn = event.currentTarget;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+        try {
+            const matchDoc = await db.collection('matches').doc(matchId).get();
+            if (!matchDoc.exists) {
+                throw new Error('Match not found');
+            }
+            const match = matchDoc.data();
+
+            const lostData = await this.getLostBetsForMatch(matchId);
+            
+            if (lostData.totalLostStake === 0) {
+                showNotification('No lost bets found for this match', 'warning');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                return;
+            }
+
+            const batch = db.batch();
+            const userRefunds = {};
+            const refundRecords = [];
+
+            // Process single bets
+            for (const [userId, data] of Object.entries(lostData.userLostBets)) {
+                for (const bet of data.bets) {
+                    if (bet.type === 'single') {
+                        const betRef = db.collection('bets').doc(bet.id);
+                        batch.update(betRef, {
+                            status: 'refunded',
+                            refundedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            refundAmount: bet.stake,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+
+                        if (!userRefunds[userId]) userRefunds[userId] = 0;
+                        userRefunds[userId] += bet.stake || 0;
+
+                        refundRecords.push({
+                            userId,
+                            betId: bet.id,
+                            amount: bet.stake,
+                            type: 'single'
+                        });
+                    }
+                }
+            }
+
+            // Process multi bets
+            for (const bet of lostData.affectedMultiBets) {
+                const betRef = db.collection('bets').doc(bet.id);
+                const updatedSelections = (bet.selections || []).map(s => {
+                    if (s.matchId === matchId) {
+                        return { ...s, status: 'refunded', refundedAt: new Date().toISOString() };
+                    }
+                    return s;
+                });
+
+                batch.update(betRef, {
+                    selections: updatedSelections,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                const proportionalRefund = (bet.stake || 0) / (bet.selections?.length || 1);
+                if (!userRefunds[bet.userId]) userRefunds[bet.userId] = 0;
+                userRefunds[bet.userId] += proportionalRefund;
+
+                refundRecords.push({
+                    userId: bet.userId,
+                    betId: bet.id,
+                    amount: proportionalRefund,
+                    type: 'multi'
+                });
+            }
+
+            // Update user balances and create transactions
+            for (const [userId, amount] of Object.entries(userRefunds)) {
+                const userRef = db.collection('users').doc(userId);
+                batch.update(userRef, {
+                    balance: firebase.firestore.FieldValue.increment(amount),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                const transRef = db.collection('transactions').doc();
+                batch.set(transRef, {
+                    userId: userId,
+                    type: 'refund',
+                    amount: amount,
+                    description: `Refund for match: ${match.homeTeam || 'Home'} vs ${match.awayTeam || 'Away'}`,
+                    matchId: matchId,
+                    date: firebase.firestore.FieldValue.serverTimestamp(),
+                    processedBy: window.authManager?.user?.uid || 'system',
+                    refundDetails: refundRecords.filter(r => r.userId === userId)
+                });
+            }
+
+            // Add audit log
+            const auditRef = db.collection('auditLogs').doc();
+            batch.set(auditRef, {
+                action: 'process_refund',
+                matchId: matchId,
+                matchName: `${match.homeTeam || 'Home'} vs ${match.awayTeam || 'Away'}`,
+                totalAmount: lostData.totalLostStake,
+                usersAffected: Object.keys(userRefunds).length,
+                betsAffected: lostData.totalLostBets,
+                processedBy: window.authManager?.user?.uid || 'system',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            await batch.commit();
+
+            showNotification(
+                `✅ Successfully refunded TZS ${lostData.totalLostStake.toFixed(2)} to ${Object.keys(userRefunds).length} users`,
+                'success'
+            );
+
+            await this.loadRefundMatches();
+            await this.loadRefundHistory();
+
+        } catch (error) {
+            console.error("Error processing refund:", error);
+            showNotification(`Error: ${error.message}`, 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
+    // ========== CANCEL REFUND ==========
+    async cancelRefund(matchId) {
+        if (!confirm('⚠️ Are you sure you want to cancel this refund? No refunds have been processed yet.')) {
+            return;
+        }
+
+        const btn = event.currentTarget;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
+
+        try {
+            const matchDoc = await db.collection('matches').doc(matchId).get();
+            if (!matchDoc.exists) {
+                throw new Error('Match not found');
+            }
+            const match = matchDoc.data();
+
+            // Record the cancellation
+            const cancelledRefundRef = db.collection('cancelledRefunds').doc();
+            await cancelledRefundRef.set({
+                matchId: matchId,
+                matchName: `${match.homeTeam || 'Home'} vs ${match.awayTeam || 'Away'}`,
+                cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
+                cancelledBy: window.authManager?.user?.uid || 'system'
+            });
+
+            // Add audit log
+            const auditRef = db.collection('auditLogs').doc();
+            await auditRef.set({
+                action: 'cancel_refund',
+                matchId: matchId,
+                matchName: `${match.homeTeam || 'Home'} vs ${match.awayTeam || 'Away'}`,
+                cancelledBy: window.authManager?.user?.uid || 'system',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            showNotification('Refund cancelled successfully', 'success');
+            
+            await this.loadCancelledRefunds();
+            await this.loadRefundMatches();
+            await this.loadRefundHistory();
+
+        } catch (error) {
+            console.error("Error cancelling refund:", error);
+            showNotification(`Error: ${error.message}`, 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
+    // ========== REINSTATE REFUND ==========
+    async reinstateRefund(matchId) {
+        if (!confirm('Are you sure you want to reinstate this refund? It will become available for processing again.')) {
+            return;
+        }
+
+        const btn = event.currentTarget;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Reinstating...';
+
+        try {
+            // Find and delete the cancelled record
+            const cancelledSnapshot = await db.collection('cancelledRefunds')
+                .where('matchId', '==', matchId)
+                .get();
+
+            const batch = db.batch();
+            
+            cancelledSnapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+
+            // Add audit log
+            const auditRef = db.collection('auditLogs').doc();
+            batch.set(auditRef, {
+                action: 'reinstate_refund',
+                matchId: matchId,
+                reinstatedBy: window.authManager?.user?.uid || 'system',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            await batch.commit();
+
+            showNotification('Refund reinstated successfully', 'success');
+            
+            await this.loadCancelledRefunds();
+            await this.loadRefundMatches();
+            await this.loadRefundHistory();
+
+        } catch (error) {
+            console.error("Error reinstating refund:", error);
+            showNotification(`Error: ${error.message}`, 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
+    // ========== DELETE REFUND ==========
+    async deleteRefund(matchId) {
+        if (!confirm('⚠️ WARNING: This will permanently delete this refund record. This action cannot be undone!')) {
+            return;
+        }
+
+        // Double confirmation
+        const secondConfirm = prompt('Type "DELETE" to confirm permanent deletion:');
+        if (secondConfirm !== 'DELETE') {
+            showNotification('Deletion cancelled', 'info');
+            return;
+        }
+
+        const btn = event.currentTarget;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+
+        try {
+            const matchDoc = await db.collection('matches').doc(matchId).get();
+            const match = matchDoc.data();
+
+            // Get all refund transactions for this match
+            const refundTransactions = await db.collection('transactions')
+                .where('matchId', '==', matchId)
+                .where('type', '==', 'refund')
+                .get();
+
+            // Get cancelled records for this match
+            const cancelledRecords = await db.collection('cancelledRefunds')
+                .where('matchId', '==', matchId)
+                .get();
+
+            const batch = db.batch();
+            let totalDeleted = 0;
+
+            // Delete all refund transactions
+            refundTransactions.forEach(doc => {
+                totalDeleted += doc.data().amount || 0;
+                batch.delete(doc.ref);
+            });
+
+            // Delete cancelled records
+            cancelledRecords.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+
+            // Record the deletion
+            const deletedRefundRef = db.collection('deletedRefunds').doc();
+            batch.set(deletedRefundRef, {
+                matchId: matchId,
+                matchName: `${match.homeTeam || 'Home'} vs ${match.awayTeam || 'Away'}`,
+                totalAmount: totalDeleted,
+                deletedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                deletedBy: window.authManager?.user?.uid || 'system'
+            });
+
+            await batch.commit();
+
+            showNotification('Refund record deleted successfully', 'success');
+            
+            await this.loadDeletedRefunds();
+            await this.loadRefundMatches();
+            await this.loadRefundHistory();
+
+        } catch (error) {
+            console.error("Error deleting refund:", error);
+            showNotification(`Error: ${error.message}`, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
+    // ========== LOAD CANCELLED REFUNDS ==========
+    async loadCancelledRefunds() {
+        try {
+            const snapshot = await db.collection('cancelledRefunds')
+                .orderBy('cancelledAt', 'desc')
+                .limit(50)
+                .get();
+            
+            this.cancelledRefunds = [];
+            snapshot.forEach(doc => {
+                this.cancelledRefunds.push({ id: doc.id, ...doc.data() });
+            });
+            
+            return this.cancelledRefunds;
+        } catch (error) {
+            console.error("Error loading cancelled refunds:", error);
+            return [];
+        }
+    }
+
+    // ========== VIEW REFUND DETAILS ==========
+    async viewRefundDetails(matchId) {
+        try {
+            const matchDoc = await db.collection('matches').doc(matchId).get();
+            if (!matchDoc.exists) {
+                showNotification('Match not found', 'error');
+                return;
+            }
+            const match = matchDoc.data();
+
+            const refundTransactions = await db.collection('transactions')
+                .where('matchId', '==', matchId)
+                .where('type', '==', 'refund')
+                .get();
+
+            const cancelledInfo = await db.collection('cancelledRefunds')
+                .where('matchId', '==', matchId)
+                .get();
+
+            const refundedBets = await db.collection('bets')
+                .where('refundedAt', '>', new Date(0))
+                .get();
+
+            const matchRefundedBets = [];
+            refundedBets.forEach(doc => {
+                const bet = doc.data();
+                if (bet.matchId === matchId || 
+                    (bet.selections && bet.selections.some(s => s.matchId === matchId && s.status === 'refunded'))) {
+                    matchRefundedBets.push({ id: doc.id, ...bet });
+                }
+            });
+
+            const isCancelled = !cancelledInfo.empty;
+            const cancelledDate = isCancelled ? cancelledInfo.docs[0]?.data().cancelledAt?.toDate() : null;
+
+            // Create modal content
+            const modalContent = `
+                <div class="refund-details-modal">
+                    <h3>Refund Details - ${match.homeTeam || 'Home'} vs ${match.awayTeam || 'Away'}</h3>
+                    
+                    ${isCancelled ? `
+                        <div class="cancelled-banner">
+                            <i class="fas fa-times-circle"></i>
+                            <span>This refund was cancelled on ${cancelledDate ? cancelledDate.toLocaleString() : 'Unknown date'}</span>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="details-section">
+                        <h4>Transaction Summary</h4>
+                        <table class="details-table">
+                            <thead>
+                                <tr>
+                                    <th>User ID</th>
+                                    <th>Amount</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${refundTransactions.docs.map(doc => {
+                                    const trans = doc.data();
+                                    const date = trans.date?.toDate ? trans.date.toDate().toLocaleString() : 'N/A';
+                                    return `
+                                        <tr>
+                                            <td>${trans.userId?.substring(0, 8)}...</td>
+                                            <td class="positive">TZS ${(trans.amount || 0).toFixed(2)}</td>
+                                            <td>${date}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                                ${refundTransactions.empty ? '<tr><td colspan="3" class="no-data">No transactions found</td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="details-section">
+                        <h4>Refunded Bets</h4>
+                        <table class="details-table">
+                            <thead>
+                                <tr>
+                                    <th>Bet ID</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${matchRefundedBets.map(bet => {
+                                    const amount = bet.type === 'multi' ? 
+                                        ((bet.stake || 0) / (bet.selections?.length || 1)) : (bet.stake || 0);
+                                    return `
+                                        <tr>
+                                            <td>${bet.id?.substring(0, 8)}...</td>
+                                            <td>${bet.type}</td>
+                                            <td class="positive">TZS ${amount.toFixed(2)}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                                ${matchRefundedBets.length === 0 ? '<tr><td colspan="3" class="no-data">No refunded bets found</td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button class="btn-secondary" onclick="closeModal('refundDetailsModal')">Close</button>
+                        <button class="btn-primary" onclick="refundSystem.exportRefundDetails('${matchId}')">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            this.showDetailsModal(modalContent);
+
+        } catch (error) {
+            console.error("Error viewing refund details:", error);
+            showNotification('Error loading refund details', 'error');
+        }
+    }
+
+    showDetailsModal(content) {
+        let modal = document.getElementById('refundDetailsModal');
+        
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'refundDetailsModal';
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-container" style="max-width: 800px;">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-receipt"></i> Refund Details</h3>
+                        <button class="close-modal" onclick="closeModal('refundDetailsModal')">&times;</button>
+                    </div>
+                    <div class="modal-body" id="refundDetailsModalBody"></div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        document.getElementById('refundDetailsModalBody').innerHTML = content;
+        modal.classList.add('active');
+    }
+
+    // ========== EXPORT REFUND DETAILS ==========
+    async exportRefundDetails(matchId) {
+        try {
+            const matchDoc = await db.collection('matches').doc(matchId).get();
+            const match = matchDoc.data();
+            
+            const refundTransactions = await db.collection('transactions')
+                .where('matchId', '==', matchId)
+                .where('type', '==', 'refund')
+                .get();
+
+            let csvContent = "User ID,Amount,Date,Transaction ID\n";
+            
+            refundTransactions.forEach(doc => {
+                const trans = doc.data();
+                const date = trans.date?.toDate ? trans.date.toDate().toISOString() : 'N/A';
+                csvContent += `${trans.userId || 'N/A'},${trans.amount || 0},${date},${doc.id}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `refund_${match.homeTeam || 'Home'}_vs_${match.awayTeam || 'Away'}_${Date.now()}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            showNotification('Refund details exported successfully', 'success');
+
+        } catch (error) {
+            console.error("Error exporting refund details:", error);
+            showNotification('Error exporting details', 'error');
+        }
+    }
+
+    // ========== LOAD REFUND HISTORY ==========
+    async loadRefundHistory() {
+        const container = document.getElementById('refundHistoryContainer');
+        if (!container) return;
+
+        try {
+            const snapshot = await db.collection('transactions')
+                .where('type', '==', 'refund')
+                .orderBy('date', 'desc')
+                .limit(50)
+                .get();
+
+            if (snapshot.empty) {
+                container.innerHTML = `
+                    <div class="no-data">
+                        <i class="fas fa-history"></i>
+                        <p>No refund history available</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="refund-history-table">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Match</th>
+                                <th>User</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            snapshot.forEach(doc => {
+                const refund = doc.data();
+                const date = refund.date?.toDate ? refund.date.toDate() : new Date();
+                
+                // Check if this refund was deleted or cancelled
+                const isDeleted = this.deletedRefunds.some(d => d.matchId === refund.matchId);
+                const isCancelled = this.cancelledRefunds.some(c => c.matchId === refund.matchId);
+                
+                let status = 'completed';
+                let statusText = 'Completed';
+                
+                if (isDeleted) {
+                    status = 'deleted';
+                    statusText = 'Deleted';
+                } else if (isCancelled) {
+                    status = 'cancelled';
+                    statusText = 'Cancelled';
+                }
+                
+                html += `
+                    <tr class="${status}-row">
+                        <td>${date.toLocaleDateString()} ${date.toLocaleTimeString()}</td>
+                        <td>${refund.description?.replace('Refund for match: ', '') || 'Match refund'}</td>
+                        <td>${refund.userId?.substring(0, 8)}...</td>
+                        <td class="positive">TZS ${(refund.amount || 0).toFixed(2)}</td>
+                        <td>
+                            <span class="status-badge ${status}">
+                                ${statusText}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn-icon" onclick="refundSystem.viewRefundDetails('${refund.matchId}')" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+
+        } catch (error) {
+            console.error("Error loading refund history:", error);
+            container.innerHTML = `
+                <div class="error-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Error loading refund history: ${error.message}</p>
+                </div>
+            `;
+        }
+    }
+
+    // ========== LOAD DELETED REFUNDS ==========
+    async loadDeletedRefunds() {
+        try {
+            const snapshot = await db.collection('deletedRefunds')
+                .orderBy('deletedAt', 'desc')
+                .limit(50)
+                .get();
+            
+            this.deletedRefunds = [];
+            snapshot.forEach(doc => {
+                this.deletedRefunds.push({ id: doc.id, ...doc.data() });
+            });
+            
+            return this.deletedRefunds;
+        } catch (error) {
+            console.error("Error loading deleted refunds:", error);
+            return [];
+        }
+    }
+
+    // ========== SETUP FILTER BUTTONS ==========
+    setupFilterButtons() {
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const filter = e.target.dataset.filter;
+                
+                // Update active state
+                filterBtns.forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                // Filter matches
+                const matchCards = document.querySelectorAll('.refund-match-card');
+                matchCards.forEach(card => {
+                    const status = card.dataset.status;
+                    if (filter === 'all' || status === filter) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+    }
+
+    // ========== UPDATE SUMMARY STATS ==========
+    updateSummaryStats(matches, lostBets, users, stake, refundedMatches = 0, pendingRefunds = 0, cancelledRefunds = 0) {
+        const matchesEl = document.getElementById('totalMatchesCount');
+        const lostBetsEl = document.getElementById('totalLostBetsCount');
+        const usersEl = document.getElementById('totalUsersCount');
+        const stakeEl = document.getElementById('totalStakeAmount');
+        const refundedEl = document.getElementById('refundedMatchesCount');
+        const pendingEl = document.getElementById('pendingRefundsCount');
+        const cancelledEl = document.getElementById('cancelledRefundsCount');
+        
+        if (matchesEl) matchesEl.textContent = matches;
+        if (lostBetsEl) lostBetsEl.textContent = lostBets;
+        if (usersEl) usersEl.textContent = users;
+        if (stakeEl) stakeEl.textContent = `TZS ${stake.toFixed(2)}`;
+        if (refundedEl) refundedEl.textContent = refundedMatches;
+        if (pendingEl) pendingEl.textContent = pendingRefunds;
+        if (cancelledEl) cancelledEl.textContent = cancelledRefunds;
+    }
+
+    // ========== UPDATE LAST UPDATED ==========
+    updateLastUpdated() {
+        const lastUpdatedEl = document.getElementById('refundLastUpdated');
+        if (lastUpdatedEl) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const dateString = now.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric'
+            });
+            lastUpdatedEl.innerHTML = `
+                <i class="far fa-clock"></i>
+                <span>Last updated: ${dateString} ${timeString}</span>
+            `;
+        }
+    }
+
+    // ========== GET EMPTY STATE HTML ==========
+    getEmptyStateHTML() {
+        return `
+            <div class="no-data">
+                <i class="fas fa-check-circle" style="font-size: 4rem; color: var(--success-color);"></i>
+                <h3>No Refunds Available</h3>
+                <p>All bets have been settled with no lost stakes requiring refund.</p>
+                <button class="btn-refresh" onclick="refundSystem.quickRefresh()" style="margin-top: 20px;">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        `;
+    }
+
+    // ========== GET ERROR STATE HTML ==========
+    getErrorStateHTML(error) {
+        return `
+            <div class="error-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Error Loading Refunds</h3>
+                <p>${error.message || 'Unknown error'}</p>
+                <button class="btn-refresh" onclick="refundSystem.quickRefresh()" style="margin-top: 20px;">
+                    <i class="fas fa-sync-alt"></i> Try Again
+                </button>
+            </div>
+        `;
+    }
+
+    // ========== CLEANUP ==========
+    destroy() {
+        if (this.autoRefreshInterval) {
+            clearInterval(this.autoRefreshInterval);
+        }
+    }
+}
+
+// ========== INITIALIZE REFUND SYSTEM ==========
+let refundSystem;
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initializing Complete Refund System...');
+    
+    setTimeout(() => {
+        refundSystem = new RefundSystem();
+        window.refundSystem = refundSystem;
+        console.log('✅ Refund System initialized');
+    }, 1500);
+});
+
+// ========== GLOBAL REFRESH FUNCTION ==========
+window.refreshRefundData = function() {
+    if (window.refundSystem) {
+        window.refundSystem.quickRefresh();
+    } else {
+        console.error('Refund system not initialized');
+        showNotification('Refund system not ready', 'error');
+    }
+};
+
+// ==================== NOTIFICATION SYSTEM ====================
+class NotificationService {
+    constructor() {
+        this.permission = null;
+        this.swRegistration = null;
+        this.notificationCheckInterval = null;
+        this.sentNotifications = new Set(); // Track sent notifications to avoid duplicates
+        this.init();
+    }
+
+    async init() {
+        console.log("🔔 Initializing Notification Service...");
+        
+        // Check if browser supports notifications
+        if (!('Notification' in window)) {
+            console.log("This browser does not support notifications");
+            return;
+        }
+
+        // Check current permission
+        this.permission = Notification.permission;
+        
+        // If permission not granted, show request button
+        if (this.permission !== 'granted') {
+            this.showPermissionRequest();
+        } else {
+            console.log("✅ Notifications already enabled");
+            this.startNotificationChecks();
+        }
+
+        // Listen for auth state changes
+        document.addEventListener('authStateChanged', (e) => {
+            if (e.detail.user) {
+                this.registerUserForNotifications();
+            }
+        });
+    }
+
+    showPermissionRequest() {
+        // Check if we already have a permission banner
+        if (document.getElementById('notification-permission-banner')) return;
+
+        const banner = document.createElement('div');
+        banner.id = 'notification-permission-banner';
+        banner.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, var(--secondary-color), #1e3a5f);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            max-width: 400px;
+            animation: slideIn 0.3s ease;
+            border-left: 4px solid var(--accent-color);
+        `;
+
+        banner.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="background: var(--accent-color); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-bell" style="color: white; font-size: 1.2rem;"></i>
+                </div>
+                <div>
+                    <h4 style="margin: 0 0 0.25rem 0; color: white;">Enable Notifications</h4>
+                    <p style="margin: 0; font-size: 0.9rem; opacity: 0.9;">Get notified about matches, announcements, and admin messages</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button id="allow-notifications" style="background: var(--accent-color); border: none; color: white; padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer; font-weight: bold;">
+                    Allow
+                </button>
+                <button id="dismiss-notifications" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer;">
+                    Later
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(banner);
+
+        document.getElementById('allow-notifications').addEventListener('click', async () => {
+            await this.requestPermission();
+            banner.remove();
+        });
+
+        document.getElementById('dismiss-notifications').addEventListener('click', () => {
+            banner.remove();
+            // Show again after 7 days
+            localStorage.setItem('notificationDismissed', Date.now() + 7 * 24 * 60 * 60 * 1000);
+        });
+
+        // Add animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100px); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    async requestPermission() {
+        try {
+            this.permission = await Notification.requestPermission();
+            
+            if (this.permission === 'granted') {
+                console.log("✅ Notification permission granted");
+                this.showNotification(
+                    'Notifications Enabled',
+                    'You will now receive updates about matches, announcements, and admin messages.',
+                    'info'
+                );
+                this.startNotificationChecks();
+                this.registerUserForNotifications();
+            } else {
+                console.log("❌ Notification permission denied");
+            }
+        } catch (error) {
+            console.error("Error requesting notification permission:", error);
+        }
+    }
+
+    // ========== SHOW NOTIFICATION ==========
+    showNotification(title, body, type = 'info', options = {}) {
+        if (this.permission !== 'granted') {
+            console.log("Notifications not permitted");
+            return;
+        }
+
+        // Create a unique ID for this notification to avoid duplicates
+        const notificationId = `${title}-${body}-${Date.now()}`;
+        if (this.sentNotifications.has(notificationId)) return;
+        this.sentNotifications.add(notificationId);
+
+        // Limit set size to prevent memory leaks
+        if (this.sentNotifications.size > 100) {
+            const array = Array.from(this.sentNotifications);
+            this.sentNotifications = new Set(array.slice(-50));
+        }
+
+        const icon = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️',
+            match: '⚽',
+            announcement: '📢',
+            message: '💬',
+            bet: '💰'
+        }[type] || '🔔';
+
+        try {
+            // Show browser notification
+            const notification = new Notification(title, {
+                body: body,
+                icon: '/favicon.ico', // Make sure you have a favicon
+                badge: '/favicon.ico',
+                tag: notificationId,
+                requireInteraction: type === 'message' || type === 'announcement',
+                silent: false,
+                ...options
+            });
+
+            notification.onclick = () => {
+                window.focus();
+                notification.close();
+                
+                // Handle click based on type
+                if (type === 'message') {
+                    // Open chat
+                    if (window.chatSystem) {
+                        document.getElementById('chat-button')?.click();
+                    }
+                } else if (type === 'match') {
+                    // Open matches section
+                    if (window.sectionManager) {
+                        window.sectionManager.showSection('matchesSection', 'user-dashboard');
+                    }
+                } else if (type === 'announcement') {
+                    // Scroll to announcements
+                    document.querySelector('.announcement-grid')?.scrollIntoView({ behavior: 'smooth' });
+                }
+            };
+        } catch (error) {
+            console.error("Error showing notification:", error);
+        }
+
+        // Also show in-app notification
+        if (window.NotificationManager) {
+            NotificationManager.show(body, type === 'message' ? 'vip' : type, {
+                duration: 5000,
+                clickToClose: true
+            });
+        }
+    }
+
+    // ========== START NOTIFICATION CHECKS ==========
+    startNotificationChecks() {
+        if (this.notificationCheckInterval) {
+            clearInterval(this.notificationCheckInterval);
+        }
+
+        // Check every minute for match reminders
+        this.notificationCheckInterval = setInterval(() => {
+            this.checkUpcomingMatches();
+        }, 60000); // Every minute
+
+        // Initial check
+        this.checkUpcomingMatches();
+
+        // Listen for announcements
+        this.listenForAnnouncements();
+
+        // Listen for admin messages
+        this.listenForAdminMessages();
+
+        // Listen for bet settlements
+        this.listenForBetSettlements();
+    }
+
+    // ========== CHECK UPCOMING MATCHES ==========
+    async checkUpcomingMatches() {
+        try {
+            const now = new Date();
+            const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60000);
+            const tenMinutesFromNow = new Date(now.getTime() + 10 * 60000);
+
+            const matchesRef = db.collection('matches');
+            const snapshot = await matchesRef
+                .where('status', '==', 'upcoming')
+                .where('date', '>=', now)
+                .where('date', '<=', tenMinutesFromNow)
+                .get();
+
+            if (snapshot.empty) return;
+
+            snapshot.forEach(doc => {
+                const match = doc.data();
+                const matchDate = match.date.toDate();
+                const timeUntilMatch = matchDate - now;
+                const minutesUntilMatch = Math.round(timeUntilMatch / 60000);
+
+                // Check if 5 minutes away
+                if (minutesUntilMatch === 5 || minutesUntilMatch === 4 || minutesUntilMatch === 3) {
+                    const notificationKey = `match-${doc.id}-${minutesUntilMatch}`;
+                    
+                    // Check if we've already sent this notification
+                    const lastSent = localStorage.getItem(notificationKey);
+                    if (lastSent && (Date.now() - parseInt(lastSent)) < 300000) return;
+
+                    this.showNotification(
+                        `⚽ Match Starting Soon!`,
+                        `${match.homeTeam} vs ${match.awayTeam} starts in ${minutesUntilMatch} minutes!`,
+                        'match',
+                        { tag: notificationKey }
+                    );
+
+                    localStorage.setItem(notificationKey, Date.now());
+                }
+            });
+        } catch (error) {
+            console.error("Error checking upcoming matches:", error);
+        }
+    }
+
+    // ========== LISTEN FOR ANNOUNCEMENTS ==========
+    listenForAnnouncements() {
+        // Listen for new announcements
+        db.collection('announcements')
+            .where('active', '==', true)
+            .orderBy('createdAt', 'desc')
+            .limit(1)
+            .onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added') {
+                        const announcement = change.doc.data();
+                        const announcementId = change.doc.id;
+                        
+                        // Check if we've already notified about this announcement
+                        const lastNotified = localStorage.getItem(`announcement-${announcementId}`);
+                        if (lastNotified) return;
+
+                        // Don't notify for very old announcements
+                        const createdAt = announcement.createdAt?.toDate?.() || new Date(announcement.createdAt);
+                        if ((Date.now() - createdAt) > 60000) return; // Older than 1 minute
+
+                        let title = '📢 New Announcement';
+                        let body = announcement.title || 'Check out the latest announcement';
+
+                        if (announcement.type === 'match') {
+                            title = '⚽ Match Announcement';
+                            body = `${announcement.title || 'New match announced!'} - ${announcement.homeTeam || ''} vs ${announcement.awayTeam || ''}`;
+                        } else if (announcement.type === 'other' && announcement.mediaUrl) {
+                            title = '🖼️ New Media Announcement';
+                        }
+
+                        this.showNotification(
+                            title,
+                            body,
+                            'announcement',
+                            { requireInteraction: true, tag: `announcement-${announcementId}` }
+                        );
+
+                        localStorage.setItem(`announcement-${announcementId}`, Date.now());
+                    }
+                });
+            });
+    }
+
+    // ========== LISTEN FOR ADMIN MESSAGES ==========
+    listenForAdminMessages() {
+        const userId = window.authManager?.user?.uid;
+        if (!userId) return;
+
+        // Listen for new messages in user's chat
+        db.collection('chats').doc(userId)
+            .collection('messages')
+            .orderBy('timestamp', 'desc')
+            .limit(1)
+            .onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added') {
+                        const message = change.doc.data();
+                        const messageId = change.doc.id;
+                        
+                        // Only notify for admin messages
+                        if (message.senderId !== 'admin') return;
+
+                        // Check if we've already notified about this message
+                        const lastNotified = localStorage.getItem(`message-${messageId}`);
+                        if (lastNotified) return;
+
+                        // Don't notify for very old messages
+                        const timestamp = message.timestamp?.toDate?.();
+                        if (timestamp && (Date.now() - timestamp) > 10000) return; // Older than 10 seconds
+
+                        this.showNotification(
+                            '💬 New Message from Admin',
+                            message.text.length > 100 ? message.text.substring(0, 100) + '...' : message.text,
+                            'message',
+                            { requireInteraction: true, tag: `message-${messageId}` }
+                        );
+
+                        localStorage.setItem(`message-${messageId}`, Date.now());
+                    }
+                });
+            });
+    }
+
+    // ========== LISTEN FOR BET SETTLEMENTS ==========
+    listenForBetSettlements() {
+        const userId = window.authManager?.user?.uid;
+        if (!userId) return;
+
+        // Listen for bet status changes
+        db.collection('bets')
+            .where('userId', '==', userId)
+            .where('status', 'in', ['won', 'lost', 'refunded'])
+            .onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'modified') {
+                        const bet = change.doc.data();
+                        const betId = change.doc.id;
+                        
+                        // Check if we've already notified about this bet
+                        const lastNotified = localStorage.getItem(`bet-${betId}`);
+                        if (lastNotified) return;
+
+                        let title, body, type;
+                        
+                        if (bet.status === 'won') {
+                            title = '🎉 You Won!';
+                            const profit = (bet.potentialReturn - bet.stake).toFixed(2);
+                            body = bet.type === 'multi' 
+                                ? `Your multi-bet won! Profit: TZS ${profit}`
+                                : `Bet on ${bet.match || 'match'} won! Profit: TZS ${profit}`;
+                            type = 'success';
+                        } else if (bet.status === 'lost') {
+                            title = '❌ Bet Lost';
+                            body = bet.type === 'multi'
+                                ? `Your multi-bet was lost. Better luck next time!`
+                                : `Bet on ${bet.match || 'match'} lost.`;
+                            type = 'error';
+                        } else if (bet.status === 'refunded') {
+                            title = '💰 Bet Refunded';
+                            body = `Your stake of TZS ${bet.stake.toFixed(2)} has been refunded.`;
+                            type = 'warning';
+                        }
+
+                        this.showNotification(title, body, type, { tag: `bet-${betId}` });
+                        localStorage.setItem(`bet-${betId}`, Date.now());
+                    }
+                });
+            });
+    }
+
+    // ========== REGISTER USER FOR NOTIFICATIONS ==========
+    async registerUserForNotifications() {
+        const userId = window.authManager?.user?.uid;
+        if (!userId || this.permission !== 'granted') return;
+
+        try {
+            // Generate a unique device ID
+            const deviceId = this.getDeviceId();
+            
+            // Register this device for push notifications
+            await db.collection('userDevices').doc(`${userId}_${deviceId}`).set({
+                userId: userId,
+                deviceId: deviceId,
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                registeredAt: firebase.firestore.FieldValue.serverTimestamp(),
+                lastActive: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            console.log("📱 Device registered for notifications");
+        } catch (error) {
+            console.error("Error registering device:", error);
+        }
+    }
+
+    // ========== GET DEVICE ID ==========
+    getDeviceId() {
+        let deviceId = localStorage.getItem('deviceId');
+        if (!deviceId) {
+            deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('deviceId', deviceId);
+        }
+        return deviceId;
+    }
+
+    // ========== CLEANUP ==========
+    destroy() {
+        if (this.notificationCheckInterval) {
+            clearInterval(this.notificationCheckInterval);
+        }
+    }
+}
+
+// ========== INITIALIZE NOTIFICATION SERVICE ==========
+let notificationService;
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize after a short delay
+    setTimeout(() => {
+        notificationService = new NotificationService();
+        window.notificationService = notificationService;
+        console.log("🔔 Notification Service initialized");
+    }, 2000);
+});
+
+// ========== MANUAL NOTIFICATION FUNCTIONS ==========
+
+// Function to send match reminder (can be called by admin)
+async function sendMatchReminder(matchId) {
+    if (!notificationService || notificationService.permission !== 'granted') {
+        showNotification('Please enable notifications first', 'warning');
+        return;
+    }
+
+    try {
+        const matchDoc = await db.collection('matches').doc(matchId).get();
+        if (!matchDoc.exists) {
+            showNotification('Match not found', 'error');
+            return;
+        }
+
+        const match = matchDoc.data();
+        const matchDate = match.date.toDate();
+        const timeUntilMatch = Math.round((matchDate - Date.now()) / 60000);
+
+        notificationService.showNotification(
+            `⚽ Match Reminder`,
+            `${match.homeTeam} vs ${match.awayTeam} starts in ${timeUntilMatch} minutes!`,
+            'match',
+            { requireInteraction: true }
+        );
+
+        showNotification('Reminder sent!', 'success');
+    } catch (error) {
+        console.error("Error sending match reminder:", error);
+        showNotification('Error sending reminder', 'error');
+    }
+}
+
+// Function to test notifications
+function testNotification() {
+    if (!notificationService) {
+        showNotification('Notification service not ready', 'error');
+        return;
+    }
+
+    notificationService.showNotification(
+        '🔔 Test Notification',
+        'If you see this, notifications are working!',
+        'success',
+        { requireInteraction: true }
+    );
+}
+
+// Make functions globally available
+window.sendMatchReminder = sendMatchReminder;
+window.testNotification = testNotification;
+
+// ========== ADD NOTIFICATION BUTTON TO UI ==========
+// This will add a notification bell to the top bar
+function addNotificationBell() {
+    // Check if bell already exists
+    if (document.getElementById('notificationBell')) return;
+
+    const topBar = document.querySelector('.top-bar .right-section');
+    if (!topBar) return;
+
+    const bell = document.createElement('div');
+    bell.id = 'notificationBell';
+    bell.style.cssText = `
+        position: relative;
+        margin-right: 1rem;
+        cursor: pointer;
+        font-size: 1.2rem;
+        color: var(--gray-color);
+        transition: color 0.3s;
+    `;
+    bell.innerHTML = `
+        <i class="fas fa-bell"></i>
+        <span id="notificationBadge" style="
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--accent-color);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+            display: none;
+        ">0</span>
+    `;
+
+    bell.addEventListener('click', () => {
+        if (!notificationService || notificationService.permission !== 'granted') {
+            notificationService?.showPermissionRequest();
+        } else {
+            // Open notification settings or show recent notifications
+            testNotification();
+        }
+    });
+
+    topBar.insertBefore(bell, topBar.firstChild);
+
+    // Update badge based on permission
+    if (notificationService?.permission === 'granted') {
+        const badge = document.getElementById('notificationBadge');
+        if (badge) {
+            badge.textContent = '✓';
+            badge.style.background = 'var(--success-color)';
+            badge.style.display = 'inline-block';
+            
+            setTimeout(() => {
+                badge.style.display = 'none';
+            }, 3000);
+        }
+    }
+}
+
+// Add bell after auth is ready
+document.addEventListener('authStateChanged', (e) => {
+    if (e.detail.user) {
+        setTimeout(addNotificationBell, 500);
+    }
+});
+
+// Also add to mobile menu
+function addMobileNotificationOption() {
+    const mobileMenuItems = document.querySelector('.mobile-menu-items');
+    if (!mobileMenuItems) return;
+
+    const notificationItem = document.createElement('div');
+    notificationItem.className = 'mobile-menu-item';
+    notificationItem.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    `;
+    notificationItem.innerHTML = `
+        <i class="fas fa-bell"></i>
+        <span>Notifications</span>
+        <span id="mobileNotificationStatus" style="margin-left: auto; font-size: 0.8rem; color: var(--gray-color);">
+            ${notificationService?.permission === 'granted' ? 'Enabled' : 'Off'}
+        </span>
+    `;
+
+    notificationItem.addEventListener('click', () => {
+        if (!notificationService || notificationService.permission !== 'granted') {
+            notificationService?.showPermissionRequest();
+        } else {
+            testNotification();
+        }
+    });
+
+    // Insert before logout
+    const logoutItem = mobileMenuItems.querySelector('[data-action="logout"]');
+    if (logoutItem) {
+        mobileMenuItems.insertBefore(notificationItem, logoutItem);
+    } else {
+        mobileMenuItems.appendChild(notificationItem);
+    }
+}
+
+// Listen for section changes to update mobile menu
+document.addEventListener('sectionChanged', () => {
+    setTimeout(addMobileNotificationOption, 500);
+});
+
+// ==================== MOBILE PUSH NOTIFICATION SYSTEM ====================
+class MobilePushNotificationService {
+    constructor() {
+        this.messaging = null;
+        this.currentToken = null;
+        this.permission = 'default';
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        this.vapidKey = 'BHMNpHTddirNJX4AJY6mlQI-uy7eKnEy9TYC50Jfqm19k1Z13Q9YogOKO_q2HMr_4q8IIZcxyco_23KbK5dFaJM';
+        
+        // Check if Notification API exists (not in service worker)
+        if (typeof Notification !== 'undefined') {
+            this.permission = Notification.permission;
+        }
+        
+        this.init();
+    }
+
+    async init() {
+        console.log("📱 Initializing Mobile Push Notification Service...");
+
+        // Check if messaging is available
+        if (typeof firebase === 'undefined' || !firebase.messaging) {
+            console.log("Firebase messaging not available");
+            return;
+        }
+
+        try {
+            this.messaging = firebase.messaging();
+
+            // Register service worker
+            await this.registerServiceWorker();
+
+            // Check current permission only if Notification API exists
+            if (typeof Notification !== 'undefined') {
+                if (this.permission === 'granted') {
+                    await this.getToken();
+                    this.setupMessageHandlers();
+                    this.startNotificationChecks();
+                }
+
+                // Show prompt for mobile users after 3 seconds
+                if (this.isMobile && this.permission !== 'granted') {
+                    setTimeout(() => {
+                        this.showMobilePrompt();
+                    }, 3000);
+                }
+            }
+
+        } catch (error) {
+            console.error("Error initializing push notifications:", error);
+        }
+    }
+
+    async registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            try {
+                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                console.log('✅ Service Worker registered:', registration);
+                return registration;
+            } catch (error) {
+                console.error('Service Worker registration failed:', error);
+            }
+        }
+    }
+
+    async getToken() {
+        try {
+            const currentToken = await this.messaging.getToken({
+                vapidKey: this.vapidKey
+            });
+
+            if (currentToken) {
+                this.currentToken = currentToken;
+                console.log('📱 FCM Token:', currentToken);
+                await this.sendTokenToServer(currentToken);
+                return currentToken;
+            } else {
+                console.log('No registration token available');
+            }
+        } catch (error) {
+            console.error('Error getting token:', error);
+        }
+    }
+
+    async sendTokenToServer(token) {
+        const userId = window.authManager?.user?.uid;
+        if (!userId) return;
+
+        try {
+            // Get device info
+            const deviceInfo = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                isMobile: this.isMobile,
+                language: navigator.language,
+                screenSize: `${window.screen.width}x${window.screen.height}`,
+                timestamp: new Date().toISOString()
+            };
+
+            // Save to Firestore
+            await db.collection('userPushTokens').doc(userId).set({
+                userId: userId,
+                token: token,
+                deviceInfo: deviceInfo,
+                lastActive: firebase.firestore.FieldValue.serverTimestamp(),
+                notificationsEnabled: true
+            }, { merge: true });
+
+            console.log("✅ Push token saved to server");
+            
+            // Update device stats
+            this.updateDeviceStats();
+            
+        } catch (error) {
+            console.error("Error saving token:", error);
+        }
+    }
+
+    async updateDeviceStats() {
+        try {
+            const snapshot = await db.collection('userPushTokens').get();
+            let android = 0, ios = 0, other = 0;
+            
+            snapshot.forEach(doc => {
+                const platform = doc.data().deviceInfo?.platform || '';
+                if (platform.includes('Android') || platform.includes('Linux')) android++;
+                else if (platform.includes('iPhone') || platform.includes('iPad') || platform.includes('iPod')) ios++;
+                else other++;
+            });
+            
+            // Update UI if elements exist
+            const totalEl = document.getElementById('totalDevices');
+            const androidEl = document.getElementById('androidDevices');
+            const iosEl = document.getElementById('iosDevices');
+            
+            if (totalEl) totalEl.textContent = snapshot.size;
+            if (androidEl) androidEl.textContent = android;
+            if (iosEl) iosEl.textContent = ios;
+            
+        } catch (error) {
+            console.error("Error updating device stats:", error);
+        }
+    }
+
+    setupMessageHandlers() {
+        // Handle foreground messages
+        this.messaging.onMessage((payload) => {
+            console.log('📱 [FOREGROUND] Message received:', payload);
+            this.handleForegroundMessage(payload);
+        });
+
+        // Handle token refresh
+        this.messaging.onTokenRefresh(() => {
+            console.log('🔄 Token refreshed');
+            this.getToken();
+        });
+    }
+
+    handleForegroundMessage(payload) {
+        const notification = payload.notification || payload.data;
+        const data = payload.data || {};
+        
+        // Show in-app notification
+        if (window.NotificationManager) {
+            NotificationManager.show(
+                notification?.body || data?.body || 'New notification',
+                this.getNotificationType(payload),
+                { duration: 5000 }
+            );
+        }
+
+        // Also show browser notification if in foreground and Notification API exists
+        if (typeof Notification !== 'undefined' && this.permission === 'granted' && notification) {
+            try {
+                new Notification(notification.title || 'Football Canvas Hub', {
+                    body: notification.body,
+                    icon: '/icons/icon-192x192.png',
+                    badge: '/icons/icon-72x72.png',
+                    vibrate: [200, 100, 200],
+                    tag: data?.id || 'notification',
+                    requireInteraction: true,
+                    silent: false,
+                    actions: [
+                        { action: 'open', title: 'View' },
+                        { action: 'close', title: 'Dismiss' }
+                    ]
+                });
+            } catch (e) {
+                console.log("Browser notification failed:", e);
+            }
+        }
+
+        // Play sound for important notifications
+        if (data?.type === 'message' || data?.type === 'match') {
+            this.playNotificationSound();
+        }
+    }
+
+    playNotificationSound() {
+        try {
+            const audio = new Audio('data:audio/wav;base64,UklGRlwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVAAAAA8//7/+/v6+vn5+Pj39/b29fX09PPz8vLx8fHw8PDv7+7u7e3s7Ovr6urp6ejo5+fm5uXl5OTj4+Li4eHg4N/f3t7d3dzc29va2tnZ2NfX1tbV1dTU09PS0tHR0NDPz87Ozc3MzMvLysrJycnIyMfHxsbFxcTExMPDwsLBwcDAv7++vr29vLy7u7q6ubm4uLe3tra1tbS0s7OysrGxsbCwr6+urq2trKyrq6qqqampqKioYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=');
+            audio.play().catch(e => console.log("Audio play failed:", e));
+        } catch (e) {
+            console.log("Sound not supported");
+        }
+    }
+
+    getNotificationType(payload) {
+        const data = payload.data || {};
+        if (data.type === 'match') return 'match';
+        if (data.type === 'announcement') return 'announcement';
+        if (data.type === 'message') return 'vip';
+        if (data.type === 'bet') return data.betStatus === 'won' ? 'success' : 'warning';
+        if (data.type === 'promo') return 'info';
+        return 'info';
+    }
+
+    // ========== MOBILE PROMPT ==========
+    showMobilePrompt() {
+        // Check if Notification API exists
+        if (typeof Notification === 'undefined') {
+            console.log("Notifications not supported in this browser");
+            return;
+        }
+
+        // Check if we already showed prompt
+        if (localStorage.getItem('mobilePromptShown')) {
+            // Check if it's time to show again (7 days)
+            const lastShown = parseInt(localStorage.getItem('mobilePromptLastShown'));
+            if (lastShown && (Date.now() - lastShown) < 7 * 24 * 60 * 60 * 1000) {
+                return;
+            }
+        }
+
+        const prompt = document.createElement('div');
+        prompt.id = 'mobile-prompt';
+        prompt.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #1a2634, #2c3e50);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 10001;
+            text-align: center;
+            border: 2px solid #FFA62B;
+            animation: slideUp 0.3s ease;
+            backdrop-filter: blur(10px);
+        `;
+
+        prompt.innerHTML = `
+            <div style="font-size: 3rem; margin-bottom: 1rem;">
+                ${this.isMobile ? '📱' : '💻'}
+            </div>
+            <h3 style="color: #FFA62B; margin-bottom: 0.5rem;">Enable Push Notifications</h3>
+            <p style="margin-bottom: 1.5rem; color: #ccc; line-height: 1.6;">
+                Get instant notifications on your ${this.isMobile ? 'phone' : 'browser'} for:
+                <br>⚽ Match reminders (5 min before)
+                <br>📢 New announcements
+                <br>💬 Admin messages
+                <br>💰 Bet results
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button id="enable-push" style="
+                    background: #FFA62B;
+                    color: #1a2634;
+                    border: none;
+                    padding: 1rem 2rem;
+                    border-radius: 30px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    flex: 1;
+                    font-size: 1rem;
+                ">
+                    <i class="fas fa-bell"></i> Enable
+                </button>
+                <button id="later-push" style="
+                    background: rgba(255,255,255,0.2);
+                    color: white;
+                    border: none;
+                    padding: 1rem 2rem;
+                    border-radius: 30px;
+                    cursor: pointer;
+                    flex: 1;
+                    font-size: 1rem;
+                ">
+                    Later
+                </button>
+            </div>
+            ${this.isMobile && /iPhone|iPad|iPod/.test(navigator.userAgent) ? `
+            <p style="margin-top: 1rem; font-size: 0.8rem; color: #999;">
+                <i class="fas fa-info-circle"></i> 
+                iOS requires iOS 16.4+. First add to Home Screen, then enable notifications in Settings.
+            </p>
+            ` : ''}
+        `;
+
+        document.body.appendChild(prompt);
+
+        document.getElementById('enable-push').addEventListener('click', async () => {
+            prompt.remove();
+            await this.requestPermission();
+        });
+
+        document.getElementById('later-push').addEventListener('click', () => {
+            prompt.remove();
+            localStorage.setItem('mobilePromptShown', 'true');
+            localStorage.setItem('mobilePromptLastShown', Date.now().toString());
+        });
+
+        // Add animation
+        if (!document.getElementById('push-animation')) {
+            const style = document.createElement('style');
+            style.id = 'push-animation';
+            style.textContent = `
+                @keyframes slideUp {
+                    from { transform: translateY(100px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                @keyframes pulse {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                    100% { transform: scale(1); }
+                }
+                .pulse {
+                    animation: pulse 2s infinite;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    async requestPermission() {
+        // Check if Notification API exists
+        if (typeof Notification === 'undefined') {
+            alert("Notifications are not supported in this browser");
+            return;
+        }
+
+        try {
+            this.permission = await Notification.requestPermission();
+            
+            if (this.permission === 'granted') {
+                console.log("✅ Push notifications enabled");
+                await this.getToken();
+                
+                // Show success message
+                this.showSuccessMessage();
+                
+                // Add to home screen prompt for iOS
+                if (this.isMobile && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+                    setTimeout(() => {
+                        this.showIOSAddToHomeScreen();
+                    }, 1000);
+                }
+
+                // Update notification bell
+                this.updateNotificationBell(true);
+            }
+        } catch (error) {
+            console.error("Error requesting permission:", error);
+        }
+    }
+
+    showSuccessMessage() {
+        const success = document.createElement('div');
+        success.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            z-index: 10001;
+            text-align: center;
+            animation: slideUp 0.3s ease;
+            font-weight: bold;
+        `;
+        success.innerHTML = `
+            <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>
+            ✅ Notifications enabled! You'll now receive alerts.
+        `;
+        document.body.appendChild(success);
+        
+        setTimeout(() => success.remove(), 3000);
+    }
+
+    showIOSAddToHomeScreen() {
+        const prompt = document.createElement('div');
+        prompt.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #1a2634, #2c3e50);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            z-index: 10002;
+            text-align: center;
+            border: 2px solid #FFD700;
+            animation: slideUp 0.3s ease;
+        `;
+        prompt.innerHTML = `
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🍎</div>
+            <h3 style="color: #FFD700;">Add to Home Screen</h3>
+            <p style="margin-bottom: 1rem; line-height: 1.6;">
+                For best experience on iPhone:
+                <br>1. Tap <i class="fas fa-share-alt"></i> Share
+                <br>2. Scroll down and tap <strong>"Add to Home Screen"</strong>
+                <br>3. Open from home screen for notifications
+            </p>
+            <button onclick="this.parentElement.remove()" style="
+                background: #FFD700;
+                color: #1a2634;
+                border: none;
+                padding: 0.8rem 2rem;
+                border-radius: 30px;
+                font-weight: bold;
+                cursor: pointer;
+                font-size: 1rem;
+            ">
+                Got it
+            </button>
+        `;
+        document.body.appendChild(prompt);
+        
+        setTimeout(() => prompt.remove(), 15000);
+    }
+
+    // ========== NOTIFICATION CHECKS ==========
+    startNotificationChecks() {
+        // Check every minute for match reminders
+        setInterval(() => {
+            this.checkUpcomingMatches();
+        }, 60000);
+
+        // Listen for announcements
+        this.listenForAnnouncements();
+
+        // Listen for bet settlements
+        this.listenForBetSettlements();
+    }
+
+    async checkUpcomingMatches() {
+        const userId = window.authManager?.user?.uid;
+        if (!userId) return;
+
+        try {
+            const now = new Date();
+            const tenMinutesFromNow = new Date(now.getTime() + 10 * 60000);
+
+            const matches = await db.collection('matches')
+                .where('status', '==', 'upcoming')
+                .where('date', '>=', now)
+                .where('date', '<=', tenMinutesFromNow)
+                .get();
+
+            matches.forEach(doc => {
+                const match = doc.data();
+                const matchDate = match.date.toDate();
+                const minutesUntil = Math.round((matchDate - now) / 60000);
+
+                // Only notify if exactly 5 minutes away
+                if (minutesUntil === 5) {
+                    // Check if we already sent notification for this match
+                    const lastNotified = localStorage.getItem(`match-${doc.id}`);
+                    if (lastNotified && (Date.now() - parseInt(lastNotified)) < 300000) return;
+
+                    this.sendNotificationToUser(
+                        userId,
+                        '⚽ Match Starting Soon!',
+                        `${match.homeTeam} vs ${match.awayTeam} starts in 5 minutes!`,
+                        'match',
+                        { 
+                            matchId: doc.id, 
+                            time: '5min',
+                            homeTeam: match.homeTeam,
+                            awayTeam: match.awayTeam
+                        }
+                    );
+
+                    localStorage.setItem(`match-${doc.id}`, Date.now());
+                }
+            });
+        } catch (error) {
+            console.error("Error checking matches:", error);
+        }
+    }
+
+    listenForAnnouncements() {
+        db.collection('announcements')
+            .where('active', '==', true)
+            .orderBy('createdAt', 'desc')
+            .limit(1)
+            .onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added') {
+                        const announcement = change.doc.data();
+                        const createdAt = announcement.createdAt?.toDate?.() || new Date(announcement.createdAt);
+                        
+                        // Only notify for new announcements (last 30 seconds)
+                        if ((Date.now() - createdAt) > 30000) return;
+
+                        const userId = window.authManager?.user?.uid;
+                        if (!userId) return;
+
+                        // Check if already notified
+                        const lastNotified = localStorage.getItem(`announcement-${change.doc.id}`);
+                        if (lastNotified) return;
+
+                        let title = '📢 New Announcement';
+                        let body = announcement.title || 'Check out the latest announcement';
+
+                        if (announcement.type === 'match') {
+                            title = '⚽ New Match Announcement';
+                            body = `${announcement.homeTeam || ''} vs ${announcement.awayTeam || ''}`;
+                        }
+
+                        this.sendNotificationToUser(
+                            userId,
+                            title,
+                            body,
+                            'announcement',
+                            { 
+                                announcementId: change.doc.id,
+                                type: announcement.type
+                            }
+                        );
+
+                        localStorage.setItem(`announcement-${change.doc.id}`, Date.now());
+                    }
+                });
+            });
+    }
+
+    listenForBetSettlements() {
+        const userId = window.authManager?.user?.uid;
+        if (!userId) return;
+
+        db.collection('bets')
+            .where('userId', '==', userId)
+            .where('status', 'in', ['won', 'lost', 'refunded'])
+            .onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'modified') {
+                        const bet = change.doc.data();
+                        
+                        // Check if already notified
+                        const lastNotified = localStorage.getItem(`bet-${change.doc.id}`);
+                        if (lastNotified) return;
+
+                        let title, body, type;
+                        
+                        if (bet.status === 'won') {
+                            const profit = (bet.potentialReturn - bet.stake).toFixed(2);
+                            title = '🎉 You Won!';
+                            body = bet.type === 'multi' 
+                                ? `Your multi-bet won! Profit: TZS ${profit}`
+                                : `Bet on ${bet.match || 'match'} won! Profit: TZS ${profit}`;
+                            type = 'success';
+                        } else if (bet.status === 'lost') {
+                            title = '❌ Bet Lost';
+                            body = bet.type === 'multi'
+                                ? `Your multi-bet was lost. Better luck next time!`
+                                : `Bet on ${bet.match || 'match'} lost.`;
+                            type = 'error';
+                        } else if (bet.status === 'refunded') {
+                            title = '💰 Bet Refunded';
+                            body = `Your stake of TZS ${bet.stake.toFixed(2)} has been refunded.`;
+                            type = 'warning';
+                        }
+
+                        this.sendNotificationToUser(
+                            userId,
+                            title,
+                            body,
+                            type,
+                            { 
+                                betId: change.doc.id,
+                                status: bet.status
+                            }
+                        );
+
+                        localStorage.setItem(`bet-${change.doc.id}`, Date.now());
+                    }
+                });
+            });
+    }
+
+    // ========== SEND NOTIFICATIONS ==========
+    async sendNotificationToAll(title, body, type = 'info', data = {}) {
+        try {
+            const users = await db.collection('userPushTokens').get();
+            
+            const notifications = [];
+            users.forEach(doc => {
+                notifications.push({
+                    userId: doc.id,
+                    token: doc.data().token,
+                });
+            });
+
+            // Store in Firestore for batch sending
+            await db.collection('pushNotifications').add({
+                title,
+                body,
+                type,
+                data: {
+                    ...data,
+                    type: type
+                },
+                targets: notifications.map(n => n.userId),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                status: 'pending',
+                sentTo: notifications.length
+            });
+
+            console.log(`📱 Notification queued for ${notifications.length} users`);
+            
+            // Also show locally for testing
+            this.showLocalNotification(title, body, type, data);
+            
+            return notifications.length;
+
+        } catch (error) {
+            console.error("Error sending notifications:", error);
+            throw error;
+        }
+    }
+
+    async sendNotificationToUser(userId, title, body, type = 'info', data = {}) {
+        try {
+            const userToken = await db.collection('userPushTokens').doc(userId).get();
+            
+            if (userToken.exists) {
+                await db.collection('pushNotifications').add({
+                    userId,
+                    title,
+                    body,
+                    type,
+                    data: {
+                        ...data,
+                        type: type
+                    },
+                    token: userToken.data().token,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: 'pending'
+                });
+                console.log(`📱 Notification queued for user ${userId}`);
+                
+                // Also show locally for testing
+                this.showLocalNotification(title, body, type, data);
+                
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error("Error sending notification:", error);
+            throw error;
+        }
+    }
+
+    // Local notification for testing (safe version)
+    showLocalNotification(title, body, type = 'info', data = {}) {
+        // Only show if Notification API exists
+        if (typeof Notification !== 'undefined' && this.permission === 'granted') {
+            try {
+                new Notification(title, {
+                    body: body,
+                    icon: '/icons/icon-192x192.png',
+                    badge: '/icons/icon-72x72.png',
+                    tag: data?.id || 'notification',
+                    data: data
+                });
+            } catch (e) {
+                console.log("Local notification failed:", e);
+            }
+        }
+        
+        // Always show in-app notification
+        if (window.NotificationManager) {
+            NotificationManager.show(body, type, { duration: 5000 });
+        } else {
+            // Fallback alert for testing
+            console.log(`🔔 ${title}: ${body}`);
+        }
+    }
+
+    updateNotificationBell(enabled) {
+        const bell = document.getElementById('notificationBell');
+        const badge = document.getElementById('notificationBadge');
+        
+        if (bell) {
+            bell.style.color = enabled ? '#FFA62B' : 'var(--gray-color)';
+        }
+        
+        if (badge) {
+            if (enabled) {
+                badge.textContent = '✓';
+                badge.style.background = '#2ecc71';
+                badge.style.display = 'inline-block';
+                setTimeout(() => {
+                    badge.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Update mobile status
+        const mobileStatus = document.getElementById('mobileNotificationStatus');
+        if (mobileStatus) {
+            mobileStatus.textContent = enabled ? 'Enabled' : 'Off';
+            mobileStatus.style.color = enabled ? '#2ecc71' : 'var(--gray-color)';
+        }
+    }
+
+    async checkPermissionStatus() {
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            this.permission = 'granted';
+            await this.getToken();
+            this.updateNotificationBell(true);
+        }
+    }
+}
+
+// ========== SAFE INITIALIZATION ==========
+let mobilePushService;
+
+// Wait for DOM and auth to be ready
+function initMobilePushService() {
+    // Check if we're in a browser environment (not service worker)
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        console.log("Not in browser environment, skipping push notifications");
+        return;
+    }
+    
+    // Wait for auth to be ready
+    const checkAuth = setInterval(() => {
+        if (window.authManager && window.authManager.user) {
+            clearInterval(checkAuth);
+            
+            // Initialize after a short delay
+            setTimeout(() => {
+                try {
+                    mobilePushService = new MobilePushNotificationService();
+                    window.mobilePushService = mobilePushService;
+                    
+                    // Add UI elements
+                    addNotificationBell();
+                    addMobileNotificationOption();
+                    
+                    console.log("✅ Mobile Push Service initialized");
+                } catch (error) {
+                    console.error("Failed to initialize push service:", error);
+                }
+            }, 2000);
+        }
+    }, 500);
+}
+
+// Start initialization when DOM is ready
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', initMobilePushService);
+}

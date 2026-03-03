@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="banking.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1a2634">
     
     <title>Football Canvas Hub</title>
     <!-- Firebase SDK version 9 (recommended) -->
@@ -243,14 +245,27 @@
 
     <!-- ==================== USER DASHBOARD ==================== -->
     <div id="user-dashboard" class="dashboard" style="display: none;">
-        <!-- Top Navigation -->
-        <nav class="top-nav">
+<!-- Top Navigation with Left and Right Sides -->
+
+<!-- Top Navigation with Left and Right Sides -->
+<nav class="top-nav">
+    <div class="nav-container">
+        <!-- LEFT SIDE - Logo and Brand -->
+        <div class="nav-left">
             <div class="nav-brand">
                 <i class="fas fa-futbol"></i>
                 <h2>Football<span>Hub</span></h2>
             </div>
+        </div>
+
+        <!-- RIGHT SIDE - All User Menu Content -->
+        <div class="nav-right">
+            <!-- Desktop Menu (visible on larger screens) -->
             
-            <div class="user-menu">
+                        <!-- Avatar exactly as original -->
+            <div class="user-avatar mobile-version" id="mobileUserAvatar">U</div>
+            
+            <div class="desktop-menu">
                 <div class="user-info">
                     <div class="user-name" id="userName">Loading...</div>
                     <div class="user-role">
@@ -262,19 +277,61 @@
                     </div>
                 </div>
                 
-    <div class="language-switcher" style="margin-right: 15px;">
-        <button id="dashboardLangToggle" class="lang-btn-dashboard" onclick="toggleLanguage()">
-            <i class="fas fa-globe"></i>
-            <span id="dashboardLangText">Kiswahili</span>
-        </button>
-    </div>
-    
-     <div class="user-avatar" id="userAvatar">U</div>
+                <div class="language-switcher">
+                    <button id="dashboardLangToggle" class="lang-btn-dashboard" onclick="toggleLanguage()">
+                        <i class="fas fa-globe"></i>
+                        <span id="dashboardLangText">Kiswahili</span>
+                    </button>
+                </div>
+                
+                <div class="user-avatar" id="userAvatar">U</div>
                 <button class="logout-btn" id="userLogoutBtn">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
-        </nav>
+
+            <!-- Mobile Menu Toggle (Hamburger) - Visible only on mobile -->
+            <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile Menu (Dropdown) - Contains all original content -->
+    <div class="mobile-menu" id="mobileMenu">
+        <div class="mobile-menu-content">
+            <!-- User Info exactly as original -->
+            <div class="user-info mobile-version">
+                <div class="user-name" id="mobileUserName">Loading...</div>
+                <div class="user-role">
+                    <span id="mobileUserRoleBadge" class="role-badge badge-user">User</span>
+                </div>
+                <div class="user-balance">
+                    <i class="fas fa-wallet"></i>
+                    <span id="mobileUserBalance">Tsh 0.00</span>
+                </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="mobile-divider"></div>
+
+            <!-- Language Switcher exactly as original -->
+            <div class="language-switcher mobile-version">
+                <button class="lang-btn-dashboard mobile-lang" onclick="toggleLanguage()">
+                    <i class="fas fa-globe"></i>
+                    <span id="mobileLangText">Kiswahili</span>
+                </button>
+            </div>
+
+            <!-- Logout Button exactly as original -->
+            <button class="logout-btn mobile-version" id="mobileLogoutBtn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </div>
+</nav>
 
         <!-- Main Content -->
         <div class="main-content">
@@ -568,43 +625,132 @@
     </div>
 </div>
 
-                        <!-- Matches Section -->
-            <div class="content-section active" id="matchesSection">
-                <div class="dashboard-header">
-                    <div>
-                        <h2><i class="fas fa-home"></i> Welcome, <span id="welcomeName">User</span>!</h2>
-                        <p>Your football community dashboard</p>
+<!-- Matches Section with Responsive Search -->
+<div class="content-section active" id="matchesSection">
+    <!-- Dashboard Header - Keep your existing structure -->
+    <div class="dashboard-header">
+        <div>
+            <h2><i class="fas fa-home"></i> Welcome, <span id="welcomeName">User</span>!</h2>
+            <p>Your football community dashboard</p>
+        </div>
+    </div>
+
+    <div class="matches-container">
+        <!-- Search and Filter Section - Unique classes to avoid conflicts -->
+        <div class="matches-search-wrapper">
+            <!-- Search Bar -->
+            <div class="matches-search-box">
+                <i class="fas fa-search matches-search-icon"></i>
+                <input type="text" id="matchSearchInput" 
+                       class="matches-search-input" 
+                       placeholder="Search teams, leagues, venues...">
+                <button class="matches-clear-search" id="clearSearchBtn" style="display: none;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Filter Toggle for Mobile -->
+            <div class="matches-filter-toggle" onclick="toggleMatchesFilters()">
+                <i class="fas fa-sliders-h"></i>
+                <span>Filters</span>
+                <span class="matches-filter-badge" id="matchesFilterCount">0</span>
+            </div>
+
+            <!-- Filters Container -->
+            <div class="matches-filters-panel" id="matchesFiltersPanel">
+                <!-- First Row -->
+                <div class="matches-filters-row">
+                    <!-- League Filter -->
+                    <div class="matches-filter-group">
+                        <label class="matches-filter-label">
+                            <i class="fas fa-trophy"></i> League
+                        </label>
+                        <select id="leagueFilter" class="matches-filter-select" onchange="filterMatches()">
+                            <option value="all">All Leagues</option>
+                        </select>
+                    </div>
+
+                    <!-- Venue Filter -->
+                    <div class="matches-filter-group">
+                        <label class="matches-filter-label">
+                            <i class="fas fa-map-marker-alt"></i> Venue
+                        </label>
+                        <select id="venueFilter" class="matches-filter-select" onchange="filterMatches()">
+                            <option value="all">All Venues</option>
+                        </select>
+                    </div>
+
+                    <!-- Team Filter -->
+                    <div class="matches-filter-group">
+                        <label class="matches-filter-label">
+                            <i class="fas fa-users"></i> Team
+                        </label>
+                        <select id="teamFilter" class="matches-filter-select" onchange="filterMatches()">
+                            <option value="all">All Teams</option>
+                        </select>
                     </div>
                 </div>
 
-                    <div class="dashboard-header">
-                          <div>
-                              <h2><i class="fas fa-futbol"></i> Matches</h2>
-                              <p>Predict reverse betting</p>
-                            </div>
-                        </div>
-
-                <div class="container">
-
-                    <!-- VIP Multi-Bet Slip - Integrated in All Matches Section -->
-                    <div id="vipBetSlip" style="display: none;">
-                        <!-- Will be shown when user has VIP selections -->
+                <!-- Second Row -->
+                <div class="matches-filters-row">
+                    <!-- Date Filter -->
+                    <div class="matches-filter-group">
+                        <label class="matches-filter-label">
+                            <i class="fas fa-calendar"></i> Date
+                        </label>
+                        <select id="dateFilter" class="matches-filter-select" onchange="filterMatches()">
+                            <option value="all">All Dates</option>
+                            <option value="today">Today</option>
+                            <option value="tomorrow">Tomorrow</option>
+                            <option value="week">This Week</option>
+                            <option value="weekend">This Weekend</option>
+                            <option value="next7">Next 7 Days</option>
+                        </select>
                     </div>
-                        <h2 style="margin-bottom: 1.5rem; color: white;">Available Matches</h2>
-                        
-                        <!-- VIP Multi-Bet Slip - Shown when selections exist -->
-                        <div id="vipBetSlipContainer"></div>
-                        
-                        <div id="matchesContainer" class="matches-grid">
-                            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                                <div class="spinner"></div>
-                                <div style="margin-top: 1rem; color: var(--gray-color);">Loading matches...</div>
-                            </div>
-                        </div>
+
+                    <!-- Sort By -->
+                    <div class="matches-filter-group">
+                        <label class="matches-filter-label">
+                            <i class="fas fa-sort-amount-down"></i> Sort By
+                        </label>
+                        <select id="sortFilter" class="matches-filter-select" onchange="filterMatches()">
+                            <option value="date">Date (Latest)</option>
+                            <option value="date-asc">Date (Earliest)</option>
+                            <option value="league">League</option>
+                        </select>
+                    </div>
+
+                    <!-- Clear Filters Button -->
+                    <div class="matches-filter-group matches-filter-actions">
+                        <button class="matches-clear-filters" onclick="clearMatchesFilters()">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
                 </div>
             </div>
 
+            <!-- Active Filters Display -->
+            <div class="matches-active-filters" id="matchesActiveFilters"></div>
 
+            <!-- Results Info -->
+            <div class="matches-results-info">
+                <span id="matchesCount"><i class="fas fa-futbol"></i> Loading matches...</span>
+                <span id="showingMatches"></span>
+            </div>
+        </div>
+
+        <!-- VIP Multi-Bet Slip -->
+        <div id="vipBetSlipContainer"></div>
+        
+        <!-- Matches Container -->
+        <div id="matchesContainer" class="matches-grid">
+            <div class="matches-loading-state">
+                <div class="spinner"></div>
+                <div>Loading matches...</div>
+            </div>
+        </div>
+    </div>
+</div>
             <!-- Matches Section -->
             <div class="content-section" id="mybetSection">
                 <div class="dashboard-header">
@@ -823,13 +969,10 @@
 
             <!-- Profile Section -->
             <div class="content-section" id="profileSection">
-                <div class="dashboard-header">
-                    <h2><i class="fas fa-user-circle"></i> My Profile</h2>
-                    <p>Manage your account settings</p>
-                </div>
                 
 <div class="dashboard-header">
     <div class="header-left">
+        <h2><i class="fas fa-user-circle"></i> My Profile</h2>
         <h2>Welcome, <span id="welcomeName1">User</span>! 👋</h2>
         <div id="vipBadgeContainer"></div>
     </div>
@@ -1276,6 +1419,72 @@
             </div>
         </div>
     </div>
+    <!-- Add to your admin banking section or create a new notifications tab -->
+<div id="pushNotificationSection" style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 10px;">
+    <h3 style="color: var(--accent-color); margin-bottom: 1rem;">
+        <i class="fas fa-bell"></i> Send Push Notification
+    </h3>
+    
+    <div class="form-group">
+        <label>Notification Type</label>
+        <select id="pushType" class="form-input">
+            <option value="info">General Info</option>
+            <option value="match">⚽ Match Update</option>
+            <option value="announcement">📢 Announcement</option>
+            <option value="message">💬 Admin Message</option>
+            <option value="promo">🎁 Promotion</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label>Title</label>
+        <input type="text" id="pushTitle" class="form-input" placeholder="e.g., New Match Added">
+    </div>
+    
+    <div class="form-group">
+        <label>Message</label>
+        <textarea id="pushMessage" class="form-input" rows="3" placeholder="Enter notification message..."></textarea>
+    </div>
+    
+    <div class="form-group">
+        <label>Target Audience</label>
+        <select id="pushTarget" class="form-input">
+            <option value="all">All Users</option>
+            <option value="active">Active Users (last 7 days)</option>
+            <option value="vip">VIP Users Only</option>
+            <option value="single">Single User</option>
+        </select>
+    </div>
+    
+    <div class="form-group" id="singleUserField" style="display: none;">
+        <label>User ID</label>
+        <input type="text" id="pushUserId" class="form-input" placeholder="Enter user ID">
+    </div>
+    
+    <div class="form-group">
+        <label>Additional Data (JSON)</label>
+        <textarea id="pushData" class="form-input" rows="2" placeholder='{"matchId": "123", "url": "/matches"}'></textarea>
+    </div>
+    
+    <button class="btn btn-primary" onclick="sendPushNotification()">
+        <i class="fas fa-paper-plane"></i> Send Notification
+    </button>
+    
+    <div id="pushStats" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(3,1fr); gap: 0.5rem;">
+        <div style="background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 5px; text-align: center;">
+            <div style="font-size: 1.5rem; color: var(--accent-color);" id="totalDevices">0</div>
+            <div style="font-size: 0.8rem; color: var(--gray-color);">Registered Devices</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 5px; text-align: center;">
+            <div style="font-size: 1.5rem; color: #2ecc71;" id="androidDevices">0</div>
+            <div style="font-size: 0.8rem; color: var(--gray-color);">Android</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 5px; text-align: center;">
+            <div style="font-size: 1.5rem; color: #3498db;" id="iosDevices">0</div>
+            <div style="font-size: 0.8rem; color: var(--gray-color);">iOS</div>
+        </div>
+    </div>
+</div>
 </div>  
 
         <!-- Deposit Approvals -->
@@ -1315,7 +1524,7 @@
                 <div class="container">
                     <!-- Navigation Tabs -->
                     <div class="nav-tabs">
-                        <button class="tab-btn" onclick="showSection('admin')">
+                        <button class="tab-btn active" onclick="showSection('admin')">
                             <i class="fas fa-user-shield"></i> Matches Management
                         </button>
                         <button class="tab-btn" onclick="showSection('refund')">
@@ -1406,20 +1615,76 @@
                         </div>
                     </section>
                     
-                    <!-- Refund System Section -->
-                    <section id="refund" class="content-section">
-                        <h2 style="margin-bottom: 1.5rem; color: white;">Refund System - Grouped by Match</h2>
-                        
-                        <div id="refundMatchesContainer">
-                            <div style="text-align: center; padding: 3rem;">
-                                <div class="spinner"></div>
-                                <div style="margin-top: 1rem; color: var(--gray-color);">Loading refund data...</div>
-                            </div>
-                        </div>
-                        
-                        <h3 style="margin: 2rem 0 1rem 0; color: var(--accent-color);">Refund History</h3>
-                        <div id="refundHistoryContainer"></div>
-                    </section>
+<!-- Refund System Section -->
+<section id="refund" class="content-section">
+    <div class="refund-header">
+        <div class="header-left">
+            <h2><i class="fas fa-hand-holding-usd"></i> Refund System - Grouped by Match</h2>
+            <p class="header-description">Manage refunds for lost bets by match</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn-refresh" onclick="refundManager.loadRefundMatches()" id="refreshRefundBtn">
+                <i class="fas fa-sync-alt"></i>
+                <span>Refresh Data</span>
+            </button>
+            <div class="last-updated" id="refundLastUpdated">
+                <i class="far fa-clock"></i>
+                <span>Last updated: Never</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="refund-stats-summary" id="refundStatsSummary">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-futbol"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">Total Matches</span>
+                <span class="stat-value" id="totalMatchesCount">0</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-ticket-alt"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">Lost Bets</span>
+                <span class="stat-value" id="totalLostBetsCount">0</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">Affected Users</span>
+                <span class="stat-value" id="totalUsersCount">0</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-coins"></i>
+            </div>
+            <div class="stat-info">
+                <span class="stat-label">Total Stake</span>
+                <span class="stat-value" id="totalStakeAmount">TZS 0</span>
+            </div>
+        </div>
+    </div>
+    
+    <div id="refundMatchesContainer">
+        <div class="loading-state">
+            <i class="fas fa-spinner fa-pulse"></i>
+            <p>Loading refund data...</p>
+        </div>
+    </div>
+    
+    <h3 style="margin: 2rem 0 1rem 0; color: var(--accent-color);">
+        <i class="fas fa-history"></i> Refund History
+    </h3>
+    <div id="refundHistoryContainer"></div>
+</section>
                 </div>
             </div>
 
@@ -2809,6 +3074,98 @@
     </div>
 </div>
 
+<!-- Edit Match Modal -->
+<div class="modal-overlay" id="editMatchModal">
+    <div class="modal-container" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-edit"></i> Edit Match</h3>
+            <button class="close-modal" onclick="closeModal('editMatchModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="editMatchForm" onsubmit="bettingSystem.saveEditedMatch(event)">
+                <input type="hidden" id="editMatchId">
+                
+                <div class="form-group">
+                    <label for="editHomeTeam">Home Team</label>
+                    <input type="text" id="editHomeTeam" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editAwayTeam">Away Team</label>
+                    <input type="text" id="editAwayTeam" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editCompetition">Competition</label>
+                    <input type="text" id="editCompetition" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editMatchDate">Date & Time</label>
+                    <input type="datetime-local" id="editMatchDate" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editVenue">Venue</label>
+                    <input type="text" id="editVenue" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editMatchStatus">Match Status</label>
+                    <select id="editMatchStatus" class="form-input" required>
+                        <option value="upcoming">Upcoming</option>
+                        <option value="live">Live</option>
+                        <option value="finished">Finished</option>
+                    </select>
+                </div>
+                
+                <div class="odds-section" style="background: rgba(255,166,43,0.1); border-radius: 10px; padding: 1.5rem; margin: 1.5rem 0;">
+                    <h4 style="color: var(--accent-color); margin-bottom: 1rem;">Win Percentages</h4>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 120px;">
+                            <label for="editHomePercentage">Home Win %</label>
+                            <input type="number" id="editHomePercentage" class="form-input" min="0" max="100" value="45" oninput="validateEditOdds()">
+                        </div>
+                        <div style="flex: 1; min-width: 120px;">
+                            <label for="editDrawPercentage">Draw %</label>
+                            <input type="number" id="editDrawPercentage" class="form-input" min="0" max="100" value="30" oninput="validateEditOdds()">
+                        </div>
+                        <div style="flex: 1; min-width: 120px;">
+                            <label for="editAwayPercentage">Away Win %</label>
+                            <input type="number" id="editAwayPercentage" class="form-input" min="0" max="100" value="25" oninput="validateEditOdds()">
+                        </div>
+                    </div>
+                    <div style="text-align: right; margin-top: 0.5rem;">
+                        <span id="editOddsTotal">Total: 100%</span>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editMatchModal')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Match Details Modal -->
+<div id="matchDetailsModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-futbol"></i> Match Details</h3>
+            <button class="close-modal" onclick="closeModal('matchDetailsModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="matchDetailsContent">
+            <!-- Content will be injected dynamically -->
+        </div>
+    </div>
+</div>
+
     <!-- Notification Container -->
     <div id="notificationContainer"></div>
 
@@ -2821,8 +3178,6 @@
     </div>
 
     <!-- Original script includes (keep as per original) -->
-    <script src="show-section.js"></script>
     <script src="main.js"></script>
-    <script src="banking.js"></script>
 </body>
 </html>
