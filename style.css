@@ -19348,35 +19348,6 @@ img, video, iframe, svg {
         font-size: 0.8rem;
         margin: 0 0.25rem;
     }
-
-    .match-odds-compact {
-        width: 100%;
-        justify-content: space-between;
-        margin-top: 0.5rem;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
-
-    .odds-group-compact {
-        width: 100%;
-        justify-content: space-around;
-    }
-
-    .odds-box-compact {
-        flex: 1;
-        min-width: 60px;
-        padding: 0.3rem 0.2rem;
-        font-size: 0.7rem;
-    }
-
-    .odds-box-compact .odds-label {
-        font-size: 0.6rem;
-    }
-
-    .odds-box-compact .odds-value {
-        font-size: 0.8rem;
-    }
-
     .bet-btn-compact {
         width: 100%;
         margin-top: 0.5rem;
@@ -19414,11 +19385,6 @@ img, video, iframe, svg {
 
     .team-compact .team-name {
         font-size: 0.75rem;
-    }
-
-    .odds-box-compact {
-        min-width: 50px;
-        padding: 0.2rem;
     }
 }
 
@@ -19500,33 +19466,7 @@ img, video, iframe, svg {
     margin: 0 0.25rem;
   }
   
-  .match-odds-compact {
-    width: 100%;
-    justify-content: space-between;
-    margin-top: 0.5rem;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-  
-  .odds-group-compact {
-    width: 100%;
-    justify-content: space-around;
-  }
-  
-  .odds-box-compact {
-    flex: 1;
-    min-width: 60px;
-    padding: 0.3rem 0.2rem;
-    font-size: 0.7rem;
-  }
-  
-  .odds-box-compact .odds-label {
-    font-size: 0.6rem;
-  }
-  
-  .odds-box-compact .odds-value {
-    font-size: 0.8rem;
-  }
+
   
   .bet-btn-compact {
     width: 100%;
@@ -19583,11 +19523,6 @@ img, video, iframe, svg {
   .vs-compact {
     font-size: 0.8rem;
     margin: 0.25rem 0;
-  }
-  
-  .odds-box-compact {
-    min-width: 50px;
-    padding: 0.2rem;
   }
 }
 

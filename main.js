@@ -1105,7 +1105,7 @@ handleForgotPassword() {
             country: formData.country,
             favoriteTeam: formData.favoriteTeam,
             role: 'user',
-            balance: 0, // TZS starting balance for betting
+            balance: 2000, // TZS starting balance for betting
             points: 0,
             status: 'active',
             referralCode: this.generateReferralCode(formData.fullName),
@@ -1974,7 +1974,7 @@ async openEditMatchModal(matchId) {
                 dateStr = `${year}-${month}-${day}T${hours}:${minutes}`;
             }
             
-            const odds = match.odds || { home: 45, draw: 30, away: 25 };
+            const odds = match.odds || { home: 2, draw: 2, away: 2 };
             
             document.getElementById('editMatchId').value = matchId;
             document.getElementById('editHomeTeam').value = match.homeTeam || '';
@@ -1983,9 +1983,9 @@ async openEditMatchModal(matchId) {
             document.getElementById('editMatchDate').value = dateStr;
             document.getElementById('editVenue').value = match.venue || '';
             document.getElementById('editMatchStatus').value = match.status || 'upcoming';
-            document.getElementById('editHomePercentage').value = odds.home || 45;
-            document.getElementById('editDrawPercentage').value = odds.draw || 30;
-            document.getElementById('editAwayPercentage').value = odds.away || 25;
+            document.getElementById('editHomePercentage').value = odds.home || 2;
+            document.getElementById('editDrawPercentage').value = odds.draw || 2;
+            document.getElementById('editAwayPercentage').value = odds.away || 2;
             
             // Update odds total display
             validateEditOdds();
@@ -2074,7 +2074,7 @@ async openMatchDetails(matchId) {
             timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
-        const odds = match.odds || { home: 45, draw: 30, away: 25 };
+        const odds = match.odds || { home: 2, draw: 2, away: 2 };
 
         let oddsHtml = '';
         if (isVIP) {
@@ -2301,8 +2301,8 @@ addToMultiBet(matchId, type, teamName, percentage, matchTitle, competition) {
             return;
         }
         
-        const odds = selectedMatch.odds || { home: 45, draw: 30, away: 25 };
-        let percentage = 45;
+        const odds = selectedMatch.odds || { home: 2, draw: 2, away: 2 };
+        let percentage = 2;
         
         if (selectedOdd.type === 'home') percentage = odds.home;
         else if (selectedOdd.type === 'draw') percentage = odds.draw;
@@ -2643,7 +2643,7 @@ addToMultiBet(matchId, type, teamName, percentage, matchTitle, competition) {
             snapshot.forEach(doc => {
                 const match = { id: doc.id, ...doc.data() };
                 let matchDate = match.date?.toDate ? match.date.toDate() : null;
-                const odds = match.odds || { home: 45, draw: 30, away: 25 };
+                const odds = match.odds || { home: 2, draw: 2, away: 2 };
                 
 html += `
     <div class="admin-card">
@@ -2673,7 +2673,7 @@ html += `
             </button>
             
             <!-- Delete Button (new) - This is where you add it -->
-            <button class="btn btn-danger" style="flex: 0 0 auto;" 
+            <button class="btn btn-danger" style="flex: 1;"
                     onclick="bettingSystem.deleteMatch('${match.id}')">
                 <i class="fas fa-trash"></i>
             </button>
@@ -2751,9 +2751,9 @@ html += `
                 <div class="odds-percentage" style="background: rgba(255, 166, 43, 0.1);">
                     <div style="color: var(--accent-color); font-weight: bold;">Custom Odds for this Match</div>
                     <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 0.5rem;">
-                        <div>Home: ${match.odds?.home || 45}%</div>
-                        <div>Draw: ${match.odds?.draw || 30}%</div>
-                        <div>Away: ${match.odds?.away || 25}%</div>
+                        <div>Home: ${match.odds?.home || 2}%</div>
+                        <div>Draw: ${match.odds?.draw || 2}%</div>
+                        <div>Away: ${match.odds?.away || 2}%</div>
                     </div>
                 </div>
                 
@@ -3408,9 +3408,9 @@ window.chatSystem.init();
                 showNotification('Match added successfully with custom odds!', 'success');
                 this.reset();
                 
-                document.getElementById('homePercentage').value = 45;
-                document.getElementById('drawPercentage').value = 30;
-                document.getElementById('awayPercentage').value = 25;
+                document.getElementById('homePercentage').value = 2;
+                document.getElementById('drawPercentage').value = 2;
+                document.getElementById('awayPercentage').value = 2;
                 
                 bettingSystem.loadMatches();
                 bettingSystem.loadAdminMatches();
@@ -13198,7 +13198,7 @@ function createMatchRow(match, isVIP = false) {
     }
     
     const isSelectedInVIP = multiBetSelections.some(s => s.matchId === match.id);
-    const odds = match.odds || { home: 45, draw: 30, away: 25 };
+    const odds = match.odds || { home: 2, draw: 2, away: 2 };
     
     return `
         <div class="match-row ${isSelectedInVIP ? 'selected-for-vip' : ''}" 
