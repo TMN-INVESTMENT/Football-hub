@@ -23875,3 +23875,1271 @@ button:disabled,
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(220, 38, 38, 0.3);
 }
+
+.status-refunded {
+    background: rgba(52, 152, 219, 0.2);
+    color: #3498db;
+    border: 1px solid #3498db;
+}
+
+.status-refunded::before {
+    content: '↩';
+    margin-right: 4px;
+    font-size: 0.8rem;
+}
+
+/* Refunded status badge */
+.status-refunded {
+    background: rgba(52, 152, 219, 0.2);
+    color: #3498db;
+    border: 1px solid #3498db;
+    position: relative;
+    padding-left: 24px;
+}
+
+.status-refunded::before {
+    content: '↩';
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Profit display for refunded bets */
+td[style*="color"] {
+    transition: color 0.2s ease;
+}
+
+/* Tooltip for multi-bet details */
+[title] {
+    cursor: help;
+}
+
+/* Multi-level Bonus Styles */
+.bonus-level-card {
+    background: linear-gradient(145deg, rgba(255, 166, 43, 0.1), rgba(0, 0, 0, 0.2));
+    border-radius: 16px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 166, 43, 0.2);
+}
+
+.bonus-level-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent-color);
+    background: linear-gradient(145deg, rgba(255, 166, 43, 0.15), rgba(0, 0, 0, 0.25));
+}
+
+.bonus-percentage {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--accent-color);
+    line-height: 1;
+}
+
+.bonus-level {
+    color: white;
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+}
+
+.bonus-desc {
+    color: var(--gray-color);
+    font-size: 0.7rem;
+    margin-top: 0.25rem;
+}
+
+/* Earnings by level table */
+.earnings-by-level {
+    margin-top: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.earnings-by-level th {
+    background: rgba(255, 166, 43, 0.15);
+    padding: 0.75rem;
+    text-align: left;
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+.earnings-by-level td {
+    padding: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.earnings-by-level .level-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+.level-badge.level-1 {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+}
+
+.level-badge.level-2 {
+    background: rgba(52, 152, 219, 0.2);
+    color: #3498db;
+}
+
+.level-badge.level-3 {
+    background: rgba(241, 196, 15, 0.2);
+    color: #f1c40f;
+}
+
+/* ===== WITHDRAWAL ELIGIBILITY BANNER ===== */
+.eligibility-banner {
+    background: linear-gradient(145deg, var(--secondary-color), #1a2f3f);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border: 2px solid rgba(255,166,43,0.3);
+    transition: all 0.3s ease;
+}
+
+.eligibility-banner.eligible {
+    border-color: var(--success-color);
+    background: linear-gradient(145deg, rgba(46,204,113,0.1), #1a2f3f);
+}
+
+.eligibility-banner.not-eligible {
+    border-color: var(--danger-color);
+}
+
+.eligibility-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.eligibility-header i {
+    font-size: 2rem;
+}
+
+.eligibility-banner.eligible .eligibility-header i {
+    color: var(--success-color);
+}
+
+.eligibility-banner.not-eligible .eligibility-header i {
+    color: var(--danger-color);
+}
+
+.eligibility-title h4 {
+    color: white;
+    margin: 0 0 5px 0;
+    font-size: 1.1rem;
+}
+
+.eligibility-title p {
+    color: var(--gray-color);
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+/* Progress Bar */
+.progress-container {
+    margin: 15px 0;
+}
+
+.progress-label {
+    display: flex;
+    justify-content: space-between;
+    color: var(--gray-color);
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+}
+
+.progress-bar {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, var(--accent-color), #FF8C00);
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+.eligibility-banner.eligible .progress-fill {
+    background: linear-gradient(90deg, var(--success-color), #27ae60);
+}
+
+/* Win Stats */
+.win-stats {
+    display: flex;
+    gap: 20px;
+    margin: 15px 0;
+    padding: 12px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 12px;
+    flex-wrap: wrap;
+}
+
+.win-stats .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+}
+
+.win-stats .stat-label {
+    color: var(--gray-color);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.win-stats .stat-value {
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.win-stats .stat-value.profit {
+    color: var(--success-color);
+}
+
+/* Next Win Info */
+.next-win-info {
+    margin-top: 12px;
+    padding: 10px;
+    background: rgba(255,166,43,0.1);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--accent-color);
+    font-size: 0.85rem;
+}
+
+.next-win-info i {
+    font-size: 1rem;
+}
+
+/* Disabled Withdraw Button */
+#withdrawSection .btn-primary:disabled,
+button[onclick*="submitWithdrawalRequest"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--gray-color);
+}
+
+#withdrawSection .btn-primary:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Referrals Modal Enhanced Styles */
+.referral-stats-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.referral-stats-card {
+    background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(0,0,0,0.2));
+    border-radius: 16px;
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid rgba(255,166,43,0.2);
+    transition: all 0.3s ease;
+}
+
+.referral-stats-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent-color);
+}
+
+.referral-stats-card i {
+    font-size: 2rem;
+    color: var(--accent-color);
+    margin-bottom: 0.5rem;
+}
+
+.referral-stats-card .stats-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: white;
+}
+
+.referral-stats-card .stats-label {
+    color: var(--gray-color);
+    font-size: 0.8rem;
+}
+
+.earnings-breakdown {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin: 1rem 0;
+    padding: 0.75rem;
+    background: rgba(0,0,0,0.2);
+    border-radius: 12px;
+}
+
+.level-badge {
+    text-align: center;
+    padding: 0.5rem;
+    border-radius: 10px;
+}
+
+.level-badge.level-1 {
+    background: rgba(46,204,113,0.1);
+    border-left: 3px solid #2ecc71;
+}
+
+.level-badge.level-2 {
+    background: rgba(52,152,219,0.1);
+    border-left: 3px solid #3498db;
+}
+
+.level-badge.level-3 {
+    background: rgba(241,196,15,0.1);
+    border-left: 3px solid #f1c40f;
+}
+
+.level-badge .level-title {
+    font-size: 0.7rem;
+    color: var(--gray-color);
+    text-transform: uppercase;
+}
+
+.level-badge .level-percent {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.level-badge.level-1 .level-percent { color: #2ecc71; }
+.level-badge.level-2 .level-percent { color: #3498db; }
+.level-badge.level-3 .level-percent { color: #f1c40f; }
+
+.level-badge .level-count {
+    font-size: 0.8rem;
+    color: white;
+}
+
+.level-badge .level-earnings {
+    font-size: 0.9rem;
+    color: #2ecc71;
+    font-weight: bold;
+}
+
+/* ===== SOCIAL LINKS STYLES ===== */
+.social-modal-content {
+    max-width: 600px;
+}
+.social-progress-section {
+    margin-bottom: 1.5rem;
+}
+.social-progress-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    color: var(--gray-color);
+}
+.social-progress-bar {
+    height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.social-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-color), #FF8C00);
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+.social-links-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1.5rem 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+.social-link-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.2s;
+}
+.social-link-card.verified {
+    border-color: var(--success-color);
+    background: rgba(46,204,113,0.05);
+}
+.social-link-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(255,166,43,0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--accent-color);
+}
+.social-link-info {
+    flex: 1;
+}
+.social-link-info h4 {
+    margin: 0 0 0.25rem 0;
+    color: white;
+}
+.social-link-info p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--gray-color);
+}
+.social-follow-btn {
+    background: var(--accent-color);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 30px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+.social-follow-btn:hover {
+    background: #ff8c00;
+    transform: translateY(-2px);
+}
+.social-verified-badge {
+    color: var(--success-color);
+    font-weight: bold;
+}
+.social-verified-badge i {
+    margin-right: 0.25rem;
+}
+.social-reminder {
+    background: rgba(255,166,43,0.1);
+    padding: 0.75rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+#socialVerifyAllBtn {
+    margin-top: 1rem;
+}
+.social-notification-badge {
+    background: var(--danger-color);
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    margin-left: 0.5rem;
+}
+.admin-social-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.admin-social-stats {
+    display: flex;
+    gap: 1rem;
+    background: rgba(0,0,0,0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 30px;
+}
+.admin-social-stats strong {
+    color: var(--accent-color);
+}
+
+/* Social Links Modals */
+.social-link-card {
+    transition: all 0.2s ease;
+}
+.social-link-card:hover {
+    transform: translateX(5px);
+}
+.social-progress-fill {
+    transition: width 0.5s ease;
+}
+#socialLinksModal .modal-container {
+    background: linear-gradient(145deg, var(--secondary-color), #1a2f3f);
+}
+#socialLinksModal .social-link-card {
+    background: rgba(255,255,255,0.05) !important;
+}
+#socialVerifyAllBtn {
+    background: var(--success-color);
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+#socialVerifyAllBtn:hover {
+    background: #27ae60;
+    transform: translateY(-2px);
+}
+
+/* ==================== ADVANCED SOCIAL LINKS MODAL CSS ==================== */
+/* Glassmorphism + Animations + Responsive Design */
+
+/* Modal Overlay Animation */
+#socialLinksModal {
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+#socialLinksModal.active {
+    display: flex;
+    animation: modalFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(10px);
+    }
+}
+
+/* Modal Container - Glassmorphism */
+#socialLinksModal .modal-container {
+    background: linear-gradient(145deg, rgba(30, 40, 50, 0.95), rgba(20, 30, 40, 0.98));
+    backdrop-filter: blur(20px);
+    border-radius: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    animation: modalSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+@keyframes modalSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Modal Header */
+#socialLinksModal .modal-header {
+    background: linear-gradient(135deg, rgba(255, 166, 43, 0.15), rgba(255, 140, 0, 0.05));
+    border-bottom: 1px solid rgba(255, 166, 43, 0.2);
+    padding: 1.5rem 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+#socialLinksModal .modal-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 166, 43, 0.1), transparent 70%);
+    animation: headerGlow 8s ease-in-out infinite;
+}
+
+@keyframes headerGlow {
+    0%, 100% {
+        transform: translate(0%, 0%) scale(1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translate(10%, 10%) scale(1.2);
+        opacity: 0.8;
+    }
+}
+
+#socialLinksModal .modal-header h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff, var(--accent-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+#socialLinksModal .modal-header h2 i {
+    background: linear-gradient(135deg, var(--accent-color), #ff8c00);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-size: 2rem;
+}
+
+#socialLinksModal .modal-header p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Close Button Styling */
+#socialLinksModal .close-modal {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+#socialLinksModal .close-modal:hover {
+    background: rgba(255, 71, 87, 0.8);
+    transform: rotate(90deg);
+}
+
+/* Progress Section */
+.social-progress-section {
+    padding: 1.5rem 2rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.social-progress-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.social-progress-info span:first-child i {
+    color: var(--accent-color);
+    margin-right: 0.5rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.social-progress-bar {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    height: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+.social-progress-fill {
+    background: linear-gradient(90deg, var(--accent-color), #ff6b6b, var(--accent-color));
+    background-size: 200% 100%;
+    height: 100%;
+    border-radius: 20px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    animation: progressShine 2s linear infinite;
+}
+
+@keyframes progressShine {
+    0% {
+        background-position: 0% 0%;
+    }
+    100% {
+        background-position: 200% 0%;
+    }
+}
+
+/* Social Links Container */
+#socialLinksContainer {
+    padding: 1.5rem 2rem;
+    max-height: 450px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+/* Custom Scrollbar */
+#socialLinksContainer::-webkit-scrollbar {
+    width: 6px;
+}
+
+#socialLinksContainer::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+#socialLinksContainer::-webkit-scrollbar-thumb {
+    background: var(--accent-color);
+    border-radius: 10px;
+}
+
+#socialLinksContainer::-webkit-scrollbar-thumb:hover {
+    background: #ff8c00;
+}
+
+/* Social Link Card */
+.social-link-card {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.social-link-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.social-link-card:hover::before {
+    left: 100%;
+}
+
+.social-link-card:hover {
+    transform: translateX(8px) translateY(-2px);
+    border-color: rgba(255, 166, 43, 0.5);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* Verified Card Styling */
+.social-link-card[data-verified="true"] {
+    border-color: rgba(46, 204, 113, 0.5);
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(255, 255, 255, 0.02));
+}
+
+.social-link-card[data-verified="true"]::after {
+    content: '✓';
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    color: #2ecc71;
+    font-size: 1.2rem;
+    font-weight: bold;
+    animation: checkmark 0.5s ease;
+}
+
+@keyframes checkmark {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Social Link Icon */
+.social-link-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--accent-color), #ff8c00);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    position: relative;
+    box-shadow: 0 5px 15px rgba(255, 166, 43, 0.3);
+}
+
+.social-link-card:hover .social-link-icon {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 8px 25px rgba(255, 166, 43, 0.5);
+}
+
+.social-link-icon i {
+    font-size: 1.8rem;
+    color: white;
+    transition: transform 0.3s ease;
+}
+
+.social-link-card:hover .social-link-icon i {
+    transform: scale(1.1);
+}
+
+/* Verified Icon Special */
+.social-link-card[data-verified="true"] .social-link-icon {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+}
+
+/* Social Link Info */
+.social-link-info {
+    flex: 1;
+}
+
+.social-link-info h4 {
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.social-link-info h4 .platform-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    background: rgba(255, 166, 43, 0.2);
+    border-radius: 20px;
+    color: var(--accent-color);
+}
+
+.social-link-info p {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Social Link Actions */
+.social-link-actions {
+    flex-shrink: 0;
+}
+
+.social-link-actions .btn {
+    padding: 0.6rem 1.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, var(--accent-color), #ff8c00);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.social-link-actions .btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.social-link-actions .btn:hover::before {
+    width: 200px;
+    height: 200px;
+}
+
+.social-link-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255, 166, 43, 0.4);
+}
+
+.social-link-actions .btn:active {
+    transform: translateY(0);
+}
+
+/* Verified Badge */
+.social-link-actions span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(46, 204, 113, 0.15);
+    border-radius: 30px;
+    color: #2ecc71;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid rgba(46, 204, 113, 0.3);
+    animation: fadeInScale 0.3s ease;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Modal Footer */
+.social-modal-footer {
+    padding: 1.5rem 2rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Reminder Box */
+#socialReminder {
+    background: linear-gradient(135deg, rgba(255, 166, 43, 0.15), rgba(255, 140, 0, 0.05));
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border: 1px solid rgba(255, 166, 43, 0.2);
+    transition: all 0.3s ease;
+}
+
+#socialReminder:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, rgba(255, 166, 43, 0.2), rgba(255, 140, 0, 0.1));
+}
+
+#socialReminder i {
+    font-size: 1.5rem;
+    color: var(--accent-color);
+    animation: bellRing 2s ease-in-out infinite;
+    transform-origin: top;
+}
+
+@keyframes bellRing {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: rotate(0deg);
+    }
+    20%, 60% {
+        transform: rotate(15deg);
+    }
+    40%, 80% {
+        transform: rotate(-10deg);
+    }
+}
+
+#socialReminder span {
+    flex: 1;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Verify All Button */
+#socialVerifyAllBtn {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.9rem;
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    border: none;
+    border-radius: 40px;
+    color: white;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    position: relative;
+    overflow: hidden;
+}
+
+#socialVerifyAllBtn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+#socialVerifyAllBtn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+#socialVerifyAllBtn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(46, 204, 113, 0.4);
+}
+
+#socialVerifyAllBtn:active {
+    transform: translateY(0);
+}
+
+/* Loading State */
+.social-loading {
+    text-align: center;
+    padding: 3rem;
+}
+
+.social-loading i {
+    font-size: 3rem;
+    color: var(--accent-color);
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+    display: inline-block;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.social-loading p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+}
+
+/* Empty State */
+.social-empty {
+    text-align: center;
+    padding: 3rem;
+}
+
+.social-empty i {
+    font-size: 4rem;
+    color: rgba(255, 255, 255, 0.2);
+    margin-bottom: 1rem;
+}
+
+.social-empty p {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.95rem;
+}
+
+/* Confetti Animation (when all links followed) */
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background: var(--accent-color);
+    position: absolute;
+    animation: confettiFall 3s ease-out forwards;
+    pointer-events: none;
+    z-index: 10001;
+}
+
+@keyframes confettiFall {
+    0% {
+        transform: translateY(-100vh) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    #socialLinksModal .modal-container {
+        width: 95%;
+        margin: 1rem;
+        border-radius: 24px;
+    }
+    
+    #socialLinksModal .modal-header {
+        padding: 1.25rem;
+    }
+    
+    #socialLinksModal .modal-header h2 {
+        font-size: 1.4rem;
+    }
+    
+    .social-progress-section,
+    #socialLinksContainer,
+    .social-modal-footer {
+        padding: 1.25rem;
+    }
+    
+    .social-link-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.25rem;
+        gap: 1rem;
+    }
+    
+    .social-link-icon {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .social-link-icon i {
+        font-size: 2rem;
+    }
+    
+    .social-link-info {
+        text-align: center;
+    }
+    
+    .social-link-info h4 {
+        justify-content: center;
+    }
+    
+    .social-link-actions .btn,
+    .social-link-actions span {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    #socialReminder {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+    
+    #socialReminder i {
+        font-size: 1.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    #socialLinksModal .modal-header h2 {
+        font-size: 1.2rem;
+    }
+    
+    .social-link-icon {
+        width: 55px;
+        height: 55px;
+    }
+    
+    .social-link-icon i {
+        font-size: 1.5rem;
+    }
+    
+    .social-link-info h4 {
+        font-size: 1rem;
+    }
+    
+    .social-link-info p {
+        font-size: 0.75rem;
+    }
+    
+    .social-progress-info {
+        font-size: 0.75rem;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    #socialLinksModal .modal-container {
+        background: linear-gradient(145deg, rgba(20, 30, 40, 0.98), rgba(10, 20, 30, 0.98));
+    }
+}
+
+/* Animation for new links appearing */
+@keyframes linkAppear {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.social-link-card {
+    animation: linkAppear 0.3s ease-out;
+}
+
+/* Success Toast Animation */
+@keyframes toastSlide {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Ripple Effect for Buttons */
+.btn-ripple {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-ripple .ripple-effect {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(0);
+    animation: ripple 0.6s linear;
+    pointer-events: none;
+}
+
+@keyframes ripple {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* Floating Animation for Icons */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+.social-link-icon i {
+    animation: float 3s ease-in-out infinite;
+}
+
+.social-link-card[data-verified="true"] .social-link-icon i {
+    animation: none;
+}

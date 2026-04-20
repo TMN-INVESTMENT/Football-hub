@@ -510,9 +510,9 @@ showSuperAdminDashboard() {
     if (authContainer) authContainer.style.display = 'none';
     this.setupDashboardNavigation('super-admin-dashboard');
     this.setupLogoutButton('superAdminLogoutBtn');
-    // 👇 Show chat section by default
+    // 👇 Changed to show the correct super admin section
     if (window.sectionManager) {
-        window.sectionManager.showSection('adminChatSection', 'super-admin-dashboard');
+        window.sectionManager.showSection('superAdminSection', 'super-admin-dashboard');
     }
 }
     
@@ -1033,47 +1033,124 @@ handleForgotPassword() {
         return userData;
     }
     
-    async handleSignup() {
-        const formData = {
-            fullName: document.getElementById('fullName')?.value.trim() || '',
-            username: document.getElementById('username')?.value.trim().toLowerCase() || '',
-            phone: document.getElementById('phone')?.value.trim() || '',
-            email: document.getElementById('email')?.value.trim().toLowerCase() || '',
-            password: document.getElementById('password')?.value || '',
-            confirmPassword: document.getElementById('confirmPassword')?.value || '',
-            country: document.getElementById('country')?.value || '',
-            favoriteTeam: document.getElementById('favoriteTeam')?.value || '',
-            terms: document.getElementById('terms')?.checked || false,
-            referralCode: document.getElementById('referralCodeInput')?.value.trim() || ''
-        };
+// ==================== UPDATED SIGNUP HANDLER ====================
+
+async handleSignup() {
+    const formData = {
+        fullName: document.getElementById('fullName')?.value.trim() || '',
+        username: document.getElementById('username')?.value.trim().toLowerCase() || '',
+        phone: document.getElementById('phone')?.value.trim() || '',
+        email: document.getElementById('email')?.value.trim().toLowerCase() || '',
+        password: document.getElementById('password')?.value || '',
+        confirmPassword: document.getElementById('confirmPassword')?.value || '',
+        country: document.getElementById('country')?.value || '',
+        favoriteTeam: document.getElementById('favoriteTeam')?.value || '',
+        terms: document.getElementById('terms')?.checked || false,
+        referralCode: document.getElementById('referralCodeInput')?.value.trim().toUpperCase() || ''
+    };
+    
+    if (!this.validateSignupForm(formData)) return;
+    
+    showLoading('Creating account...');
+    
+    try {
+        const userCredential = await auth.createUserWithEmailAndPassword(formData.email, formData.password);
+        const user = userCredential.user;
         
-        if (!this.validateSignupForm(formData)) return;
+        await user.sendEmailVerification();
         
-        showLoading('Creating account...');
+        // Process referral BEFORE creating user document
+        let referredById = null;
+        let referrerData = null;
         
+        if (formData.referralCode) {
+            console.log(`🔍 Looking for referral code: ${formData.referralCode}`);
+            
+            // Find the referrer by their referral code
+            const referrerQuery = await db.collection('users')
+                .where('referralCode', '==', formData.referralCode)
+                .limit(1)
+                .get();
+            
+            if (!referrerQuery.empty) {
+                const referrerDoc = referrerQuery.docs[0];
+                referredById = referrerDoc.id;
+                referrerData = referrerDoc.data();
+                console.log(`✅ Referrer found: ${referrerData.fullName || referrerData.username} (${referredById})`);
+            } else {
+                console.log(`⚠️ Referral code not found: ${formData.referralCode}`);
+            }
+        }
+        
+        // Create user document with referredBy field
+        await this.createUserDocument(user.uid, formData, referredById);
+        
+        await this.authManager.loadUserData(user.uid);
+        this.authManager.showAppropriateDashboard();
+        
+        showNotification(
+            'Account created successfully! You are now logged in. Please verify your email.',
+            'success'
+        );
+        
+        document.getElementById('signupForm')?.reset();
+        
+    } catch (error) {
+        this.handleAuthError(error, 'signup');
+    } finally {
+        hideLoading();
+    }
+}
+
+async createUserDocument(uid, formData, referredById = null) {
+    const userData = {
+        uid: uid,
+        email: formData.email,
+        fullName: formData.fullName,
+        username: formData.username,
+        phone: formData.phone,
+        country: formData.country,
+        favoriteTeam: formData.favoriteTeam,
+        role: 'user',
+        balance: 2000,
+        points: 0,
+        status: 'active',
+        referralCode: this.generateReferralCode(formData.fullName),
+        referredBy: referredById, // IMPORTANT: Store the referrer's UID
+        referralCount: 0,
+        firstDepositBonusesProcessed: false, // Track if first deposit bonuses were given
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    
+    // If user was referred, increment referrer's referral count
+    if (referredById) {
         try {
-            const userCredential = await auth.createUserWithEmailAndPassword(formData.email, formData.password);
-            const user = userCredential.user;
-            
-            await user.sendEmailVerification();
-            await this.createUserDocument(user.uid, formData);
-            
-            await this.authManager.loadUserData(user.uid);
-            this.authManager.showAppropriateDashboard();
-            
-            showNotification(
-                'Account created successfully! You are now logged in. Please verify your email.',
-                'success'
-            );
-            
-            document.getElementById('signupForm')?.reset();
-            
+            const referrerRef = db.collection('users').doc(referredById);
+            await referrerRef.update({
+                referralCount: firebase.firestore.FieldValue.increment(1),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log(`✅ Incremented referral count for ${referredById}`);
         } catch (error) {
-            this.handleAuthError(error, 'signup');
-        } finally {
-            hideLoading();
+            console.error("Error incrementing referrer count:", error);
         }
     }
+    
+    await db.collection('users').doc(uid).set(userData);
+    console.log("✅ User document created with referredBy:", referredById);
+    return userData;
+}
+
+generateReferralCode(fullName) {
+    // Generate a unique referral code
+    let namePart = fullName.split(' ')[0].toUpperCase().substring(0, 3);
+    if (namePart.length < 3) namePart = namePart.padEnd(3, 'X');
+    const randomDigits = Math.floor(1000 + Math.random() * 9000);
+    const code = `${namePart}${randomDigits}`;
+    console.log(`Generated referral code: ${code} for ${fullName}`);
+    return code;
+}
     
     validateSignupForm(formData) {
         if (!formData.fullName || !formData.email || !formData.password || !formData.confirmPassword) {
@@ -1095,59 +1172,62 @@ handleForgotPassword() {
         return true;
     }
     
-    async createUserDocument(uid, formData) {
-        const userData = {
-            uid,
-            email: formData.email,
-            fullName: formData.fullName,
-            username: formData.username,
-            phone: formData.phone,
-            country: formData.country,
-            favoriteTeam: formData.favoriteTeam,
-            role: 'user',
-            balance: 2000, // TZS starting balance for betting
-            points: 0,
-            status: 'active',
-            referralCode: this.generateReferralCode(formData.fullName),
-            referredBy: null,
-            referralCount: 0,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-        };
+    // In your FormHandler class, update the createUserDocument method:
 
-        if (formData.referralCode) {
-            try {
-                const referrerSnapshot = await db
-                    .collection('users')
-                    .where('referralCode', '==', formData.referralCode)
-                    .limit(1)
-                    .get();
-
-                if (!referrerSnapshot.empty) {
-                    const referrerId = referrerSnapshot.docs[0].id;
-                    userData.referredBy = referrerId;
-
-                    await db.runTransaction(async (transaction) => {
-                        const referrerRef = db.collection('users').doc(referrerId);
-                        const referrerSnap = await transaction.get(referrerRef);
-                        if (referrerSnap.exists) {
-                            const currentCount = referrerSnap.data().referralCount || 0;
-                            transaction.update(referrerRef, { referralCount: currentCount + 1 });
-                        }
-                    });
-                    console.log(`✅ Referral applied: ${formData.referralCode} → user ${uid}`);
-                } else {
-                    console.log(`⚠️ Referral code not found: ${formData.referralCode}`);
-                }
-            } catch (error) {
-                console.error("Error processing referral code:", error);
+async createUserDocument(uid, formData) {
+    const userData = {
+        uid,
+        email: formData.email,
+        fullName: formData.fullName,
+        username: formData.username,
+        phone: formData.phone,
+        country: formData.country,
+        favoriteTeam: formData.favoriteTeam,
+        role: 'user',
+        balance: 2000,
+        points: 0,
+        status: 'active',
+        referralCode: this.generateReferralCode(formData.fullName),
+        referredBy: null,
+        referralCount: 0,
+        firstDepositBonusesProcessed: false, // IMPORTANT: Track if first deposit bonuses are processed
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    
+    // Process referral code if provided
+    if (formData.referralCode) {
+        try {
+            // Find user with this referral code
+            const referrerSnapshot = await db
+                .collection('users')
+                .where('referralCode', '==', formData.referralCode.toUpperCase())
+                .limit(1)
+                .get();
+            
+            if (!referrerSnapshot.empty) {
+                const referrerId = referrerSnapshot.docs[0].id;
+                userData.referredBy = referrerId;
+                
+                // Increment referrer's referral count
+                await db.collection('users').doc(referrerId).update({
+                    referralCount: firebase.firestore.FieldValue.increment(1),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                console.log(`✅ Referral applied: ${formData.referralCode} → user ${uid}`);
+            } else {
+                console.log(`⚠️ Referral code not found: ${formData.referralCode}`);
             }
+        } catch (error) {
+            console.error("Error processing referral code:", error);
         }
-
-        await db.collection('users').doc(uid).set(userData);
-        console.log("✅ User document created in Firestore");
-        return userData;
     }
+    
+    await db.collection('users').doc(uid).set(userData);
+    console.log("✅ User document created in Firestore");
+    return userData;
+}
     
 
     handleAuthError(error, context) {
@@ -4432,7 +4512,8 @@ async loadPendingApprovalsCount() {
     }
 }
 
-// Approve transaction with full processing
+// ==================== UPDATED APPROVE TRANSACTION ====================
+
 async approveTransaction(transactionId) {
     try {
         showLoading('Processing approval...');
@@ -4448,7 +4529,12 @@ async approveTransaction(transactionId) {
         const batch = db.batch();
         
         if (transaction.type === 'deposit') {
-            // Check if this is user's first approved deposit
+            // Get the user who made the deposit
+            const userRef = db.collection('users').doc(transaction.userId);
+            const userDoc = await userRef.get();
+            const userData = userDoc.data();
+            
+            // Check if this is first deposit (no previous approved deposits)
             const previousDeposits = await db.collection('transactions')
                 .where('userId', '==', transaction.userId)
                 .where('type', '==', 'deposit')
@@ -4456,59 +4542,270 @@ async approveTransaction(transactionId) {
                 .get();
             
             const isFirstDeposit = previousDeposits.size === 0;
+            const alreadyProcessed = userData?.firstDepositBonusesProcessed === true;
             
             // Add deposit amount to user balance
-            const userRef = db.collection('users').doc(transaction.userId);
             batch.update(userRef, {
                 balance: firebase.firestore.FieldValue.increment(transaction.amount),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             
-            // If this is first deposit, process referral commission
-            if (isFirstDeposit) {
-                const userDoc = await userRef.get();
-                const userData = userDoc.data();
+            // PROCESS REFERRAL BONUSES - ONLY ON FIRST DEPOSIT
+            if (isFirstDeposit && !alreadyProcessed && userData?.referredBy) {
+                console.log('🎁 FIRST DEPOSIT - Processing referral bonuses');
+                console.log(`User: ${transaction.userId}`);
+                console.log(`Referred by: ${userData.referredBy}`);
+                console.log(`Deposit amount: TZS ${transaction.amount}`);
                 
-                if (userData.referredBy) {
-                    const commission = transaction.amount * 0.1; // 10% commission
-                    
-                    // Add commission to referrer's balance
-                    const referrerRef = db.collection('users').doc(userData.referredBy);
-                    batch.update(referrerRef, {
-                        balance: firebase.firestore.FieldValue.increment(commission),
-                        totalReferralEarnings: firebase.firestore.FieldValue.increment(commission),
+                // Get the referral chain (up to 3 levels)
+                const level1Referrer = userData.referredBy;
+                let level2Referrer = null;
+                let level3Referrer = null;
+                
+                // Get Level 2 referrer
+                const level1Doc = await db.collection('users').doc(level1Referrer).get();
+                if (level1Doc.exists && level1Doc.data().referredBy) {
+                    level2Referrer = level1Doc.data().referredBy;
+                    console.log(`Level 2 referrer found: ${level2Referrer}`);
+                }
+                
+                // Get Level 3 referrer
+                if (level2Referrer) {
+                    const level2Doc = await db.collection('users').doc(level2Referrer).get();
+                    if (level2Doc.exists && level2Doc.data().referredBy) {
+                        level3Referrer = level2Doc.data().referredBy;
+                        console.log(`Level 3 referrer found: ${level3Referrer}`);
+                    }
+                }
+                
+                // Bonus percentages
+                const BONUS_CONFIG = {
+                    1: { percentage: 10, rate: 0.10, label: 'Level 1 (10%)' },
+                    2: { percentage: 2, rate: 0.02, label: 'Level 2 (2%)' },
+                    3: { percentage: 1, rate: 0.01, label: 'Level 3 (1%)' }
+                };
+                
+                let totalBonuses = 0;
+                const bonusesDistributed = [];
+                
+                // Process Level 1 Bonus (10%)
+                if (level1Referrer) {
+                    const bonusAmount = transaction.amount * BONUS_CONFIG[1].rate;
+                    if (bonusAmount > 0) {
+                        totalBonuses += bonusAmount;
+                        bonusesDistributed.push({ level: 1, userId: level1Referrer, amount: bonusAmount, percentage: 10 });
+                        
+                        const referrerDoc = await db.collection('users').doc(level1Referrer).get();
+                        const referrerName = referrerDoc.exists ? (referrerDoc.data().fullName || referrerDoc.data().username || 'User') : 'User';
+                        
+                        // Add bonus to referrer's balance
+                        const referrerRef = db.collection('users').doc(level1Referrer);
+                        batch.update(referrerRef, {
+                            balance: firebase.firestore.FieldValue.increment(bonusAmount),
+                            totalReferralEarnings: firebase.firestore.FieldValue.increment(bonusAmount),
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        // Create referral earning record
+                        const earningRef = db.collection('referralEarnings').doc();
+                        batch.set(earningRef, {
+                            referrerId: level1Referrer,
+                            referrerName: referrerName,
+                            referredUserId: transaction.userId,
+                            referredUserName: userData.fullName || userData.username || 'User',
+                            amount: bonusAmount,
+                            depositAmount: transaction.amount,
+                            level: 1,
+                            percentage: 10,
+                            status: 'paid',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            paidAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        // Create transaction record
+                        const transRef = db.collection('transactions').doc();
+                        batch.set(transRef, {
+                            userId: level1Referrer,
+                            type: 'referral_bonus',
+                            amount: bonusAmount,
+                            description: `10% Level 1 referral bonus from ${userData.fullName || userData.username || 'User'}'s first deposit of TZS ${transaction.amount.toFixed(2)}`,
+                            date: firebase.firestore.FieldValue.serverTimestamp(),
+                            relatedUserId: transaction.userId,
+                            level: 1
+                        });
+                        
+                        // Create notification
+                        const notifRef = db.collection('notifications').doc();
+                        batch.set(notifRef, {
+                            userId: level1Referrer,
+                            title: '🎉 Level 1 Referral Bonus!',
+                            message: `You earned TZS ${bonusAmount.toFixed(2)} (10%) from ${userData.fullName || userData.username || 'User'}'s first deposit!`,
+                            type: 'success',
+                            read: false,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        console.log(`✅ Level 1 bonus: TZS ${bonusAmount.toFixed(2)} to ${level1Referrer}`);
+                    }
+                }
+                
+                // Process Level 2 Bonus (2%)
+                if (level2Referrer) {
+                    const bonusAmount = transaction.amount * BONUS_CONFIG[2].rate;
+                    if (bonusAmount > 0) {
+                        totalBonuses += bonusAmount;
+                        bonusesDistributed.push({ level: 2, userId: level2Referrer, amount: bonusAmount, percentage: 2 });
+                        
+                        const referrerDoc = await db.collection('users').doc(level2Referrer).get();
+                        const referrerName = referrerDoc.exists ? (referrerDoc.data().fullName || referrerDoc.data().username || 'User') : 'User';
+                        
+                        const referrerRef = db.collection('users').doc(level2Referrer);
+                        batch.update(referrerRef, {
+                            balance: firebase.firestore.FieldValue.increment(bonusAmount),
+                            totalReferralEarnings: firebase.firestore.FieldValue.increment(bonusAmount),
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        const earningRef = db.collection('referralEarnings').doc();
+                        batch.set(earningRef, {
+                            referrerId: level2Referrer,
+                            referrerName: referrerName,
+                            referredUserId: transaction.userId,
+                            referredUserName: userData.fullName || userData.username || 'User',
+                            amount: bonusAmount,
+                            depositAmount: transaction.amount,
+                            level: 2,
+                            percentage: 2,
+                            status: 'paid',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            paidAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        const transRef = db.collection('transactions').doc();
+                        batch.set(transRef, {
+                            userId: level2Referrer,
+                            type: 'referral_bonus',
+                            amount: bonusAmount,
+                            description: `2% Level 2 referral bonus from ${userData.fullName || userData.username || 'User'}'s first deposit of TZS ${transaction.amount.toFixed(2)}`,
+                            date: firebase.firestore.FieldValue.serverTimestamp(),
+                            relatedUserId: transaction.userId,
+                            level: 2
+                        });
+                        
+                        const notifRef = db.collection('notifications').doc();
+                        batch.set(notifRef, {
+                            userId: level2Referrer,
+                            title: '🎉 Level 2 Referral Bonus!',
+                            message: `You earned TZS ${bonusAmount.toFixed(2)} (2%) from ${userData.fullName || userData.username || 'User'}'s first deposit!`,
+                            type: 'success',
+                            read: false,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        console.log(`✅ Level 2 bonus: TZS ${bonusAmount.toFixed(2)} to ${level2Referrer}`);
+                    }
+                }
+                
+                // Process Level 3 Bonus (1%)
+                if (level3Referrer) {
+                    const bonusAmount = transaction.amount * BONUS_CONFIG[3].rate;
+                    if (bonusAmount > 0) {
+                        totalBonuses += bonusAmount;
+                        bonusesDistributed.push({ level: 3, userId: level3Referrer, amount: bonusAmount, percentage: 1 });
+                        
+                        const referrerDoc = await db.collection('users').doc(level3Referrer).get();
+                        const referrerName = referrerDoc.exists ? (referrerDoc.data().fullName || referrerDoc.data().username || 'User') : 'User';
+                        
+                        const referrerRef = db.collection('users').doc(level3Referrer);
+                        batch.update(referrerRef, {
+                            balance: firebase.firestore.FieldValue.increment(bonusAmount),
+                            totalReferralEarnings: firebase.firestore.FieldValue.increment(bonusAmount),
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        const earningRef = db.collection('referralEarnings').doc();
+                        batch.set(earningRef, {
+                            referrerId: level3Referrer,
+                            referrerName: referrerName,
+                            referredUserId: transaction.userId,
+                            referredUserName: userData.fullName || userData.username || 'User',
+                            amount: bonusAmount,
+                            depositAmount: transaction.amount,
+                            level: 3,
+                            percentage: 1,
+                            status: 'paid',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            paidAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        const transRef = db.collection('transactions').doc();
+                        batch.set(transRef, {
+                            userId: level3Referrer,
+                            type: 'referral_bonus',
+                            amount: bonusAmount,
+                            description: `1% Level 3 referral bonus from ${userData.fullName || userData.username || 'User'}'s first deposit of TZS ${transaction.amount.toFixed(2)}`,
+                            date: firebase.firestore.FieldValue.serverTimestamp(),
+                            relatedUserId: transaction.userId,
+                            level: 3
+                        });
+                        
+                        const notifRef = db.collection('notifications').doc();
+                        batch.set(notifRef, {
+                            userId: level3Referrer,
+                            title: '🎉 Level 3 Referral Bonus!',
+                            message: `You earned TZS ${bonusAmount.toFixed(2)} (1%) from ${userData.fullName || userData.username || 'User'}'s first deposit!`,
+                            type: 'success',
+                            read: false,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        console.log(`✅ Level 3 bonus: TZS ${bonusAmount.toFixed(2)} to ${level3Referrer}`);
+                    }
+                }
+                
+                // Mark that first deposit bonuses have been processed
+                batch.update(userRef, {
+                    firstDepositBonusesProcessed: true,
+                    firstDepositAmount: transaction.amount,
+                    firstDepositBonusesDistributed: totalBonuses,
+                    firstDepositDate: firebase.firestore.FieldValue.serverTimestamp(),
+                    referralBonusesGenerated: bonusesDistributed,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Mark transaction as having bonuses processed
+                const transBonusRef = db.collection('transactions').doc(transactionId);
+                batch.update(transBonusRef, {
+                    referralBonusesProcessed: true,
+                    referralBonusesDistributed: bonusesDistributed,
+                    referralTotalBonuses: totalBonuses,
+                    referralProcessedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                console.log(`🎁 TOTAL BONUSES: TZS ${totalBonuses.toFixed(2)} distributed across ${bonusesDistributed.length} level(s)`);
+                
+                if (totalBonuses > 0) {
+                    showNotification(`✅ Referral bonuses: TZS ${totalBonuses.toFixed(2)} sent to ${bonusesDistributed.length} referrer(s)`, 'success');
+                }
+            } else {
+                if (isFirstDeposit && !alreadyProcessed && !userData?.referredBy) {
+                    console.log('User has no referrer - marking first deposit as processed');
+                    batch.update(userRef, {
+                        firstDepositBonusesProcessed: true,
+                        firstDepositAmount: transaction.amount,
+                        firstDepositDate: firebase.firestore.FieldValue.serverTimestamp(),
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    
-                    // Create referral earning record
-                    const earningRef = db.collection('referralEarnings').doc();
-                    batch.set(earningRef, {
-                        referrerId: userData.referredBy,
-                        referredUserId: transaction.userId,
-                        referredUserName: userData.fullName || userData.username || 'User',
-                        amount: commission,
-                        depositAmount: transaction.amount,
-                        status: 'paid',
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        paidAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    
-                    // Create transaction record for commission
-                    const commissionTransRef = db.collection('transactions').doc();
-                    batch.set(commissionTransRef, {
-                        userId: userData.referredBy,
-                        type: 'referral_bonus',
-                        amount: commission,
-                        description: `10% commission from ${userData.fullName || userData.username}'s first deposit`,
-                        date: firebase.firestore.FieldValue.serverTimestamp(),
-                        relatedUserId: transaction.userId
-                    });
+                } else if (alreadyProcessed) {
+                    console.log('Referral bonuses already processed for this user');
+                } else if (!isFirstDeposit) {
+                    console.log('Not first deposit - no referral bonuses');
                 }
             }
             
-            // Create notification for user
-            const notificationRef = db.collection('notifications').doc();
-            batch.set(notificationRef, {
+            // Create notification for depositing user
+            const depositNotifRef = db.collection('notifications').doc();
+            batch.set(depositNotifRef, {
                 userId: transaction.userId,
                 title: 'Deposit Approved ✅',
                 message: `Your deposit of TZS ${transaction.amount.toFixed(2)} has been approved and added to your balance.`,
@@ -4518,7 +4815,7 @@ async approveTransaction(transactionId) {
             });
             
         } else if (transaction.type === 'withdrawal') {
-            // Fee goes to admin stats
+            // Withdrawal processing (keep existing code)
             if (transaction.fee > 0) {
                 const adminStatsRef = db.collection('adminStats').doc('fees');
                 const adminStats = await adminStatsRef.get();
@@ -4538,9 +4835,8 @@ async approveTransaction(transactionId) {
                 }
             }
             
-            // Create notification for user
-            const notificationRef = db.collection('notifications').doc();
-            batch.set(notificationRef, {
+            const withdrawNotifRef = db.collection('notifications').doc();
+            batch.set(withdrawNotifRef, {
                 userId: transaction.userId,
                 title: 'Withdrawal Approved 💰',
                 message: `Your withdrawal request of TZS ${transaction.amount.toFixed(2)} has been approved.`,
@@ -4577,10 +4873,148 @@ async approveTransaction(transactionId) {
             approvedAt: new Date()
         });
         
+        // Refresh current user's data if they received a bonus
+        const currentUserId = window.authManager?.user?.uid;
+        if (currentUserId && window.authManager) {
+            await window.authManager.loadUserData(currentUserId);
+            if (typeof updateAllBalanceDisplays === 'function') {
+                updateAllBalanceDisplays();
+            }
+        }
+        
+        // Refresh referrals modal if open
+        const referralsModal = document.getElementById('referralsModal');
+        if (referralsModal && referralsModal.classList.contains('active') && typeof loadReferralsData === 'function') {
+            setTimeout(() => {
+                loadReferralsData();
+            }, 500);
+        }
+        
     } catch (error) {
         hideLoading();
         console.error("Error approving transaction:", error);
         showNotification('Error approving transaction: ' + error.message, 'error');
+    }
+}
+
+
+
+/**
+ * Get the referral chain (upline) for a user
+ * @param {string} userId - The user ID to start from
+ * @param {number} maxLevels - Maximum levels to retrieve
+ * @returns {Promise<Array>} Array of user IDs in the referral chain
+ */
+async getReferralChain(userId, maxLevels = 3) {
+    if (!userId) return [];
+    
+    const chain = [];
+    let currentUserId = userId;
+    const visitedUsers = new Set(); // Prevent infinite loops
+    
+    for (let level = 1; level <= maxLevels; level++) {
+        if (!currentUserId || visitedUsers.has(currentUserId)) break;
+        visitedUsers.add(currentUserId);
+        
+        try {
+            const userDoc = await db.collection('users').doc(currentUserId).get();
+            if (!userDoc.exists) break;
+            
+            const referredBy = userDoc.data().referredBy;
+            if (!referredBy) break;
+            
+            // Check for circular reference
+            if (referredBy === currentUserId) break;
+            
+            chain.push(referredBy);
+            currentUserId = referredBy;
+        } catch (error) {
+            console.error(`Error fetching referrer at level ${level}:`, error);
+            break;
+        }
+    }
+    
+    console.log(`Referral chain for ${userId}:`, chain);
+    return chain;
+}
+
+
+
+/**
+ * Get detailed referral statistics for a user
+ * @param {string} userId 
+ * @returns {Promise<Object>}
+ */
+async getReferralStats(userId) {
+    try {
+        // Get all direct referrals (Level 1)
+        const level1Snapshot = await db.collection('users')
+            .where('referredBy', '==', userId)
+            .get();
+        
+        // Get Level 2 referrals (referrals of direct referrals)
+        let level2Count = 0;
+        let level3Count = 0;
+        
+        for (const doc of level1Snapshot.docs) {
+            const level2Snapshot = await db.collection('users')
+                .where('referredBy', '==', doc.id)
+                .get();
+            level2Count += level2Snapshot.size;
+            
+            // Get Level 3 referrals
+            for (const level2Doc of level2Snapshot.docs) {
+                const level3Snapshot = await db.collection('users')
+                    .where('referredBy', '==', level2Doc.id)
+                    .get();
+                level3Count += level3Snapshot.size;
+            }
+        }
+        
+        // Get earnings by level
+        const earningsSnapshot = await db.collection('referralEarnings')
+            .where('referrerId', '==', userId)
+            .orderBy('createdAt', 'desc')
+            .get();
+        
+        const earningsByLevel = {
+            1: { count: 0, total: 0 },
+            2: { count: 0, total: 0 },
+            3: { count: 0, total: 0 }
+        };
+        
+        let totalEarnings = 0;
+        earningsSnapshot.forEach(doc => {
+            const earning = doc.data();
+            const level = earning.level || 1;
+            if (earningsByLevel[level]) {
+                earningsByLevel[level].count++;
+                earningsByLevel[level].total += earning.amount;
+            }
+            totalEarnings += earning.amount;
+        });
+        
+        return {
+            level1Referrals: level1Snapshot.size,
+            level2Referrals: level2Count,
+            level3Referrals: level3Count,
+            totalReferrals: level1Snapshot.size + level2Count + level3Count,
+            totalEarnings: totalEarnings,
+            earningsByLevel: earningsByLevel,
+            recentEarnings: earningsSnapshot.docs.slice(0, 10).map(doc => doc.data())
+        };
+        
+    } catch (error) {
+        console.error("Error getting referral stats:", error);
+        return {
+            level1Referrals: 0,
+            level2Referrals: 0,
+            level3Referrals: 0,
+            totalReferrals: 0,
+            totalEarnings: 0,
+            earningsByLevel: { 1: { count: 0, total: 0 }, 2: { count: 0, total: 0 }, 3: { count: 0, total: 0 } },
+            recentEarnings: []
+        };
     }
 }
 
@@ -7292,8 +7726,7 @@ setupAdminSendButton() {
         });
     }
     
-    // Helper to escape HTML (prevent XSS)
-    escapeHtml(unsafe) {
+escapeHtml(unsafe) {
     const str = unsafe == null ? '' : String(unsafe);
     return str.replace(/[&<>"]/g, function(m) {
         if (m === '&') return '&amp;';
@@ -7303,7 +7736,8 @@ setupAdminSendButton() {
         return m;
     });
 }
-    
+
+
     // Cleanup listeners (optional)
     cleanup() {
         if (this.unsubscribeMessages) this.unsubscribeMessages();
@@ -8114,7 +8548,6 @@ function closeHamburgerMenu() {
 
 // ==================== REFERRALS MODAL FUNCTIONS ====================
 
-// Load referral data when modal opens
 async function loadReferralsData() {
     const userId = window.authManager?.user?.uid;
     if (!userId) {
@@ -8122,9 +8555,10 @@ async function loadReferralsData() {
         return;
     }
     
-    // Show loading state
-    document.getElementById('referralsLoading').style.display = 'block';
-    document.getElementById('referralsTableBody').innerHTML = '';
+    const loadingEl = document.getElementById('referralsLoading');
+    const tbody = document.getElementById('referralsTableBody');
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:2rem;">Loading...</td></tr>';
     
     try {
         // Get user's referral code
@@ -8133,74 +8567,176 @@ async function loadReferralsData() {
         const referralCode = userData.referralCode || 'N/A';
         
         // Update referral code display
-        document.getElementById('modalReferralCode').value = referralCode;
+        const modalReferralCode = document.getElementById('modalReferralCode');
+        if (modalReferralCode) modalReferralCode.value = referralCode;
         
-        // Generate and display referral link
+        // Generate referral link
         const baseUrl = window.location.origin + window.location.pathname;
         const referralLink = `${baseUrl}?ref=${referralCode}`;
-        document.getElementById('modalReferralLink').value = referralLink;
+        const modalReferralLink = document.getElementById('modalReferralLink');
+        if (modalReferralLink) modalReferralLink.value = referralLink;
         
-        // Get all users referred by this user
+        // Get referrals count
         const referredUsersSnapshot = await db.collection('users')
             .where('referredBy', '==', userId)
             .get();
         
-        // Get all referral earnings for this user
+        // Get earnings
         const earningsSnapshot = await db.collection('referralEarnings')
             .where('referrerId', '==', userId)
             .orderBy('createdAt', 'desc')
             .get();
         
-        // Calculate stats
-        const totalReferrals = referredUsersSnapshot.size;
-        const activeReferrals = earningsSnapshot.size;
-        
+        // Calculate totals
         let totalEarnings = 0;
-        const earningsMap = new Map();
+        const earningsByLevel = { 1: { count: 0, total: 0 }, 2: { count: 0, total: 0 }, 3: { count: 0, total: 0 } };
+        const recentEarnings = [];
         
         earningsSnapshot.forEach(doc => {
             const earning = doc.data();
+            const level = earning.level || 1;
+            earningsByLevel[level].count++;
+            earningsByLevel[level].total += earning.amount;
             totalEarnings += earning.amount;
-            earningsMap.set(earning.referredUserId, {
-                amount: earning.amount,
-                depositAmount: earning.depositAmount,
-                date: earning.createdAt?.toDate?.() || new Date()
-            });
+            recentEarnings.push({ id: doc.id, ...earning });
         });
         
         // Update stats display
-        document.getElementById('modalTotalReferrals').textContent = totalReferrals;
-        document.getElementById('modalActiveReferrals').textContent = activeReferrals;
-        document.getElementById('modalTotalEarnings').textContent = `TZS ${totalEarnings.toFixed(2)}`;
+        const totalReferralsEl = document.getElementById('modalTotalReferrals');
+        const activeReferralsEl = document.getElementById('modalActiveReferrals');
+        const totalEarningsEl = document.getElementById('modalTotalEarnings');
         
-        // Load referrals into table
-        await loadReferralsTable(referredUsersSnapshot, earningsMap);
+        if (totalReferralsEl) totalReferralsEl.textContent = referredUsersSnapshot.size;
+        if (activeReferralsEl) activeReferralsEl.textContent = earningsSnapshot.size;
+        if (totalEarningsEl) totalEarningsEl.textContent = `TZS ${totalEarnings.toFixed(2)}`;
         
-    } catch (error) {
-        console.error('Error loading referral data:', error);
+        // Build table HTML
+        let html = '';
         
-        // Check if it's an index error
-        if (error.message?.includes('index')) {
-            document.getElementById('referralsTableBody').innerHTML = `
+        // Earnings by level summary
+        html += `
+            <tr style="background: rgba(255,166,43,0.1);">
+                <td colspan="4" style="padding: 1rem;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; text-align: center;">
+                        <div>
+                            <div style="color: #2ecc71; font-weight: bold;">Level 1 (10%)</div>
+                            <div>${earningsByLevel[1].count} referrals</div>
+                            <div style="color: #2ecc71;">TZS ${earningsByLevel[1].total.toFixed(2)}</div>
+                        </div>
+                        <div>
+                            <div style="color: #3498db; font-weight: bold;">Level 2 (2%)</div>
+                            <div>${earningsByLevel[2].count} referrals</div>
+                            <div style="color: #3498db;">TZS ${earningsByLevel[2].total.toFixed(2)}</div>
+                        </div>
+                        <div>
+                            <div style="color: #f1c40f; font-weight: bold;">Level 3 (1%)</div>
+                            <div>${earningsByLevel[3].count} referrals</div>
+                            <div style="color: #f1c40f;">TZS ${earningsByLevel[3].total.toFixed(2)}</div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+        
+        if (recentEarnings.length === 0 && referredUsersSnapshot.size === 0) {
+            html += `
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 2rem;">
-                        <i class="fas fa-database" style="font-size: 3rem; color: var(--accent-color); margin-bottom: 1rem; display: block;"></i>
-                        <p style="color: white;">Firestore index required</p>
-                        <p style="color: var(--gray-color); font-size: 0.85rem; margin-bottom: 1rem;">Please create the required index for referralEarnings collection</p>
-                        <a href="https://console.firebase.google.com/v1/r/project/football-canvas-hub/firestore/indexes?create_composite=Clxwcm9qZWN0cy9mb290YmFsbC1jYW52YXMtaHViL2RhdGFiYXNlcy8oZGVmYXVsdCkvY29sbGVjdGlvbkdyb3Vwcy9yZWZlcnJhbEVhcm5pbmdzL2luZGV4ZXMvXxABGg4K" 
-                           target="_blank" class="btn-primary" style="display: inline-block; padding: 0.5rem 1rem; border-radius: 5px; text-decoration: none;">
-                            <i class="fas fa-external-link-alt"></i> Create Index
-                        </a>
+                    <td colspan="4" style="text-align: center; padding: 2rem; color: var(--gray-color);">
+                        <i class="fas fa-users" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem; display: block;"></i>
+                        <p>No referrals yet</p>
+                        <small>Share your code to earn 10% commission on first deposits!</small>
                     </td>
                 </tr>
             `;
         } else {
-            showNotification('Error loading referrals: ' + error.message, 'error');
+            // Show recent earnings
+            recentEarnings.forEach(earning => {
+                const date = earning.createdAt?.toDate?.() || new Date();
+                const formattedDate = date.toLocaleDateString();
+                html += `
+                    <tr style="background: rgba(46,204,113,0.05);">
+                        <td style="padding: 0.75rem 0.5rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-user-check" style="color: #2ecc71;"></i>
+                                <span style="color: white;">${earning.referredUserName || 'User'}</span>
+                            </div>
+                        </td>
+                        <td style="padding: 0.75rem 0.5rem; color: var(--gray-color);">${formattedDate}</td>
+                        <td style="padding: 0.75rem 0.5rem;">
+                            <span class="status-badge active" style="background: rgba(46,204,113,0.2); color: #2ecc71;">
+                                Level ${earning.level || 1} - Earned
+                            </span>
+                        </td>
+                        <td style="padding: 0.75rem 0.5rem; text-align: right; color: #2ecc71; font-weight: bold;">
+                            TZS ${earning.amount.toFixed(2)}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            // Show pending referrals (signed up but no deposit)
+            for (const refDoc of referredUsersSnapshot.docs) {
+                const ref = refDoc.data();
+                const alreadyEarned = recentEarnings.some(e => e.referredUserId === refDoc.id);
+                if (!alreadyEarned) {
+                    const date = ref.createdAt?.toDate?.() || new Date();
+                    const formattedDate = date.toLocaleDateString();
+                    html += `
+                        <tr style="opacity: 0.8;">
+                            <td style="padding: 0.75rem 0.5rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <i class="fas fa-hourglass-half" style="color: #f39c12;"></i>
+                                    <span style="color: white;">${ref.fullName || ref.username || 'User'}</span>
+                                </div>
+                            </td>
+                            <td style="padding: 0.75rem 0.5rem; color: var(--gray-color);">${formattedDate}</td>
+                            <td style="padding: 0.75rem 0.5rem;">
+                                <span class="status-badge pending" style="background: rgba(243,156,18,0.2); color: #f39c12;">
+                                    Pending Deposit
+                                </span>
+                            </td>
+                            <td style="padding: 0.75rem 0.5rem; text-align: right; color: var(--gray-color);">—</td>
+                        </tr>
+                    `;
+                }
+            }
+        }
+        
+        if (tbody) tbody.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error loading referral data:', error);
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 2rem; color: var(--danger-color);">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
+                        <p>Error loading referrals</p>
+                        <small>${error.message}</small>
+                        <button class="btn btn-secondary" style="margin-top: 1rem;" onclick="loadReferralsData()">
+                            <i class="fas fa-sync-alt"></i> Retry
+                        </button>
+                    </td>
+                </tr>
+            `;
         }
     } finally {
-        document.getElementById('referralsLoading').style.display = 'none';
+        if (loadingEl) loadingEl.style.display = 'none';
     }
 }
+
+// Make sure functions are globally accessible
+window.loadReferralsData = loadReferralsData;
+window.copyReferralCode = copyReferralCode;
+window.copyReferralLink = copyReferralLink;
+window.shareReferralLink = shareReferralLink;
+
+// Initialize referral data when modal opens
+document.addEventListener('modalOpened', (e) => {
+    if (e.detail?.modalId === 'referralsModal') {
+        setTimeout(loadReferralsData, 100);
+    }
+});
 
 // Load referrals table with filter
 async function loadReferralsTable(referredUsersSnapshot, earningsMap) {
@@ -9055,6 +9591,8 @@ async function addNewUser(e) {
             lastLogin: firebase.firestore.FieldValue.serverTimestamp()
         });
         
+        followedSocialLinks: [],
+        
         showNotification('User created successfully', 'success');
         closeModal('addUserModal');
         document.getElementById('addUserForm').reset();
@@ -9280,23 +9818,23 @@ document.addEventListener('sectionChanged', (e) => {
             });
         })();
 
-    // ========== SLIDESHOW MANAGEMENT (announcements only) ==========
-    const slidesContainer = document.getElementById('slides');
-    const prevButton = document.getElementById('prevBtn');
-    const nextButton = document.getElementById('nextBtn');
-    const dotsContainer = document.getElementById('dotsContainer');
-    
-    let currentIndex = 0;
-    let autoInterval = null;
-    const AUTO_SPEED = 4000;
-    let totalSlides = 0;
+// ========== SLIDESHOW MANAGEMENT (announcements only) ==========
+const slidesContainer = document.getElementById('slides');
+const prevButton = document.getElementById('prevBtn');
+const nextButton = document.getElementById('nextBtn');
+const dotsContainer = document.getElementById('dotsContainer');
 
-    // Helper to get first letter for fallback
-    function getInitial(str) {
-        return str && str.length > 0 ? str.charAt(0).toUpperCase() : '?';
-    }
+let currentIndex = 0;
+let autoInterval = null;
+const AUTO_SPEED = 4000; // 4 seconds per slide
+let totalSlides = 0;
+let isAnimating = false;
 
-// Build slides from active announcements (if any), otherwise show placeholder
+// Helper to get first letter for fallback
+function getInitial(str) {
+    return str && str.length > 0 ? str.charAt(0).toUpperCase() : '?';
+}
+
 // Build slides from active announcements (if any), otherwise show placeholder
 function buildSlides(announcements) {
     let slidesHtml = '';
@@ -9319,7 +9857,6 @@ function buildSlides(announcements) {
                     <div class="desc">${escapeHtml(data.description || '')}</div>
                 `;
             } else if (type === 'other' && data.mediaUrl) {
-                // For slideshow, use isSlideshow = true
                 innerHtml = `
                     <div class="type-badge">🖼️ media</div>
                     <div class="title">${escapeHtml(data.title || '')}</div>
@@ -9332,7 +9869,6 @@ function buildSlides(announcements) {
                 const homeLogo = data.homeLogo ? escapeHtml(data.homeLogo) : null;
                 const awayLogo = data.awayLogo ? escapeHtml(data.awayLogo) : null;
                 
-                // Build team logos with fixed fallback - using separate container to prevent duplication
                 const homeLogoHtml = homeLogo ?
                     `<div class="logo-container" style="position: relative;">
                         <img src="${homeLogo}" alt="${homeTeam}" 
@@ -9362,7 +9898,6 @@ function buildSlides(announcements) {
                     <div class="desc">${escapeHtml(data.description || '')}</div>
                 `;
             } else {
-                // Fallback for unknown type (should not happen)
                 innerHtml = `
                     <div class="type-badge">❓ unknown</div>
                     <div class="title">${escapeHtml(data.title || '')}</div>
@@ -9383,7 +9918,6 @@ function buildSlides(announcements) {
 }
 
 function escapeHtml(unsafe) {
-    // Convert to string, handling null/undefined
     const str = unsafe == null ? '' : String(unsafe);
     return str.replace(/[&<>"]/g, function(m) {
         if (m === '&') return '&amp;';
@@ -9394,126 +9928,227 @@ function escapeHtml(unsafe) {
     });
 }
 
-    function updateSlidePosition() {
-        slidesContainer.style.transform = `translateX(-${currentIndex * 100}%)`;
-        updateActiveDot();
-    }
-    function updateActiveDot() {
-        const dots = document.querySelectorAll('.dot');
-        dots.forEach((dot, idx) => dot.classList.toggle('active', idx === currentIndex));
-    }
-    function goToSlide(n) {
-        if (totalSlides === 0) return;
-        currentIndex = (n + totalSlides) % totalSlides;
-        updateSlidePosition();
-    }
-    function changeSlide(direction) { goToSlide(currentIndex + direction); }
+function updateSlidePosition() {
+    if (!slidesContainer) return;
+    slidesContainer.style.transform = `translateX(-${currentIndex * 100}%)`;
+    updateActiveDot();
+}
 
-    function createDots() {
-        dotsContainer.innerHTML = '';
-        for (let i = 0; i < totalSlides; i++) {
-            const dot = document.createElement('span');
-            dot.classList.add('dot');
-            dot.setAttribute('role', 'button');
-            dot.addEventListener('click', () => { goToSlide(i); resetAutoPlay(); });
-            dotsContainer.appendChild(dot);
-        }
-        updateActiveDot();
-    }
+function updateActiveDot() {
+    const dots = document.querySelectorAll('.dot');
+    dots.forEach((dot, idx) => dot.classList.toggle('active', idx === currentIndex));
+}
 
-    function startAutoPlay() { stopAutoPlay(); if (totalSlides > 1) autoInterval = setInterval(() => changeSlide(1), AUTO_SPEED); }
-    function stopAutoPlay() { if (autoInterval) { clearInterval(autoInterval); autoInterval = null; } }
-    function resetAutoPlay() { stopAutoPlay(); startAutoPlay(); }
-
-    // Attach event listeners (once)
-    if (prevButton) prevButton.addEventListener('click', () => { changeSlide(-1); resetAutoPlay(); });
-    if (nextButton) nextButton.addEventListener('click', () => { changeSlide(1); resetAutoPlay(); });
-    const container = document.getElementById('slideshowContainer');
-    if (container) { container.addEventListener('mouseenter', stopAutoPlay); container.addEventListener('mouseleave', startAutoPlay); }
-    window.addEventListener('keydown', (e) => {
-        if (!container) return;
-        const rect = container.getBoundingClientRect();
-        if (rect.top < window.innerHeight && rect.bottom > 0) {
-            if (e.key === 'ArrowLeft') { e.preventDefault(); changeSlide(-1); resetAutoPlay(); }
-            else if (e.key === 'ArrowRight') { e.preventDefault(); changeSlide(1); resetAutoPlay(); }
-        }
-    });
-
-    // ========== FIRESTORE: realtime announcements ==========
-    const announcementsRef = db.collection('announcements');
-const q = announcementsRef.orderBy('createdAt', 'desc');
-q.onSnapshot((snapshot) => { 
-        const allAnnouncements = [];
-        const activeAnnouncements = [];
-        snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            const docId = docSnap.id;
-            allAnnouncements.push({ id: docId, data: { ...data, id: docId } });
-            if (data.active !== false) { // active if not false
-                activeAnnouncements.push({ id: docId, data });
-            }
-        });
-
-        // 1. rebuild slideshow with active announcements (or placeholder)
-        buildSlides(activeAnnouncements);
-
-        // 2. render user cards (only active)
-        let userHtml = '';
-        activeAnnouncements.forEach(ann => {
-            userHtml += renderUserCard(ann.data);
-        });
-        document.getElementById('announcementsContainer').innerHTML = userHtml || '<div style="color:white;">No active announcements</div>';
-
-        // 3. render admin list (all announcements)
-        // 3. render admin list (all announcements) with working actions
-let adminHtml = '';
-allAnnouncements.forEach(ann => {
-    const data = ann.data;
-    const activeBadge = data.active === false ? '<span class="inactive-badge">inactive</span>' : '<span class="active-badge">active</span>';
+function goToSlide(n) {
+    if (totalSlides === 0 || isAnimating) return;
     
-    adminHtml += `
-        <div class="admin-item" data-id="${ann.id}">
-            <div class="admin-item-info">
-                <strong>${escapeHtml(data.title) || 'no title'}</strong> (${data.type}) ${activeBadge}<br>
-                <small>${escapeHtml(data.description?.substring(0,50))}...</small>
-            </div>
-            <div class="admin-actions">
-                <button class="btn-small btn" onclick="editAnnouncement('${ann.id}')">✏️ Edit</button>
-                <button class="btn-small btn" onclick="toggleAnnouncement('${ann.id}')">${data.active ? '🔴 Deactivate' : '🟢 Activate'}</button>
-                <button class="btn-small btn" onclick="deleteAnnouncement('${ann.id}')">🗑️ Delete</button>
-            </div>
-        </div>
-    `;
-});
-document.getElementById('adminListContainer').innerHTML = adminHtml || '<div style="color:#ccc;">No announcements yet</div>';
-        document.getElementById('adminListContainer').innerHTML = adminHtml || '<div style="color:#ccc;">No announcements yet</div>';
+    isAnimating = true;
+    currentIndex = (n + totalSlides) % totalSlides;
+    updateSlidePosition();
+    
+    setTimeout(() => {
+        isAnimating = false;
+    }, 600); // Match CSS transition duration
+}
 
-        // Attach admin listeners (edit, toggle, delete)
-        document.querySelectorAll('[data-edit]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = e.target.dataset.edit;
-                const ann = allAnnouncements.find(a => a.id === id);
-                if (ann) fillFormForEdit(ann.data, id);
-            });
+function changeSlide(direction) {
+    goToSlide(currentIndex + direction);
+}
+
+function nextSlide() {
+    changeSlide(1);
+}
+
+function prevSlide() {
+    changeSlide(-1);
+}
+
+function createDots() {
+    if (!dotsContainer) return;
+    dotsContainer.innerHTML = '';
+    for (let i = 0; i < totalSlides; i++) {
+        const dot = document.createElement('span');
+        dot.classList.add('dot');
+        dot.setAttribute('role', 'button');
+        dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
+        dot.addEventListener('click', () => {
+            goToSlide(i);
+            resetAutoPlay();
         });
-        document.querySelectorAll('[data-toggle]').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const id = e.target.dataset.toggle;
-                const ann = allAnnouncements.find(a => a.id === id);
-                if (ann) {
-                    await updateDoc(doc(db, 'announcements', id), { active: !ann.data.active });
-                }
-            });
-        });
-        document.querySelectorAll('[data-delete]').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                if (confirm('Delete announcement?')) {
-                    const id = e.target.dataset.delete;
-                    await deleteDoc(doc(db, 'announcements', id));
-                }
-            });
-        });
+        dotsContainer.appendChild(dot);
+    }
+    updateActiveDot();
+}
+
+// ========== AUTO-PLAY FUNCTIONS ==========
+function startAutoPlay() {
+    stopAutoPlay(); // Clear any existing interval
+    
+    if (totalSlides > 1) {
+        console.log('🎬 Starting slideshow auto-play');
+        autoInterval = setInterval(() => {
+            nextSlide();
+        }, AUTO_SPEED);
+    }
+}
+
+function stopAutoPlay() {
+    if (autoInterval) {
+        clearInterval(autoInterval);
+        autoInterval = null;
+        console.log('⏸️ Slideshow auto-play paused');
+    }
+}
+
+function resetAutoPlay() {
+    stopAutoPlay();
+    startAutoPlay();
+}
+
+// ========== EVENT LISTENERS ==========
+if (prevButton) {
+    prevButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        prevSlide();
+        resetAutoPlay();
     });
+}
+
+if (nextButton) {
+    nextButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        nextSlide();
+        resetAutoPlay();
+    });
+}
+
+const slideshowContainer = document.getElementById('slideshowContainer');
+if (slideshowContainer) {
+    // Pause on hover
+    slideshowContainer.addEventListener('mouseenter', () => {
+        stopAutoPlay();
+    });
+    
+    // Resume on mouse leave
+    slideshowContainer.addEventListener('mouseleave', () => {
+        startAutoPlay();
+    });
+    
+    // Touch events for mobile
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    slideshowContainer.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        stopAutoPlay();
+    }, { passive: true });
+    
+    slideshowContainer.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+        startAutoPlay();
+    }, { passive: true });
+    
+    function handleSwipe() {
+        const swipeThreshold = 50;
+        if (touchEndX < touchStartX - swipeThreshold) {
+            nextSlide(); // Swipe left -> next slide
+        }
+        if (touchEndX > touchStartX + swipeThreshold) {
+            prevSlide(); // Swipe right -> previous slide
+        }
+    }
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+    // Only if slideshow is visible
+    const container = document.getElementById('slideshowContainer');
+    if (!container) return;
+    
+    const rect = container.getBoundingClientRect();
+    const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+    
+    if (isVisible) {
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            prevSlide();
+            resetAutoPlay();
+        } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            nextSlide();
+            resetAutoPlay();
+        }
+    }
+});
+
+// ========== FIRESTORE: realtime announcements ==========
+const announcementsRef = db.collection('announcements');
+const q = announcementsRef.orderBy('createdAt', 'desc');
+
+q.onSnapshot((snapshot) => {
+    const allAnnouncements = [];
+    const activeAnnouncements = [];
+    
+    snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const docId = docSnap.id;
+        allAnnouncements.push({ id: docId, data: { ...data, id: docId } });
+        if (data.active !== false) {
+            activeAnnouncements.push({ id: docId, data });
+        }
+    });
+
+    // 1. rebuild slideshow with active announcements (or placeholder)
+    buildSlides(activeAnnouncements);
+    
+    // 2. Start auto-play after building slides
+    startAutoPlay();
+    
+    // 3. render user cards (only active)
+    let userHtml = '';
+    activeAnnouncements.forEach(ann => {
+        userHtml += renderUserCard(ann.data);
+    });
+    const announcementsContainer = document.getElementById('announcementsContainer');
+    if (announcementsContainer) {
+        announcementsContainer.innerHTML = userHtml || '<div style="color:white;">No active announcements</div>';
+    }
+
+    // 4. render admin list (all announcements)
+    let adminHtml = '';
+    allAnnouncements.forEach(ann => {
+        const data = ann.data;
+        const activeBadge = data.active === false ? '<span class="inactive-badge">inactive</span>' : '<span class="active-badge">active</span>';
+        
+        adminHtml += `
+            <div class="admin-item" data-id="${ann.id}">
+                <div class="admin-item-info">
+                    <strong>${escapeHtml(data.title) || 'no title'}</strong> (${data.type}) ${activeBadge}<br>
+                    <small>${escapeHtml(data.description?.substring(0,50))}...</small>
+                </div>
+                <div class="admin-actions">
+                    <button class="btn-small btn" onclick="editAnnouncement('${ann.id}')">✏️ Edit</button>
+                    <button class="btn-small btn" onclick="toggleAnnouncement('${ann.id}')">${data.active ? '🔴 Deactivate' : '🟢 Activate'}</button>
+                    <button class="btn-small btn" onclick="deleteAnnouncement('${ann.id}')">🗑️ Delete</button>
+                </div>
+            </div>
+        `;
+    });
+    const adminListContainer = document.getElementById('adminListContainer');
+    if (adminListContainer) {
+        adminListContainer.innerHTML = adminHtml || '<div style="color:#ccc;">No announcements yet</div>';
+    }
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    stopAutoPlay();
+});
+
+console.log('✅ Slideshow initialized with auto-play');
+
+
 
     // Helper to render user card (match cards also use fallback, no placeholder)
 // Helper to render user card (match cards also use fallback, no placeholder)
@@ -10194,7 +10829,7 @@ const translations = {
         myBets: "My Bets",
         matches: "Matches",
         profile: "Profile",
-        aboutUs: "About Us",
+        announcements: "Announcements",
         logout: "Logout",
         loading: "Loading...",
         welcome: "Welcome",
@@ -10333,7 +10968,7 @@ const translations = {
         // ===== ABOUT SECTION =====
         whatWeDo: "What We Do",
         aboutService: "About our service",
-        aboutUs: "About Us",
+        announcement: "Announcements",
         faq: "FAQ's",
         privacyPolicy: "Privacy Policy",
         termsConditions: "Terms & Conditions",
@@ -10732,7 +11367,7 @@ const translations = {
         myBets: "Dau Zangu",
         matches: "Mechi",
         profile: "Wasifu",
-        aboutUs: "Kuhusu Sisi",
+        abouUs: "Kuhusu Sisi",
         logout: "Toka",
         loading: "Inapakia...",
         welcome: "Karibu",
@@ -11737,7 +12372,7 @@ function translateNavigation() {
                 'mybetSection': 'myBets',
                 'matchesSection': 'matches',
                 'profileSection': 'profile',
-                'aboutsection': 'aboutUs',
+                'announcementsSection': 'Announcements',
                 'adminChatSection': 'support',
                 'adminTransactionApproval': 'approvals',
                 'adminmatchesSection': 'matches',
@@ -14620,140 +15255,145 @@ class RefundSystem {
         `;
     }
 
-    // ========== PROCESS REFUND ==========
-    async processRefund(matchId) {
-        if (!confirm('Are you sure you want to process refunds for all lost bets in this match?')) {
-            return;
+async processRefund(matchId) {
+    if (!confirm('Are you sure you want to process refunds for all lost bets in this match?')) {
+        return;
+    }
+    
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    
+    try {
+        const matchDoc = await db.collection('matches').doc(matchId).get();
+        if (!matchDoc.exists) {
+            throw new Error('Match not found');
         }
-
-        const btn = event.currentTarget;
-        const originalText = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
-        try {
-            const matchDoc = await db.collection('matches').doc(matchId).get();
-            if (!matchDoc.exists) {
-                throw new Error('Match not found');
-            }
-            const match = matchDoc.data();
-
-            const lostData = await this.getLostBetsForMatch(matchId);
-            
-            if (lostData.totalLostStake === 0) {
-                showNotification('No lost bets found for this match', 'warning');
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-                return;
-            }
-
-            const batch = db.batch();
-            const userRefunds = {};
-            const refundRecords = [];
-
-            // Process single bets
-            for (const [userId, data] of Object.entries(lostData.userLostBets)) {
-                for (const bet of data.bets) {
-                    if (bet.type === 'single') {
-                        const betRef = db.collection('bets').doc(bet.id);
-                        batch.update(betRef, {
-                            status: 'refunded',
-                            refundedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                            refundAmount: bet.stake,
-                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-
-                        if (!userRefunds[userId]) userRefunds[userId] = 0;
-                        userRefunds[userId] += bet.stake || 0;
-
-                        refundRecords.push({
-                            userId,
-                            betId: bet.id,
-                            amount: bet.stake,
-                            type: 'single'
-                        });
-                    }
-                }
-            }
-
-            // Process multi bets
-            for (const bet of lostData.affectedMultiBets) {
-                const betRef = db.collection('bets').doc(bet.id);
-                const updatedSelections = (bet.selections || []).map(s => {
-                    if (s.matchId === matchId) {
-                        return { ...s, status: 'refunded', refundedAt: new Date().toISOString() };
-                    }
-                    return s;
-                });
-
-                batch.update(betRef, {
-                    selections: updatedSelections,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                const proportionalRefund = (bet.stake || 0) / (bet.selections?.length || 1);
-                if (!userRefunds[bet.userId]) userRefunds[bet.userId] = 0;
-                userRefunds[bet.userId] += proportionalRefund;
-
-                refundRecords.push({
-                    userId: bet.userId,
-                    betId: bet.id,
-                    amount: proportionalRefund,
-                    type: 'multi'
-                });
-            }
-
-            // Update user balances and create transactions
-            for (const [userId, amount] of Object.entries(userRefunds)) {
-                const userRef = db.collection('users').doc(userId);
-                batch.update(userRef, {
-                    balance: firebase.firestore.FieldValue.increment(amount),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-
-                const transRef = db.collection('transactions').doc();
-                batch.set(transRef, {
-                    userId: userId,
-                    type: 'refund',
-                    amount: amount,
-                    description: `Refund for match: ${match.homeTeam || 'Home'} vs ${match.awayTeam || 'Away'}`,
-                    matchId: matchId,
-                    date: firebase.firestore.FieldValue.serverTimestamp(),
-                    processedBy: window.authManager?.user?.uid || 'system',
-                    refundDetails: refundRecords.filter(r => r.userId === userId)
-                });
-            }
-
-            // Add audit log
-            const auditRef = db.collection('auditLogs').doc();
-            batch.set(auditRef, {
-                action: 'process_refund',
-                matchId: matchId,
-                matchName: `${match.homeTeam || 'Home'} vs ${match.awayTeam || 'Away'}`,
-                totalAmount: lostData.totalLostStake,
-                usersAffected: Object.keys(userRefunds).length,
-                betsAffected: lostData.totalLostBets,
-                processedBy: window.authManager?.user?.uid || 'system',
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-
-            await batch.commit();
-
-            showNotification(
-                `✅ Successfully refunded TZS ${lostData.totalLostStake.toFixed(2)} to ${Object.keys(userRefunds).length} users`,
-                'success'
-            );
-
-            await this.loadRefundMatches();
-            await this.loadRefundHistory();
-
-        } catch (error) {
-            console.error("Error processing refund:", error);
-            showNotification(`Error: ${error.message}`, 'error');
+        const match = matchDoc.data();
+        
+        const lostData = await this.getLostBetsForMatch(matchId);
+        
+        if (lostData.totalLostStake === 0) {
+            showNotification('No lost bets found for this match', 'warning');
             btn.disabled = false;
             btn.innerHTML = originalText;
+            return;
         }
+        
+        const batch = db.batch();
+        const userRefunds = {};
+        const refundRecords = [];
+        
+        // Process single bets
+        for (const [userId, data] of Object.entries(lostData.userLostBets)) {
+            for (const bet of data.bets) {
+                if (bet.type === 'single') {
+                    const betRef = db.collection('bets').doc(bet.id);
+                    batch.update(betRef, {
+                        status: 'refunded',
+                        refundedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        refundAmount: bet.stake,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    if (!userRefunds[userId]) userRefunds[userId] = 0;
+                    userRefunds[userId] += bet.stake || 0;
+                    
+                    refundRecords.push({
+                        userId,
+                        betId: bet.id,
+                        amount: bet.stake,
+                        type: 'single'
+                    });
+                }
+            }
+        }
+        
+        // Process multi bets
+        for (const bet of lostData.affectedMultiBets) {
+            const betRef = db.collection('bets').doc(bet.id);
+            const updatedSelections = (bet.selections || []).map(s => {
+                if (s.matchId === matchId) {
+                    return { ...s, status: 'refunded', refundedAt: new Date().toISOString() };
+                }
+                return s;
+            });
+            
+            batch.update(betRef, {
+                selections: updatedSelections,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            const proportionalRefund = (bet.stake || 0) / (bet.selections?.length || 1);
+            if (!userRefunds[bet.userId]) userRefunds[bet.userId] = 0;
+            userRefunds[bet.userId] += proportionalRefund;
+            
+            refundRecords.push({
+                userId: bet.userId,
+                betId: bet.id,
+                amount: proportionalRefund,
+                type: 'multi'
+            });
+        }
+        
+        // Update user balances and create transactions
+        for (const [userId, amount] of Object.entries(userRefunds)) {
+            const userRef = db.collection('users').doc(userId);
+            batch.update(userRef, {
+                balance: firebase.firestore.FieldValue.increment(amount),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            const transRef = db.collection('transactions').doc();
+            batch.set(transRef, {
+                userId: userId,
+                type: 'refund',
+                amount: amount,
+                description: `Refund for match: ${match.homeTeam || 'Home'} vs ${match.awayTeam || 'Away'}`,
+                matchId: matchId,
+                date: firebase.firestore.FieldValue.serverTimestamp(),
+                processedBy: window.authManager?.user?.uid || 'system',
+                refundDetails: refundRecords.filter(r => r.userId === userId)
+            });
+        }
+        
+        // Add audit log
+        const auditRef = db.collection('auditLogs').doc();
+        batch.set(auditRef, {
+            action: 'process_refund',
+            matchId: matchId,
+            matchName: `${match.homeTeam || 'Home'} vs ${match.awayTeam || 'Away'}`,
+            totalAmount: lostData.totalLostStake,
+            usersAffected: Object.keys(userRefunds).length,
+            betsAffected: lostData.totalLostBets,
+            processedBy: window.authManager?.user?.uid || 'system',
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        await batch.commit();
+        
+        showNotification(
+            `✅ Successfully refunded TZS ${lostData.totalLostStake.toFixed(2)} to ${Object.keys(userRefunds).length} users`,
+            'success'
+        );
+        
+        await this.loadRefundMatches();
+        await this.loadRefundHistory();
+        
+        // 👇 ADD THIS LINE TO REFRESH MY BETS
+        if (window.bettingSystem && typeof window.bettingSystem.loadMyBets === 'function') {
+            window.bettingSystem.loadMyBets();
+        }
+        
+    } catch (error) {
+        console.error("Error processing refund:", error);
+        showNotification(`Error: ${error.message}`, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
     }
+}
 
     // ========== CANCEL REFUND ==========
     async cancelRefund(matchId) {
@@ -14793,6 +15433,11 @@ class RefundSystem {
             });
 
             showNotification('Refund cancelled successfully', 'success');
+            
+            // After successful cancellation/reinstatement, add:
+if (window.bettingSystem && typeof window.bettingSystem.loadMyBets === 'function') {
+    window.bettingSystem.loadMyBets();
+}
             
             await this.loadCancelledRefunds();
             await this.loadRefundMatches();
@@ -15980,4 +16625,2903 @@ function addMobileNotificationOption() {
 document.addEventListener('sectionChanged', () => {
     setTimeout(addMobileNotificationOption, 500);
 });
+
+// ==================== COMPLETE REFERRAL BONUS SYSTEM (REAL-TIME) ====================
+
+class ReferralBonusSystem {
+    constructor() {
+        this.bonusLevels = {
+            1: 0.10,  // Level 1: 10%
+            2: 0.02,  // Level 2: 2%
+            3: 0.01   // Level 3: 1%
+        };
+        this.realtimeListeners = [];
+    }
+
+    /**
+     * Initialize real-time listeners for deposit approvals
+     */
+    initRealtimeListeners() {
+        console.log("🎁 Initializing real-time referral bonus listeners...");
+        
+        // Listen for newly approved deposit transactions
+        const unsubscribe = db.collection('transactions')
+            .where('type', '==', 'deposit')
+            .where('status', '==', 'approved')
+            .onSnapshot(async (snapshot) => {
+                snapshot.docChanges().forEach(async (change) => {
+                    if (change.type === 'added') {
+                        const transaction = { id: change.doc.id, ...change.doc.data() };
+                        console.log("📦 New approved deposit detected:", transaction);
+                        
+                        // Check if this deposit has already been processed for bonuses
+                        if (transaction.referralBonusesProcessed) {
+                            console.log("Referral bonuses already processed for this deposit");
+                            return;
+                        }
+                        
+                        // Check if this is the user's first deposit
+                        const isFirstDeposit = await this.isFirstDeposit(transaction.userId);
+                        
+                        if (isFirstDeposit) {
+                            console.log(`🎉 First deposit detected for user ${transaction.userId} - Processing referral bonuses`);
+                            await this.processReferralBonuses(transaction.userId, transaction.amount, transaction.id);
+                            
+                            // Mark transaction as processed
+                            await db.collection('transactions').doc(transaction.id).update({
+                                referralBonusesProcessed: true,
+                                referralProcessedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        } else {
+                            console.log(`Not first deposit for user ${transaction.userId} - No referral bonuses`);
+                        }
+                    }
+                });
+            });
+        
+        this.realtimeListeners.push(unsubscribe);
+        
+        // Also listen for user document changes to track referral updates
+        const userUnsubscribe = db.collection('users')
+            .onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'modified') {
+                        const userData = change.doc.data();
+                        // If referral earnings were updated, refresh UI
+                        if (userData.totalReferralEarnings !== undefined) {
+                            this.refreshReferralUI(change.doc.id);
+                        }
+                    }
+                });
+            });
+        
+        this.realtimeListeners.push(userUnsubscribe);
+        
+        console.log("✅ Real-time referral listeners active");
+    }
+
+    /**
+     * Get the referral chain (upline) for a user
+     * @param {string} userId - The user ID to get upline for
+     * @param {number} maxLevels - Maximum levels to retrieve
+     * @returns {Promise<Array>} Array of referrer objects at each level
+     */
+    async getReferralUpline(userId, maxLevels = 3) {
+        const upline = [];
+        let currentUserId = userId;
+        const processedIds = new Set(); // Prevent infinite loops
+        
+        for (let level = 1; level <= maxLevels; level++) {
+            if (processedIds.has(currentUserId)) break;
+            processedIds.add(currentUserId);
+            
+            try {
+                const userDoc = await db.collection('users').doc(currentUserId).get();
+                if (!userDoc.exists) break;
+                
+                const referredBy = userDoc.data().referredBy;
+                if (!referredBy) break;
+                
+                // Get referrer's data
+                const referrerDoc = await db.collection('users').doc(referredBy).get();
+                if (!referrerDoc.exists) break;
+                
+                upline.push({
+                    level: level,
+                    userId: referredBy,
+                    userData: referrerDoc.data(),
+                    bonusPercentage: this.bonusLevels[level]
+                });
+                
+                currentUserId = referredBy;
+            } catch (error) {
+                console.error(`Error fetching referrer at level ${level}:`, error);
+                break;
+            }
+        }
+        
+        return upline;
+    }
+
+    /**
+     * Process referral bonuses for a user's first deposit
+     * @param {string} userId - The user who made the deposit
+     * @param {number} depositAmount - The deposit amount
+     * @param {string} transactionId - The deposit transaction ID
+     * @returns {Promise<Object>} Summary of bonuses distributed
+     */
+    async processReferralBonuses(userId, depositAmount, transactionId) {
+        const bonusSummary = {
+            totalBonuses: 0,
+            bonusesDistributed: [],
+            errors: [],
+            timestamp: new Date().toISOString()
+        };
+        
+        try {
+            // Double-check if this is the user's first deposit
+            const isFirstDeposit = await this.isFirstDeposit(userId);
+            if (!isFirstDeposit) {
+                console.log(`User ${userId} has already received first deposit bonuses`);
+                return bonusSummary;
+            }
+            
+            // Get the user's data
+            const userDoc = await db.collection('users').doc(userId).get();
+            const userData = userDoc.data();
+            
+            if (!userData.referredBy) {
+                console.log(`User ${userId} has no referrer - no bonuses to process`);
+                // Still mark that first deposit was checked
+                await this.markFirstDepositProcessed(userId, depositAmount, bonusSummary);
+                return bonusSummary;
+            }
+            
+            // Get the referral chain (up to 3 levels)
+            const upline = await this.getReferralUpline(userId, 3);
+            
+            if (upline.length === 0) {
+                console.log(`No valid referrers found for user ${userId}`);
+                await this.markFirstDepositProcessed(userId, depositAmount, bonusSummary);
+                return bonusSummary;
+            }
+            
+            console.log(`Processing referral bonuses for user ${userId}, deposit: TZS ${depositAmount}`);
+            console.log(`Upline:`, upline.map(u => ({ level: u.level, userId: u.userId })));
+            
+            const batch = db.batch();
+            const updates = [];
+            
+            // Process bonuses for each referrer level
+            for (const referrer of upline) {
+                const bonusAmount = depositAmount * referrer.bonusPercentage;
+                
+                if (bonusAmount <= 0) continue;
+                
+                // Update referrer's balance and stats
+                const referrerRef = db.collection('users').doc(referrer.userId);
+                batch.update(referrerRef, {
+                    balance: firebase.firestore.FieldValue.increment(bonusAmount),
+                    totalReferralEarnings: firebase.firestore.FieldValue.increment(bonusAmount),
+                    lastReferralBonus: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Create referral earning record
+                const earningRef = db.collection('referralEarnings').doc();
+                batch.set(earningRef, {
+                    referrerId: referrer.userId,
+                    referrerName: referrer.userData?.fullName || referrer.userData?.username || 'User',
+                    referredUserId: userId,
+                    referredUserName: userData.fullName || userData.username || 'User',
+                    amount: bonusAmount,
+                    depositAmount: depositAmount,
+                    level: referrer.level,
+                    percentage: referrer.bonusPercentage * 100,
+                    transactionId: transactionId,
+                    status: 'paid',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    paidAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Create transaction record for the bonus
+                const commissionTransRef = db.collection('transactions').doc();
+                batch.set(commissionTransRef, {
+                    userId: referrer.userId,
+                    type: 'referral_bonus',
+                    amount: bonusAmount,
+                    description: `${referrer.bonusPercentage * 100}% Level ${referrer.level} referral bonus from ${userData.fullName || userData.username || 'User'}'s first deposit of TZS ${depositAmount.toFixed(2)}`,
+                    date: firebase.firestore.FieldValue.serverTimestamp(),
+                    relatedUserId: userId,
+                    level: referrer.level,
+                    depositAmount: depositAmount
+                });
+                
+                // Create notification for referrer
+                const notificationRef = db.collection('notifications').doc();
+                batch.set(notificationRef, {
+                    userId: referrer.userId,
+                    title: `🎉 Level ${referrer.level} Referral Bonus!`,
+                    message: `You earned TZS ${bonusAmount.toFixed(2)} (${referrer.bonusPercentage * 100}%) from ${userData.fullName || userData.username || 'User'}'s first deposit of TZS ${depositAmount.toFixed(2)}!`,
+                    type: 'success',
+                    read: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    clickAction: '/referrals'
+                });
+                
+                bonusSummary.totalBonuses += bonusAmount;
+                bonusSummary.bonusesDistributed.push({
+                    level: referrer.level,
+                    referrerId: referrer.userId,
+                    referrerName: referrer.userData?.fullName || referrer.userData?.username || 'User',
+                    bonusAmount: bonusAmount,
+                    percentage: referrer.bonusPercentage * 100
+                });
+                
+                updates.push({
+                    type: 'bonus',
+                    level: referrer.level,
+                    userId: referrer.userId,
+                    amount: bonusAmount
+                });
+                
+                console.log(`✅ Level ${referrer.level} bonus: TZS ${bonusAmount.toFixed(2)} to ${referrer.userId}`);
+            }
+            
+            // Mark that first deposit bonuses have been processed for this user
+            const userRef = db.collection('users').doc(userId);
+            batch.update(userRef, {
+                firstDepositBonusesProcessed: true,
+                firstDepositAmount: depositAmount,
+                firstDepositBonusesDistributed: bonusSummary.totalBonuses,
+                firstDepositDate: firebase.firestore.FieldValue.serverTimestamp(),
+                referralBonusesGenerated: bonusSummary.bonusesDistributed.map(b => ({
+                    level: b.level,
+                    referrerId: b.referrerId,
+                    amount: b.bonusAmount
+                })),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            // Commit all updates
+            await batch.commit();
+            
+            // Send real-time notifications to referrers
+            await this.sendRealtimeNotifications(userId, userData, bonusSummary.bonusesDistributed, depositAmount);
+            
+            // Refresh UI for all affected users
+            await this.refreshAllAffectedUsersUI(bonusSummary.bonusesDistributed);
+            
+            console.log(`🎁 Referral bonuses processed: TZS ${bonusSummary.totalBonuses.toFixed(2)} distributed across ${bonusSummary.bonusesDistributed.length} level(s)`);
+            
+            // Show admin notification
+            if (window.authManager?.userData?.role === 'admin' || window.authManager?.userData?.role === 'superadmin') {
+                showNotification(
+                    `Referral bonuses processed: TZS ${bonusSummary.totalBonuses.toFixed(2)} distributed to ${bonusSummary.bonusesDistributed.length} referrers`,
+                    'success',
+                    { duration: 5000 }
+                );
+            }
+            
+        } catch (error) {
+            console.error("Error processing referral bonuses:", error);
+            bonusSummary.errors.push({
+                level: 0,
+                referrerId: null,
+                error: error.message
+            });
+        }
+        
+        return bonusSummary;
+    }
+    
+    /**
+     * Check if this is the user's first deposit (and bonuses not yet processed)
+     * @param {string} userId 
+     * @returns {Promise<boolean>}
+     */
+    async isFirstDeposit(userId) {
+        try {
+            // Check if first deposit bonuses have already been processed
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (userDoc.exists && userDoc.data().firstDepositBonusesProcessed === true) {
+                return false;
+            }
+            
+            // Check if there are any approved deposits for this user
+            const depositsSnapshot = await db.collection('transactions')
+                .where('userId', '==', userId)
+                .where('type', '==', 'deposit')
+                .where('status', '==', 'approved')
+                .get();
+            
+            // If no approved deposits, this is the first
+            return depositsSnapshot.empty;
+            
+        } catch (error) {
+            console.error("Error checking first deposit:", error);
+            return false;
+        }
+    }
+    
+    /**
+     * Mark that first deposit bonuses have been processed
+     * @param {string} userId 
+     * @param {number} depositAmount 
+     * @param {Object} bonusSummary 
+     */
+    async markFirstDepositProcessed(userId, depositAmount, bonusSummary) {
+        try {
+            await db.collection('users').doc(userId).update({
+                firstDepositBonusesProcessed: true,
+                firstDepositAmount: depositAmount,
+                firstDepositBonusesDistributed: bonusSummary.totalBonuses,
+                firstDepositDate: firebase.firestore.FieldValue.serverTimestamp(),
+                referralBonusesGenerated: bonusSummary.bonusesDistributed.map(b => ({
+                    level: b.level,
+                    referrerId: b.referrerId,
+                    amount: b.bonusAmount
+                }))
+            });
+        } catch (error) {
+            console.error("Error marking first deposit processed:", error);
+        }
+    }
+    
+    /**
+     * Send real-time notifications to referrers
+     */
+    async sendRealtimeNotifications(referredUserId, referredUserData, bonusesDistributed, depositAmount) {
+        for (const bonus of bonusesDistributed) {
+            // Show in-app notification if referrer is currently logged in
+            if (window.authManager?.user?.uid === bonus.referrerId) {
+                showNotification(
+                    `🎉 You earned TZS ${bonus.bonusAmount.toFixed(2)}!`,
+                    `Level ${bonus.level} referral bonus from ${referredUserData.fullName || referredUserData.username || 'User'}'s first deposit!`,
+                    'vip',
+                    { duration: 8000 }
+                );
+            }
+            
+            // Also show a browser notification
+            if (window.notificationService && window.notificationService.permission === 'granted') {
+                window.notificationService.showNotification(
+                    `🎉 Level ${bonus.level} Referral Bonus!`,
+                    `You earned TZS ${bonus.bonusAmount.toFixed(2)} from ${referredUserData.fullName || referredUserData.username || 'User'}'s first deposit!`,
+                    'success'
+                );
+            }
+        }
+    }
+    
+    /**
+     * Refresh UI for all affected users
+     */
+    async refreshAllAffectedUsersUI(bonusesDistributed) {
+        // Refresh current user's balance if they received a bonus
+        const currentUserId = window.authManager?.user?.uid;
+        if (currentUserId && bonusesDistributed.some(b => b.referrerId === currentUserId)) {
+            // Refresh user data
+            if (window.authManager) {
+                await window.authManager.loadUserData(currentUserId);
+            }
+            
+            // Refresh balance displays
+            if (typeof updateAllBalanceDisplays === 'function') {
+                updateAllBalanceDisplays();
+            }
+            
+            // Show notification about new bonus
+            const myBonus = bonusesDistributed.find(b => b.referrerId === currentUserId);
+            if (myBonus) {
+                showNotification(
+                    `🎉 You received a Level ${myBonus.level} referral bonus!`,
+                    `TZS ${myBonus.bonusAmount.toFixed(2)} has been added to your balance.`,
+                    'vip'
+                );
+            }
+        }
+        
+        // Refresh referrals modal if it's open
+        const referralsModal = document.getElementById('referralsModal');
+        if (referralsModal && referralsModal.classList.contains('active')) {
+            setTimeout(() => {
+                if (typeof loadReferralsData === 'function') {
+                    loadReferralsData();
+                }
+            }, 500);
+        }
+    }
+    
+    /**
+     * Refresh referral UI for a specific user
+     */
+    async refreshReferralUI(userId) {
+        const currentUserId = window.authManager?.user?.uid;
+        if (currentUserId === userId) {
+            // Refresh user's own referral data
+            if (typeof loadReferralsData === 'function') {
+                loadReferralsData();
+            }
+            
+            // Update referral count in menu
+            const userData = window.authManager?.userData;
+            if (userData) {
+                const menuReferralCount = document.getElementById('menuReferralCount');
+                const menuReferralBadge = document.getElementById('menuReferralBadge');
+                if (menuReferralCount) menuReferralCount.textContent = userData.referralCount || 0;
+                if (menuReferralBadge) {
+                    menuReferralBadge.textContent = userData.referralCount || 0;
+                    menuReferralBadge.style.display = (userData.referralCount || 0) > 0 ? 'inline-block' : 'none';
+                }
+            }
+        }
+    }
+    
+    /**
+     * Get referral statistics for a user
+     * @param {string} userId 
+     * @returns {Promise<Object>}
+     */
+    async getReferralStats(userId) {
+        try {
+            // Get all referrals (direct)
+            const directReferralsSnapshot = await db.collection('users')
+                .where('referredBy', '==', userId)
+                .get();
+            
+            // Get all earnings
+            const earningsSnapshot = await db.collection('referralEarnings')
+                .where('referrerId', '==', userId)
+                .orderBy('createdAt', 'desc')
+                .get();
+            
+            // Calculate earnings by level
+            const earningsByLevel = {
+                1: { count: 0, total: 0 },
+                2: { count: 0, total: 0 },
+                3: { count: 0, total: 0 }
+            };
+            
+            let totalEarnings = 0;
+            const recentEarnings = [];
+            
+            earningsSnapshot.forEach(doc => {
+                const earning = doc.data();
+                const level = earning.level || 1;
+                if (earningsByLevel[level]) {
+                    earningsByLevel[level].count++;
+                    earningsByLevel[level].total += earning.amount;
+                }
+                totalEarnings += earning.amount;
+                
+                recentEarnings.push({
+                    id: doc.id,
+                    ...earning,
+                    date: earning.createdAt?.toDate?.() || new Date()
+                });
+            });
+            
+            return {
+                totalReferrals: directReferralsSnapshot.size,
+                totalEarnings: totalEarnings,
+                earningsByLevel: earningsByLevel,
+                recentEarnings: recentEarnings.slice(0, 10),
+                activeReferrals: earningsSnapshot.size,
+                directReferrals: directReferralsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }))
+            };
+            
+        } catch (error) {
+            console.error("Error getting referral stats:", error);
+            return {
+                totalReferrals: 0,
+                totalEarnings: 0,
+                earningsByLevel: { 1: { count: 0, total: 0 }, 2: { count: 0, total: 0 }, 3: { count: 0, total: 0 } },
+                recentEarnings: [],
+                activeReferrals: 0,
+                directReferrals: []
+            };
+        }
+    }
+    
+    /**
+     * Clean up listeners
+     */
+    cleanup() {
+        this.realtimeListeners.forEach(unsubscribe => {
+            if (typeof unsubscribe === 'function') unsubscribe();
+        });
+        this.realtimeListeners = [];
+        console.log("Referral bonus listeners cleaned up");
+    }
+}
+
+// ==================== UPDATED LOAD REFERRALS DATA FUNCTION ====================
+
+async function loadReferralsData() {
+    const userId = window.authManager?.user?.uid;
+    if (!userId) {
+        showNotification('Please login first', 'error');
+        return;
+    }
+    
+    // Show loading state
+    const loadingEl = document.getElementById('referralsLoading');
+    const tbody = document.getElementById('referralsTableBody');
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (tbody) tbody.innerHTML = '';
+    
+    try {
+        // Get user's referral code
+        const userDoc = await db.collection('users').doc(userId).get();
+        const userData = userDoc.data();
+        const referralCode = userData.referralCode || 'N/A';
+        
+        // Update referral code display
+        const modalReferralCode = document.getElementById('modalReferralCode');
+        if (modalReferralCode) modalReferralCode.value = referralCode;
+        
+        // Generate and display referral link
+        const baseUrl = window.location.origin + window.location.pathname;
+        const referralLink = `${baseUrl}?ref=${referralCode}`;
+        const modalReferralLink = document.getElementById('modalReferralLink');
+        if (modalReferralLink) modalReferralLink.value = referralLink;
+        
+        // Get referral statistics using the bonus system
+        let stats = { totalReferrals: 0, activeReferrals: 0, totalEarnings: 0, recentEarnings: [], earningsByLevel: { 1: { count: 0, total: 0 }, 2: { count: 0, total: 0 }, 3: { count: 0, total: 0 } } };
+        
+        if (window.referralBonusSystem) {
+            stats = await window.referralBonusSystem.getReferralStats(userId);
+        } else {
+            // Fallback: get data directly
+            const referredUsersSnapshot = await db.collection('users')
+                .where('referredBy', '==', userId)
+                .get();
+            
+            const earningsSnapshot = await db.collection('referralEarnings')
+                .where('referrerId', '==', userId)
+                .orderBy('createdAt', 'desc')
+                .get();
+            
+            stats.totalReferrals = referredUsersSnapshot.size;
+            stats.activeReferrals = earningsSnapshot.size;
+            
+            earningsSnapshot.forEach(doc => {
+                const earning = doc.data();
+                stats.totalEarnings += earning.amount;
+                stats.recentEarnings.push({ ...earning, date: earning.createdAt?.toDate?.() || new Date() });
+                
+                const level = earning.level || 1;
+                if (stats.earningsByLevel[level]) {
+                    stats.earningsByLevel[level].count++;
+                    stats.earningsByLevel[level].total += earning.amount;
+                }
+            });
+        }
+        
+        // Update stats display
+        const totalReferralsEl = document.getElementById('modalTotalReferrals');
+        const activeReferralsEl = document.getElementById('modalActiveReferrals');
+        const totalEarningsEl = document.getElementById('modalTotalEarnings');
+        
+        if (totalReferralsEl) totalReferralsEl.textContent = stats.totalReferrals;
+        if (activeReferralsEl) activeReferralsEl.textContent = stats.activeReferrals;
+        if (totalEarningsEl) totalEarningsEl.textContent = `TZS ${stats.totalEarnings.toFixed(2)}`;
+        
+        // Build referrals table
+        let html = '';
+        
+        // Show earnings by level summary
+        html += `
+            <tr style="background: rgba(255,166,43,0.1);">
+                <td colspan="4" style="padding: 1rem;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; text-align: center;">
+                        <div>
+                            <div style="color: var(--accent-color); font-weight: bold;">Level 1</div>
+                            <div>${stats.earningsByLevel[1].count} referrals</div>
+                            <div style="color: #2ecc71;">TZS ${stats.earningsByLevel[1].total.toFixed(2)}</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--accent-color); font-weight: bold;">Level 2</div>
+                            <div>${stats.earningsByLevel[2].count} referrals</div>
+                            <div style="color: #2ecc71;">TZS ${stats.earningsByLevel[2].total.toFixed(2)}</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--accent-color); font-weight: bold;">Level 3</div>
+                            <div>${stats.earningsByLevel[3].count} referrals</div>
+                            <div style="color: #2ecc71;">TZS ${stats.earningsByLevel[3].total.toFixed(2)}</div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+        
+        if (stats.recentEarnings.length === 0 && stats.totalReferrals === 0) {
+            html += `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 2rem; color: var(--gray-color);">
+                        <i class="fas fa-users" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem; display: block;"></i>
+                        <p>No referrals yet</p>
+                        <small>Share your code to start earning 10% commission on first deposits!</small>
+                    </td>
+                </tr>
+            `;
+        } else {
+            // Show recent earnings
+            if (stats.recentEarnings.length > 0) {
+                stats.recentEarnings.forEach(earning => {
+                    const date = earning.date instanceof Date ? earning.date : new Date();
+                    const formattedDate = date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                    
+                    html += `
+                        <tr style="background: rgba(46, 204, 113, 0.05);">
+                            <td style="padding: 0.75rem 0.5rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <i class="fas fa-user-check" style="color: #2ecc71;"></i>
+                                    <span style="color: white;">${earning.referredUserName || 'User'}</span>
+                                </div>
+                            </td>
+                            <td style="padding: 0.75rem 0.5rem; color: var(--gray-color);">${formattedDate}</td>
+                            <td style="padding: 0.75rem 0.5rem;">
+                                <span class="status-badge active" style="background: rgba(46,204,113,0.2); color: #2ecc71;">
+                                    Level ${earning.level || 1} - Earned
+                                </span>
+                            </td>
+                            <td style="padding: 0.75rem 0.5rem; text-align: right; color: #2ecc71; font-weight: bold;">
+                                TZS ${earning.amount.toFixed(2)}
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            // Show pending referrals (signed up but no deposit yet)
+            if (stats.directReferrals) {
+                const pendingReferrals = stats.directReferrals.filter(ref => {
+                    return !stats.recentEarnings.some(earn => earn.referredUserId === ref.uid || earn.referredUserId === ref.id);
+                });
+                
+                pendingReferrals.forEach(ref => {
+                    const date = ref.createdAt?.toDate?.() || new Date();
+                    const formattedDate = date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                    const userName = ref.fullName || ref.username || 'User';
+                    
+                    html += `
+                        <tr style="opacity: 0.8;">
+                            <td style="padding: 0.75rem 0.5rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <i class="fas fa-hourglass-half" style="color: #f39c12;"></i>
+                                    <span style="color: white;">${userName}</span>
+                                </div>
+                            </td>
+                            <td style="padding: 0.75rem 0.5rem; color: var(--gray-color);">${formattedDate}</td>
+                            <td style="padding: 0.75rem 0.5rem;">
+                                <span class="status-badge pending" style="background: rgba(243,156,18,0.2); color: #f39c12;">
+                                    Pending Deposit
+                                </span>
+                            </td>
+                            <td style="padding: 0.75rem 0.5rem; text-align: right; color: var(--gray-color);">—</td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+        
+        if (tbody) tbody.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error loading referral data:', error);
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 2rem; color: var(--danger-color);">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
+                        <p>Error loading referrals</p>
+                        <small>${error.message}</small>
+                        <button class="btn btn-secondary" style="margin-top: 1rem;" onclick="loadReferralsData()">
+                            <i class="fas fa-sync-alt"></i> Retry
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+    } finally {
+        if (loadingEl) loadingEl.style.display = 'none';
+    }
+}
+
+
+
+// ==================== INITIALIZE REFERRAL SYSTEM ====================
+
+// Initialize referral system when auth is ready
+const initReferralSystem = setInterval(() => {
+    if (window.authManager && window.authManager.user) {
+        clearInterval(initReferralSystem);
+        
+        if (!window.referralBonusSystem) {
+            window.referralBonusSystem = new ReferralBonusSystem();
+            window.referralBonusSystem.initRealtimeListeners();
+            console.log("🎁 Multi-level Referral Bonus System initialized with real-time listeners");
+        }
+    }
+}, 1000);
+
+// Clean up on page unload
+window.addEventListener('beforeunload', () => {
+    if (window.referralBonusSystem) {
+        window.referralBonusSystem.cleanup();
+    }
+});
+
+// Also refresh referrals data when the modal is opened
+document.addEventListener('modalOpened', (e) => {
+    if (e.detail?.modalId === 'referralsModal') {
+        setTimeout(() => {
+            loadReferralsData();
+        }, 100);
+    }
+});
+
+
+
+
+
+
+
+
+
+
+// ==================== UPDATED WITHDRAWAL SYSTEM WITH WIN REQUIREMENTS ====================
+
+class WithdrawalManager {
+    constructor() {
+        this.MIN_WINS_REQUIRED = 5; // Minimum matches that must be won
+        this.REQUIRE_ALL_WINS = true; // All selected matches must be won
+        this.init();
+    }
+
+    async init() {
+        console.log("💰 Withdrawal Manager initialized - Win requirements: 5+ matches won");
+    }
+
+    /**
+     * Check if user is eligible for withdrawal based on won matches
+     * @param {string} userId - User ID to check
+     * @returns {Promise<Object>} Eligibility status with details
+     */
+    async checkWithdrawalEligibility(userId) {
+        try {
+            // Get all won bets for this user
+            const wonBetsSnapshot = await db.collection('bets')
+                .where('userId', '==', userId)
+                .where('status', '==', 'won')
+                .get();
+            
+            let totalWonMatches = 0;
+            let wonMatchesList = [];
+            
+            // Process each won bet
+            for (const doc of wonBetsSnapshot.docs) {
+                const bet = doc.data();
+                
+                if (bet.type === 'single') {
+                    // Single bet - one match won
+                    totalWonMatches++;
+                    wonMatchesList.push({
+                        betId: doc.id,
+                        type: 'single',
+                        match: bet.match || `${bet.matchId}`,
+                        stake: bet.stake,
+                        profit: bet.potentialProfit,
+                        wonAt: bet.updatedAt?.toDate?.() || bet.createdAt?.toDate?.()
+                    });
+                } else if (bet.type === 'multi') {
+                    // Multi-bet - check how many selections were won
+                    const selections = bet.selections || [];
+                    const wonSelections = selections.filter(s => s.status === 'won');
+                    
+                    if (this.REQUIRE_ALL_WINS) {
+                        // Only count if ALL selections were won
+                        if (wonSelections.length === selections.length && selections.length > 0) {
+                            totalWonMatches += selections.length;
+                            wonMatchesList.push({
+                                betId: doc.id,
+                                type: 'multi',
+                                matchCount: selections.length,
+                                selections: wonSelections,
+                                stake: bet.stake,
+                                profit: bet.potentialReturn - bet.stake,
+                                wonAt: bet.updatedAt?.toDate?.() || bet.createdAt?.toDate?.()
+                            });
+                        }
+                    } else {
+                        // Count each won selection individually
+                        totalWonMatches += wonSelections.length;
+                        wonSelections.forEach(selection => {
+                            wonMatchesList.push({
+                                betId: doc.id,
+                                type: 'multi_selection',
+                                match: selection.matchTitle || 'Unknown match',
+                                selection: selection.betAgainst,
+                                wonAt: bet.updatedAt?.toDate?.() || bet.createdAt?.toDate?.()
+                            });
+                        });
+                    }
+                }
+            }
+            
+            // Check eligibility
+            const isEligible = totalWonMatches >= this.MIN_WINS_REQUIRED;
+            const remainingWins = Math.max(0, this.MIN_WINS_REQUIRED - totalWonMatches);
+            
+            return {
+                isEligible: isEligible,
+                totalWonMatches: totalWonMatches,
+                requiredWins: this.MIN_WINS_REQUIRED,
+                remainingWins: remainingWins,
+                wonMatchesList: wonMatchesList,
+                canWithdraw: isEligible,
+                message: isEligible 
+                    ? `✅ You have won ${totalWonMatches} matches! You are eligible to withdraw.`
+                    : `❌ You need to win ${remainingWins} more match(es) to be eligible for withdrawal. (${totalWonMatches}/${this.MIN_WINS_REQUIRED} won)`
+            };
+            
+        } catch (error) {
+            console.error("Error checking withdrawal eligibility:", error);
+            return {
+                isEligible: false,
+                totalWonMatches: 0,
+                requiredWins: this.MIN_WINS_REQUIRED,
+                remainingWins: this.MIN_WINS_REQUIRED,
+                wonMatchesList: [],
+                canWithdraw: false,
+                message: "Error checking eligibility. Please try again.",
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Get detailed win statistics for a user
+     * @param {string} userId 
+     * @returns {Promise<Object>}
+     */
+    async getWinStatistics(userId) {
+        try {
+            // Get all bets (won, lost, pending)
+            const allBetsSnapshot = await db.collection('bets')
+                .where('userId', '==', userId)
+                .get();
+            
+            let totalBets = 0;
+            let totalWon = 0;
+            let totalLost = 0;
+            let totalPending = 0;
+            let totalProfit = 0;
+            let totalStake = 0;
+            
+            // Track wins by date for chart
+            const winsByDate = {};
+            
+            for (const doc of allBetsSnapshot.docs) {
+                const bet = doc.data();
+                totalBets++;
+                totalStake += bet.stake || 0;
+                
+                if (bet.status === 'won') {
+                    totalWon++;
+                    const profit = bet.type === 'multi' 
+                        ? (bet.potentialReturn - bet.stake) 
+                        : (bet.potentialProfit || 0);
+                    totalProfit += profit;
+                    
+                    // Track by date
+                    const date = bet.updatedAt?.toDate?.() || bet.createdAt?.toDate?.() || new Date();
+                    const dateKey = date.toISOString().split('T')[0];
+                    winsByDate[dateKey] = (winsByDate[dateKey] || 0) + 1;
+                    
+                } else if (bet.status === 'lost') {
+                    totalLost++;
+                } else if (bet.status === 'pending') {
+                    totalPending++;
+                }
+            }
+            
+            const winRate = totalBets > 0 ? (totalWon / totalBets) * 100 : 0;
+            
+            return {
+                totalBets,
+                totalWon,
+                totalLost,
+                totalPending,
+                winRate: winRate.toFixed(1),
+                totalProfit,
+                totalStake,
+                netProfit: totalProfit - totalStake,
+                winsByDate,
+                isEligibleForWithdrawal: totalWon >= this.MIN_WINS_REQUIRED
+            };
+            
+        } catch (error) {
+            console.error("Error getting win statistics:", error);
+            return null;
+        }
+    }
+
+    /**
+     * Display withdrawal eligibility in UI
+     * @param {string} userId 
+     */
+    async displayWithdrawalEligibility(userId) {
+        const eligibility = await this.checkWithdrawalEligibility(userId);
+        const stats = await this.getWinStatistics(userId);
+        
+        // Update withdrawal section UI
+        const withdrawSection = document.getElementById('withdrawSection');
+        if (!withdrawSection) return;
+        
+        // Create or update eligibility banner
+        let eligibilityBanner = document.getElementById('withdrawalEligibilityBanner');
+        if (!eligibilityBanner) {
+            eligibilityBanner = document.createElement('div');
+            eligibilityBanner.id = 'withdrawalEligibilityBanner';
+            withdrawSection.insertBefore(eligibilityBanner, withdrawSection.firstChild);
+        }
+        
+        const progressPercent = (eligibility.totalWonMatches / eligibility.requiredWins) * 100;
+        
+        eligibilityBanner.innerHTML = `
+            <div class="eligibility-banner ${eligibility.isEligible ? 'eligible' : 'not-eligible'}">
+                <div class="eligibility-header">
+                    <i class="fas ${eligibility.isEligible ? 'fa-check-circle' : 'fa-lock'}"></i>
+                    <div class="eligibility-title">
+                        <h4>Withdrawal Eligibility</h4>
+                        <p>${eligibility.message}</p>
+                    </div>
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-label">
+                        <span>Matches Won: ${eligibility.totalWonMatches} / ${eligibility.requiredWins}</span>
+                        <span>${progressPercent.toFixed(0)}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progressPercent}%"></div>
+                    </div>
+                </div>
+                
+                ${stats && stats.totalWon > 0 ? `
+                    <div class="win-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Wins:</span>
+                            <span class="stat-value">${stats.totalWon}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Win Rate:</span>
+                            <span class="stat-value">${stats.winRate}%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total Profit:</span>
+                            <span class="stat-value profit">TZS ${stats.totalProfit.toFixed(2)}</span>
+                        </div>
+                    </div>
+                ` : ''}
+                
+                ${!eligibility.isEligible && eligibility.remainingWins > 0 ? `
+                    <div class="next-win-info">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Win ${eligibility.remainingWins} more match${eligibility.remainingWins > 1 ? 'es' : ''} to unlock withdrawals!</span>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        
+        // Enable/disable withdrawal button
+        const withdrawBtn = document.querySelector('#withdrawSection .btn-primary, #withdrawSection button[onclick*="submitWithdrawalRequest"]');
+        if (withdrawBtn) {
+            withdrawBtn.disabled = !eligibility.isEligible;
+            if (!eligibility.isEeligible) {
+                withdrawBtn.title = `Need to win ${eligibility.remainingWins} more matches first`;
+            }
+        }
+        
+        return eligibility;
+    }
+}
+
+// ==================== UPDATED SUBMIT WITHDRAWAL FUNCTION ====================
+
+async function submitWithdrawalRequest() {
+    const userData = window.authManager?.userData;
+    if (!userData) {
+        showNotification('Please login first', 'error');
+        return;
+    }
+    
+    // Check withdrawal eligibility first
+    const withdrawalManager = window.withdrawalManager;
+    if (!withdrawalManager) {
+        showNotification('Withdrawal system not ready', 'error');
+        return;
+    }
+    
+    const eligibility = await withdrawalManager.checkWithdrawalEligibility(userData.uid);
+    
+    if (!eligibility.isEligible) {
+        showNotification(
+            `❌ Withdrawal not available. You need to win ${eligibility.remainingWins} more match(es) first. (${eligibility.totalWonMatches}/${eligibility.requiredWins} won)`,
+            'error',
+            { duration: 5000 }
+        );
+        return;
+    }
+    
+    // Get form values
+    const amount = parseFloat(document.getElementById('withdrawAmount').value);
+    const bankId = document.getElementById('withdrawBank').value;
+    const accountName = document.getElementById('withdrawAccountName').value.trim();
+    const accountNumber = document.getElementById('withdrawAccountNumber').value.trim();
+    const mobile = document.getElementById('withdrawMobile').value.trim();
+    
+    // Validate inputs
+    if (!amount || amount < 5000) {
+        showNotification('Minimum withdrawal amount is TZS 5,000', 'error');
+        return;
+    }
+    
+    if (amount > userData.balance) {
+        showNotification('Insufficient balance', 'error');
+        return;
+    }
+    
+    if (!bankId) {
+        showNotification('Please select an account', 'error');
+        return;
+    }
+    
+    if (!accountName || !accountNumber || !mobile) {
+        showNotification('Please fill all fields', 'error');
+        return;
+    }
+    
+    // Calculate fees
+    const fee = amount * 0.15;
+    const netAmount = amount - fee;
+    
+    try {
+        showLoading('Processing withdrawal request...');
+        
+        // Get provider from selected option
+        const select = document.getElementById('withdrawBank');
+        const selectedOption = select.options[select.selectedIndex];
+        const provider = selectedOption.getAttribute('data-provider') || 'Unknown';
+        
+        // Determine account type
+        const mobileProviders = ['vodacom', 'airtel', 'lipa', 'halotel', 'yas', 'pesa'];
+        const accountType = mobileProviders.includes(provider) ? 'mobile' : 'bank';
+        
+        // Create withdrawal request data with win verification
+        const withdrawalData = {
+            userId: userData.uid,
+            userEmail: userData.email,
+            userName: userData.fullName || userData.username,
+            amount: amount,
+            fee: fee,
+            netAmount: netAmount,
+            bankId: bankId,
+            bankName: accountName,
+            bankProvider: provider,
+            bankType: accountType,
+            accountName: accountName,
+            accountNumber: accountNumber,
+            mobile: mobile,
+            status: 'pending',
+            type: 'withdrawal',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            
+            // Add win verification data
+            withdrawalVerification: {
+                totalWonMatches: eligibility.totalWonMatches,
+                requiredWins: eligibility.requiredWins,
+                verifiedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                verifiedBy: 'system'
+            }
+        };
+        
+        // Use transaction to ensure data consistency
+        await db.runTransaction(async (transaction) => {
+            // Verify user still has sufficient balance
+            const userRef = db.collection('users').doc(userData.uid);
+            const userDoc = await transaction.get(userRef);
+            
+            if (!userDoc.exists) {
+                throw new Error('User not found');
+            }
+            
+            const currentBalance = userDoc.data().balance || 0;
+            if (currentBalance < amount) {
+                throw new Error('Insufficient balance');
+            }
+            
+            // Re-check eligibility within transaction to prevent race conditions
+            const freshEligibility = await withdrawalManager.checkWithdrawalEligibility(userData.uid);
+            if (!freshEligibility.isEligible) {
+                throw new Error(`Withdrawal not available. Need ${freshEligibility.remainingWins} more wins.`);
+            }
+            
+            // Deduct amount immediately
+            transaction.update(userRef, {
+                balance: firebase.firestore.FieldValue.increment(-amount),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                lastWithdrawalRequest: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            // Save withdrawal request
+            const transRef = db.collection('transactions').doc();
+            transaction.set(transRef, withdrawalData);
+        });
+        
+        // Update local balance
+        if (window.authManager.userData) {
+            window.authManager.userData.balance -= amount;
+        }
+        
+        // Clear form
+        document.getElementById('withdrawAmount').value = '';
+        document.getElementById('withdrawBank').value = '';
+        document.getElementById('withdrawAccountName').value = '';
+        document.getElementById('withdrawAccountNumber').value = '';
+        document.getElementById('withdrawMobile').value = '';
+        
+        // Reset calculator displays
+        if (typeof calculateWithdrawalDeduction === 'function') {
+            calculateWithdrawalDeduction();
+        }
+        
+        // Update balance display
+        if (window.bankingSystem) {
+            window.bankingSystem.updateBalanceDisplay();
+        }
+        
+        hideLoading();
+        showNotification(
+            `✅ Withdrawal request submitted! You have won ${eligibility.totalWonMatches} matches.`,
+            'success'
+        );
+        
+        // Show receipt
+        if (window.bankingSystem) {
+            window.bankingSystem.showReceipt({
+                ...withdrawalData,
+                type: 'withdrawal',
+                status: 'pending'
+            });
+        }
+        
+    } catch (error) {
+        hideLoading();
+        console.error("Error submitting withdrawal:", error);
+        showNotification('Error: ' + error.message, 'error');
+    }
+}
+
+// Initialize withdrawal manager
+let withdrawalManager;
+
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        withdrawalManager = new WithdrawalManager();
+        window.withdrawalManager = withdrawalManager;
+        console.log("💰 Withdrawal Manager initialized - 5+ wins required");
+    }, 2000);
+});
+
+// Also check eligibility when withdrawal section becomes active
+document.addEventListener('sectionChanged', async (e) => {
+    if (e.detail.sectionId === 'withdrawSection' || e.detail.sectionId === 'walletSection') {
+        const user = window.authManager?.user;
+        if (user && window.withdrawalManager) {
+            setTimeout(() => {
+                window.withdrawalManager.displayWithdrawalEligibility(user.uid);
+            }, 500);
+        }
+    }
+});
+
+// Debug function to check if referral is working
+async function debugReferral(userEmail) {
+    try {
+        const userQuery = await db.collection('users')
+            .where('email', '==', userEmail)
+            .get();
+        
+        if (!userQuery.empty) {
+            const user = userQuery.docs[0];
+            const userData = user.data();
+            console.log('User:', userData.email);
+            console.log('Full Name:', userData.fullName);
+            console.log('Referral Code:', userData.referralCode);
+            console.log('Referred By:', userData.referredBy);
+            console.log('First Deposit Bonuses Processed:', userData.firstDepositBonusesProcessed);
+            return userData;
+        } else {
+            console.log('User not found');
+        }
+    } catch (error) {
+        console.error('Debug error:', error);
+    }
+}
+
+// Make debug function available globally
+window.debugReferral = debugReferral;
+
+// ==================== SOCIAL LINKS SYSTEM ====================
+// Auto popup every 3 minutes, admin management, user verification
+
+// Global variables
+let socialLinksList = [];
+let userFollowedLinksList = [];
+let socialPopupInterval = null;
+let isSocialModalVisible = false;
+let socialLinksUnsubscribeFunc = null;
+
+/**
+ * Initialize social links system with real-time listener
+ */
+async function initSocialLinksSystem() {
+    console.log('🔗 Initializing social links system...');
+    
+    if (socialLinksUnsubscribeFunc) socialLinksUnsubscribeFunc();
+    
+    try {
+        socialLinksUnsubscribeFunc = db.collection('socialLinks')
+            .where('status', '==', 'active')
+            .orderBy('order', 'asc')
+            .onSnapshot(async (snapshot) => {
+                socialLinksList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log(`📱 Loaded ${socialLinksList.length} social links`);
+                
+                if (window.authManager?.user) {
+                    await loadUserFollowedStatus();
+                    updateSocialPopupStatus();
+                    
+                    // Update admin table if open
+                    if (document.getElementById('adminSocialLinksModal')?.classList.contains('active')) {
+                        loadAdminSocialLinksTable();
+                    }
+                }
+            }, (error) => {
+                console.error('Error loading social links:', error);
+            });
+    } catch (error) {
+        console.error('Error initializing social links:', error);
+    }
+}
+
+/**
+ * Load user's followed links status from Firestore
+ */
+async function loadUserFollowedStatus() {
+    if (!window.authManager?.user) return;
+    const userId = window.authManager.user.uid;
+    try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        const userData = userDoc.data();
+        userFollowedLinksList = userData.followedSocialLinks || [];
+        console.log(`👤 User has followed ${userFollowedLinksList.length} of ${socialLinksList.length} links`);
+    } catch (error) {
+        console.error('Error loading user followed status:', error);
+        userFollowedLinksList = [];
+    }
+}
+
+/**
+ * Check if user has followed all active social links
+ */
+function hasFollowedAllSocialLinks() {
+    if (socialLinksList.length === 0) return true;
+    return socialLinksList.every(link => userFollowedLinksList.includes(link.id));
+}
+
+/**
+ * Get number of unfollowed links
+ */
+function getUnfollowedLinksCount() {
+    return socialLinksList.filter(link => !userFollowedLinksList.includes(link.id)).length;
+}
+
+/**
+ * Start or stop the 3‑minute popup interval based on completion status
+ */
+function updateSocialPopupStatus() {
+    const allFollowed = hasFollowedAllSocialLinks();
+    
+    if (!allFollowed && socialLinksList.length > 0) {
+        if (!socialPopupInterval) startSocialPopupInterval();
+    } else {
+        stopSocialPopupInterval();
+        if (isSocialModalVisible) closeSocialLinksModal();
+    }
+}
+
+/**
+ * Start 3‑minute interval for auto‑popup
+ */
+function startSocialPopupInterval() {
+    if (socialPopupInterval) clearInterval(socialPopupInterval);
+    console.log('⏰ Starting social popup interval (every 3 minutes)');
+    socialPopupInterval = setInterval(() => {
+        if (window.authManager?.user && !hasFollowedAllSocialLinks() && !isSocialModalVisible && socialLinksList.length > 0) {
+            console.log('🔄 Auto-showing social links modal (3-minute interval)');
+            openSocialLinksModal();
+        }
+    }, 180000); // 3 minutes
+}
+
+/**
+ * Stop the interval
+ */
+function stopSocialPopupInterval() {
+    if (socialPopupInterval) {
+        clearInterval(socialPopupInterval);
+        socialPopupInterval = null;
+        console.log('⏹️ Stopped social popup interval (all links followed)');
+    }
+}
+
+/**
+ * Open the social links modal (user view)
+ */
+async function openSocialLinksModal() {
+    if (!window.authManager?.user) {
+        console.log('Cannot open social modal: No user logged in');
+        return;
+    }
+    if (isSocialModalVisible) return;
+    
+    await loadUserFollowedStatus();
+    if (hasFollowedAllSocialLinks()) {
+        console.log('All links already followed, not showing modal');
+        stopSocialPopupInterval();
+        return;
+    }
+    
+    renderSocialLinksModal();
+    const modal = document.getElementById('socialLinksModal');
+    if (modal) {
+        modal.classList.add('active');
+        isSocialModalVisible = true;
+        document.body.style.overflow = 'hidden';
+        console.log('📢 Social links modal opened');
+    }
+}
+
+/**
+ * Close the user social links modal
+ */
+function closeSocialLinksModal() {
+    const modal = document.getElementById('socialLinksModal');
+    if (modal) {
+        modal.classList.remove('active');
+        isSocialModalVisible = false;
+        document.body.style.overflow = '';
+        console.log('Social links modal closed');
+    }
+}
+
+/**
+ * Render the list of social links inside the user modal
+ */
+function renderSocialLinksModal() {
+    const container = document.getElementById('socialLinksContainer');
+    if (!container) return;
+    
+    if (socialLinksList.length === 0) {
+        container.innerHTML = `<div class="social-loading"><i class="fas fa-info-circle"></i><p>No social links available.</p></div>`;
+        return;
+    }
+    
+    let followedCount = 0;
+    let html = '';
+    socialLinksList.forEach(link => {
+        const isFollowed = userFollowedLinksList.includes(link.id);
+        if (isFollowed) followedCount++;
+        const iconClass = link.icon || 'fab fa-facebook-f';
+        html += `
+            <div class="social-link-card" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; margin-bottom: 0.75rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid ${isFollowed ? 'var(--success-color)' : 'rgba(255,255,255,0.1)'};">
+                <div class="social-link-icon" style="width: 50px; height: 50px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="${iconClass}" style="font-size: 1.5rem; color: white;"></i>
+                </div>
+                <div class="social-link-info" style="flex: 1;">
+                    <h4 style="margin: 0 0 0.25rem; color: white;">${escapeHtml(link.title)}</h4>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--gray-color);">${escapeHtml(link.description || 'Follow us on ' + link.title)}</p>
+                </div>
+                <div class="social-link-actions">
+                    ${!isFollowed ? `
+                        <button class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="followSocialLinkAndVerify('${link.id}', '${escapeHtml(link.url)}')">
+                            <i class="fas fa-external-link-alt"></i> Follow
+                        </button>
+                    ` : `
+                        <span style="color: var(--success-color);"><i class="fas fa-check-circle"></i> Verified</span>
+                    `}
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+    
+    // Update progress
+    const total = socialLinksList.length;
+    const percent = total > 0 ? (followedCount / total) * 100 : 0;
+    const progressFill = document.getElementById('socialProgressFill');
+    const progressCount = document.getElementById('socialProgressCount');
+    const verifyAllBtn = document.getElementById('socialVerifyAllBtn');
+    const reminder = document.getElementById('socialReminder');
+    
+    if (progressFill) progressFill.style.width = `${percent}%`;
+    if (progressCount) progressCount.textContent = `${followedCount}/${total} Links Followed`;
+    if (verifyAllBtn) verifyAllBtn.style.display = (followedCount === total && total > 0) ? 'block' : 'none';
+    if (reminder) {
+        const remaining = total - followedCount;
+        if (remaining === 0) {
+            reminder.innerHTML = `<i class="fas fa-trophy"></i> <span>Congratulations! You've followed all our social media pages!</span>`;
+            reminder.style.background = 'rgba(46,204,113,0.2)';
+            reminder.style.color = '#2ecc71';
+        } else {
+            reminder.innerHTML = `<i class="fas fa-bell"></i> <span>Please follow ${remaining} more ${remaining === 1 ? 'page' : 'pages'} to complete all tasks</span>`;
+            reminder.style.background = 'rgba(255,166,43,0.2)';
+            reminder.style.color = 'var(--accent-color)';
+        }
+    }
+}
+
+/**
+ * Follow link (opens in new tab) and verify after confirmation
+ */
+async function followSocialLinkAndVerify(linkId, url) {
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setTimeout(async () => {
+        if (confirm('Have you successfully followed/followed this page? Click OK to verify.')) {
+            await verifySocialLink(linkId);
+        } else {
+            showNotification('Please follow the page and try again', 'warning');
+        }
+    }, 1500);
+}
+
+/**
+ * Verify a single social link (mark as followed)
+ */
+async function verifySocialLink(linkId) {
+    if (!window.authManager?.user) return;
+    const userId = window.authManager.user.uid;
+    if (userFollowedLinksList.includes(linkId)) {
+        showNotification('You have already verified this link!', 'warning');
+        return;
+    }
+    showLoading('Verifying...');
+    try {
+        const updatedFollowed = [...userFollowedLinksList, linkId];
+        await db.collection('users').doc(userId).update({
+            followedSocialLinks: updatedFollowed,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        userFollowedLinksList = updatedFollowed;
+        const link = socialLinksList.find(l => l.id === linkId);
+        showNotification(`✅ Verified! You followed ${link?.title || 'the page'}`, 'success');
+        renderSocialLinksModal();
+        if (hasFollowedAllSocialLinks()) {
+            showNotification('🎉 Congratulations! You have followed all our social media pages!', 'success');
+            stopSocialPopupInterval();
+            setTimeout(() => closeSocialLinksModal(), 2000);
+        }
+    } catch (error) {
+        console.error('Error verifying social link:', error);
+        showNotification('Error verifying. Please try again.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+/**
+ * Verify all active social links at once (admin convenience)
+ */
+async function verifyAllSocialLinks() {
+    const unverified = socialLinksList.filter(link => !userFollowedLinksList.includes(link.id));
+    if (unverified.length === 0) {
+        showNotification('All links are already verified!', 'success');
+        closeSocialLinksModal();
+        return;
+    }
+    if (!confirm(`⚠️ This will mark ALL ${unverified.length} unverified links as followed.\nOnly do this if you have actually followed all pages.\nContinue?`)) return;
+    
+    showLoading('Verifying all links...');
+    try {
+        const allIds = socialLinksList.map(l => l.id);
+        await db.collection('users').doc(window.authManager.user.uid).update({
+            followedSocialLinks: allIds,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        userFollowedLinksList = allIds;
+        showNotification('✅ All social links verified successfully!', 'success');
+        renderSocialLinksModal();
+        stopSocialPopupInterval();
+        setTimeout(() => closeSocialLinksModal(), 1500);
+    } catch (error) {
+        console.error('Error verifying all links:', error);
+        showNotification('Error verifying links', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// ==================== ADMIN SOCIAL LINKS MANAGEMENT ====================
+
+/**
+ * Open admin social links management modal
+ */
+function openAdminSocialLinksModal() {
+    const userData = window.authManager?.userData;
+    if (!userData || (userData.role !== 'admin' && userData.role !== 'superadmin')) {
+        showNotification('Access denied. Admin only.', 'error');
+        return;
+    }
+    loadAdminSocialLinksTable();
+    const modal = document.getElementById('adminSocialLinksModal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeAdminSocialLinksModal() {
+    const modal = document.getElementById('adminSocialLinksModal');
+    if (modal) modal.classList.remove('active');
+}
+
+/**
+ * Load social links into admin table
+ */
+async function loadAdminSocialLinksTable() {
+    const tbody = document.getElementById('adminSocialLinksBody');
+    if (!tbody) return;
+    try {
+        const snapshot = await db.collection('socialLinks').orderBy('order', 'asc').get();
+        const links = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        document.getElementById('adminTotalLinks').textContent = links.length;
+        document.getElementById('adminActiveLinks').textContent = links.filter(l => l.status === 'active').length;
+        
+        if (links.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="no-data">No social links found. Click "Add New Link" to create one.</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        links.forEach(link => {
+            const iconClass = link.icon || 'fab fa-facebook-f';
+            const statusClass = link.status === 'active' ? 'status-success' : 'status-danger';
+            const statusText = link.status === 'active' ? 'Active' : 'Inactive';
+            html += `
+                <tr>
+                    <td><i class="${iconClass}" style="font-size: 22px; color: var(--accent-color);"></i></td>
+                    <td><strong>${escapeHtml(link.title)}</strong></td>
+                    <td>${escapeHtml(link.description?.substring(0, 40) || '-')}</td>
+                    <td><a href="${escapeHtml(link.url)}" target="_blank" style="color: var(--accent-color);">${escapeHtml(link.url.substring(0, 35))}...</a></td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td class="action-buttons">
+                        <button class="btn-icon" onclick="editSocialLink('${link.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" onclick="deleteSocialLink('${link.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading admin social links:', error);
+        tbody.innerHTML = '<tr><td colspan="6" class="no-data">Error loading links</td></tr>';
+    }
+}
+
+function showAddSocialLinkForm() {
+    document.getElementById('socialLinkFormTitle').innerText = 'Add Social Link';
+    document.getElementById('socialLinkId').value = '';
+    document.getElementById('socialLinkIcon').value = 'fab fa-facebook-f';
+    document.getElementById('socialLinkTitle').value = '';
+    document.getElementById('socialLinkDescription').value = '';
+    document.getElementById('socialLinkUrl').value = '';
+    document.getElementById('socialLinkStatus').value = 'active';
+    document.getElementById('socialLinkOrder').value = '0';
+    updateSocialIconPreview();
+    document.getElementById('socialLinkFormModal').classList.add('active');
+}
+
+async function editSocialLink(linkId) {
+    try {
+        const doc = await db.collection('socialLinks').doc(linkId).get();
+        if (!doc.exists) {
+            showNotification('Link not found', 'error');
+            return;
+        }
+        const link = doc.data();
+        document.getElementById('socialLinkFormTitle').innerText = 'Edit Social Link';
+        document.getElementById('socialLinkId').value = linkId;
+        document.getElementById('socialLinkIcon').value = link.icon || 'fab fa-facebook-f';
+        document.getElementById('socialLinkTitle').value = link.title || '';
+        document.getElementById('socialLinkDescription').value = link.description || '';
+        document.getElementById('socialLinkUrl').value = link.url || '';
+        document.getElementById('socialLinkStatus').value = link.status || 'active';
+        document.getElementById('socialLinkOrder').value = link.order || 0;
+        updateSocialIconPreview();
+        document.getElementById('socialLinkFormModal').classList.add('active');
+    } catch (error) {
+        console.error('Error loading link for edit:', error);
+        showNotification('Error loading link', 'error');
+    }
+}
+
+function updateSocialIconPreview() {
+    const iconClass = document.getElementById('socialLinkIcon').value;
+    const preview = document.getElementById('socialIconPreview');
+    if (preview) preview.innerHTML = `<i class="${iconClass}"></i>`;
+}
+
+async function saveSocialLink() {
+    const id = document.getElementById('socialLinkId').value;
+    const icon = document.getElementById('socialLinkIcon').value;
+    const title = document.getElementById('socialLinkTitle').value.trim();
+    const description = document.getElementById('socialLinkDescription').value.trim();
+    const url = document.getElementById('socialLinkUrl').value.trim();
+    const status = document.getElementById('socialLinkStatus').value;
+    const order = parseInt(document.getElementById('socialLinkOrder').value) || 0;
+    
+    if (!title || !url) {
+        showNotification('Please fill in all required fields', 'error');
+        return;
+    }
+    showLoading('Saving...');
+    try {
+        const linkData = { icon, title, description, url, status, order, updatedAt: new Date().toISOString() };
+        if (id) {
+            await db.collection('socialLinks').doc(id).update(linkData);
+            showNotification('Social link updated successfully', 'success');
+        } else {
+            linkData.createdAt = new Date().toISOString();
+            await db.collection('socialLinks').add(linkData);
+            showNotification('Social link added successfully', 'success');
+        }
+        closeSocialLinkFormModal();
+    } catch (error) {
+        console.error('Error saving social link:', error);
+        showNotification('Error saving link', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function deleteSocialLink(linkId) {
+    if (!confirm('Are you sure you want to delete this social link?\nUsers will no longer need to follow it.')) return;
+    showLoading('Deleting...');
+    try {
+        await db.collection('socialLinks').doc(linkId).delete();
+        showNotification('Social link deleted', 'success');
+        await loadAdminSocialLinksTable();
+    } catch (error) {
+        console.error('Error deleting social link:', error);
+        showNotification('Error deleting link', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+function closeSocialLinkFormModal() {
+    document.getElementById('socialLinkFormModal').classList.remove('active');
+}
+
+// ==================== INTEGRATION WITH EXISTING DASHBOARDS ====================
+
+/**
+ * Add social links menu item to user hamburger menu
+ */
+function addSocialLinksToUserMenu() {
+    const menuItems = document.querySelector('.hamburger-menu .menu-items');
+    if (!menuItems) return;
+    if (document.getElementById('socialLinksMenuItem')) return;
+    
+    const socialItem = document.createElement('a');
+    socialItem.id = 'socialLinksMenuItem';
+    socialItem.className = 'menu-item';
+    socialItem.href = '#';
+    socialItem.onclick = (e) => { e.preventDefault(); openSocialLinksModal(); };
+    socialItem.innerHTML = `
+        <i class="fab fa-superpowers"></i>
+        <span>Social Links</span>
+        <span class="menu-badge" id="socialNotificationBadge" style="display: none;">!</span>
+    `;
+    // Insert before SUPPORT or at the end
+    const supportItem = menuItems.querySelector('.menu-item[onclick*="userChatModal"]');
+    if (supportItem) {
+        menuItems.insertBefore(socialItem, supportItem);
+    } else {
+        menuItems.appendChild(socialItem);
+    }
+}
+
+/**
+ * Add social links menu item to admin bottom navigation
+ */
+function addSocialLinksToAdminNav() {
+    const adminNav = document.querySelector('#admin-dashboard .bottom-nav');
+    if (!adminNav) return;
+    if (document.querySelector('#admin-dashboard .bottom-nav .nav-item[data-section="adminSocialLinks"]')) return;
+    
+    const socialNavItem = document.createElement('a');
+    socialNavItem.className = 'nav-item';
+    socialNavItem.setAttribute('data-section', 'adminSocialLinks');
+    socialNavItem.href = '#';
+    socialNavItem.onclick = (e) => {
+        e.preventDefault();
+        openAdminSocialLinksModal();
+    };
+    socialNavItem.innerHTML = `
+        <i class="fab fa-superpowers nav-icon"></i>
+        <span class="nav-label">Social Links</span>
+    `;
+    // Insert before Announcement or at the end
+    const announcementNav = adminNav.querySelector('.nav-item[data-section="announcementAdminSection"]');
+    if (announcementNav) {
+        adminNav.insertBefore(socialNavItem, announcementNav);
+    } else {
+        adminNav.appendChild(socialNavItem);
+    }
+}
+
+/**
+ * Update the notification badge on the user menu
+ */
+async function updateSocialNotificationBadge() {
+    if (!window.authManager?.user) return;
+    await loadUserFollowedStatus();
+    const unfollowed = getUnfollowedLinksCount();
+    const badge = document.getElementById('socialNotificationBadge');
+    if (badge) {
+        if (unfollowed > 0) {
+            badge.style.display = 'inline-block';
+            badge.textContent = unfollowed;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
+
+// ==================== INITIALIZATION ON AUTH STATE ====================
+
+// Hook into existing AuthManager (or listen to auth state)
+// We'll add a listener inside the existing AuthManager.init or after user loads.
+// Since the existing code already has window.authManager, we can patch the showAppropriateDashboard method.
+
+const originalShowAppropriateDashboard = window.authManager?.showAppropriateDashboard;
+if (window.authManager) {
+    window.authManager.showAppropriateDashboard = async function() {
+        await originalShowAppropriateDashboard.call(this);
+        if (this.userData) {
+            await initSocialLinksSystem();
+            await loadUserFollowedStatus();
+            addSocialLinksToUserMenu();
+            await updateSocialNotificationBadge();
+            if (this.userData.role === 'admin' || this.userData.role === 'superadmin') {
+                addSocialLinksToAdminNav();
+            }
+            // Auto‑show modal after 2 seconds if not all followed
+            if (!hasFollowedAllSocialLinks() && socialLinksList.length > 0) {
+                setTimeout(() => openSocialLinksModal(), 2000);
+            }
+        }
+    };
+}
+
+// Also ensure social links are cleaned up on logout
+const originalLogout = window.authManager?.auth?.signOut;
+if (window.authManager && window.authManager.auth) {
+    const originalSignOut = window.authManager.auth.signOut;
+    window.authManager.auth.signOut = async function() {
+        stopSocialPopupInterval();
+        if (socialLinksUnsubscribeFunc) socialLinksUnsubscribeFunc();
+        return originalSignOut.call(this);
+    };
+}
+
+// Make functions globally accessible
+window.openSocialLinksModal = openSocialLinksModal;
+window.closeSocialLinksModal = closeSocialLinksModal;
+window.followSocialLinkAndVerify = followSocialLinkAndVerify;
+window.verifyAllSocialLinks = verifyAllSocialLinks;
+window.openAdminSocialLinksModal = openAdminSocialLinksModal;
+window.closeAdminSocialLinksModal = closeAdminSocialLinksModal;
+window.showAddSocialLinkForm = showAddSocialLinkForm;
+window.editSocialLink = editSocialLink;
+window.saveSocialLink = saveSocialLink;
+window.deleteSocialLink = deleteSocialLink;
+window.closeSocialLinkFormModal = closeSocialLinkFormModal;
+window.updateSocialIconPreview = updateSocialIconPreview;
+
+console.log('✅ Social Links System Loaded – auto popup every 3 minutes');
+
+// ==================== SOCIAL LINKS HELPER ====================
+// Complete helper for managing social links – admin CRUD, user verification, auto-popup
+
+const SocialLinksHelper = (() => {
+    // Private variables
+    let socialLinksList = [];
+    let userFollowedLinksList = [];
+    let socialPopupInterval = null;
+    let isSocialModalVisible = false;
+    let socialLinksUnsubscribe = null;
+
+    // Config
+    const POPUP_INTERVAL_MS = 180000; // 3 minutes
+    const INITIAL_DELAY_MS = 2000;    // 2 seconds after login
+
+    // ========== PRIVATE HELPERS ==========
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function getCurrentUser() {
+        return window.authManager?.user || null;
+    }
+
+    function getCurrentUserId() {
+        return getCurrentUser()?.uid || null;
+    }
+
+    function showNotif(message, type = 'info') {
+        if (typeof showNotification === 'function') {
+            showNotification(message, type);
+        } else {
+            console.log(`[${type}] ${message}`);
+        }
+    }
+
+    // ========== DATA LOADING ==========
+    async function loadSocialLinks() {
+        try {
+            const snapshot = await db.collection('socialLinks')
+                .where('status', '==', 'active')
+                .orderBy('order', 'asc')
+                .get();
+            socialLinksList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log(`📱 Loaded ${socialLinksList.length} active social links`);
+            return socialLinksList;
+        } catch (error) {
+            console.error('Error loading social links:', error);
+            return [];
+        }
+    }
+
+    async function loadUserFollowedStatus() {
+        const userId = getCurrentUserId();
+        if (!userId) {
+            userFollowedLinksList = [];
+            return [];
+        }
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            const userData = userDoc.data();
+            userFollowedLinksList = userData?.followedSocialLinks || [];
+            console.log(`👤 User followed ${userFollowedLinksList.length} of ${socialLinksList.length} links`);
+            return userFollowedLinksList;
+        } catch (error) {
+            console.error('Error loading user followed status:', error);
+            userFollowedLinksList = [];
+            return [];
+        }
+    }
+
+    async function refreshUserData() {
+        await loadSocialLinks();
+        await loadUserFollowedStatus();
+        return { socialLinksList, userFollowedLinksList };
+    }
+
+    // ========== VERIFICATION LOGIC ==========
+    function hasFollowedAllSocialLinks() {
+        if (socialLinksList.length === 0) return true;
+        return socialLinksList.every(link => userFollowedLinksList.includes(link.id));
+    }
+
+    function getUnfollowedLinksCount() {
+        return socialLinksList.filter(link => !userFollowedLinksList.includes(link.id)).length;
+    }
+
+    async function verifySocialLink(linkId) {
+        const userId = getCurrentUserId();
+        if (!userId) {
+            showNotif('Please login first', 'error');
+            return false;
+        }
+        if (userFollowedLinksList.includes(linkId)) {
+            showNotif('You have already verified this link!', 'warning');
+            return false;
+        }
+        const link = socialLinksList.find(l => l.id === linkId);
+        if (!link) {
+            showNotif('Link not found', 'error');
+            return false;
+        }
+        try {
+            const updated = [...userFollowedLinksList, linkId];
+            await db.collection('users').doc(userId).update({
+                followedSocialLinks: updated,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            userFollowedLinksList = updated;
+            showNotif(`✅ Verified! You followed ${link.title || 'the page'}`, 'success');
+            // Re-render UI if modal is open
+            if (isSocialModalVisible && typeof renderSocialLinksModal === 'function') {
+                renderSocialLinksModal();
+            }
+            if (hasFollowedAllSocialLinks()) {
+                showNotif('🎉 Congratulations! You have followed all our social media pages!', 'success');
+                stopAutoPopup();
+                if (isSocialModalVisible) closeSocialLinksModal();
+            }
+            return true;
+        } catch (error) {
+            console.error('Error verifying social link:', error);
+            showNotif('Error verifying. Please try again.', 'error');
+            return false;
+        }
+    }
+
+    async function verifyAllSocialLinks() {
+        const unverified = socialLinksList.filter(link => !userFollowedLinksList.includes(link.id));
+        if (unverified.length === 0) {
+            showNotif('All links are already verified!', 'success');
+            if (isSocialModalVisible) closeSocialLinksModal();
+            return true;
+        }
+        if (!confirm(`⚠️ This will mark ALL ${unverified.length} unverified links as followed.\nOnly do this if you have actually followed all pages.\nContinue?`)) {
+            return false;
+        }
+        const userId = getCurrentUserId();
+        if (!userId) return false;
+        try {
+            const allIds = socialLinksList.map(l => l.id);
+            await db.collection('users').doc(userId).update({
+                followedSocialLinks: allIds,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            userFollowedLinksList = allIds;
+            showNotif('✅ All social links verified successfully!', 'success');
+            if (isSocialModalVisible && typeof renderSocialLinksModal === 'function') {
+                renderSocialLinksModal();
+            }
+            stopAutoPopup();
+            if (isSocialModalVisible) closeSocialLinksModal();
+            return true;
+        } catch (error) {
+            console.error('Error verifying all links:', error);
+            showNotif('Error verifying links', 'error');
+            return false;
+        }
+    }
+
+    // ========== AUTO-POPUP MANAGEMENT ==========
+    function startAutoPopup() {
+        if (socialPopupInterval) clearInterval(socialPopupInterval);
+        if (hasFollowedAllSocialLinks() || socialLinksList.length === 0) return;
+        socialPopupInterval = setInterval(() => {
+            if (getCurrentUser() && !hasFollowedAllSocialLinks() && !isSocialModalVisible && socialLinksList.length > 0) {
+                console.log('🔄 Auto-showing social links modal (3-minute interval)');
+                openSocialLinksModal();
+            }
+        }, POPUP_INTERVAL_MS);
+        console.log('⏰ Social popup interval started');
+    }
+
+    function stopAutoPopup() {
+        if (socialPopupInterval) {
+            clearInterval(socialPopupInterval);
+            socialPopupInterval = null;
+            console.log('⏹️ Social popup interval stopped');
+        }
+    }
+
+    // ========== MODAL CONTROLS ==========
+    async function openSocialLinksModal() {
+        if (!getCurrentUser()) {
+            console.log('Cannot open social modal: No user logged in');
+            return;
+        }
+        if (isSocialModalVisible) return;
+        await refreshUserData();
+        if (hasFollowedAllSocialLinks()) {
+            stopAutoPopup();
+            return;
+        }
+        // Ensure modal HTML exists
+        if (!document.getElementById('socialLinksModal')) {
+            console.error('Social links modal not found in DOM');
+            return;
+        }
+        renderSocialLinksModal();  // defined separately
+        const modal = document.getElementById('socialLinksModal');
+        modal.classList.add('active');
+        isSocialModalVisible = true;
+        document.body.style.overflow = 'hidden';
+        console.log('📢 Social links modal opened');
+    }
+
+    function closeSocialLinksModal() {
+        const modal = document.getElementById('socialLinksModal');
+        if (modal) {
+            modal.classList.remove('active');
+            isSocialModalVisible = false;
+            document.body.style.overflow = '';
+            console.log('Social links modal closed');
+        }
+    }
+
+    // ========== RENDER UI (modal content) ==========
+    function renderSocialLinksModal() {
+        const container = document.getElementById('socialLinksContainer');
+        if (!container) return;
+        if (socialLinksList.length === 0) {
+            container.innerHTML = `<div class="social-loading"><i class="fas fa-info-circle"></i><p>No social links available.</p></div>`;
+            return;
+        }
+        let followedCount = 0;
+        let html = '';
+        socialLinksList.forEach(link => {
+            const isFollowed = userFollowedLinksList.includes(link.id);
+            if (isFollowed) followedCount++;
+            const iconClass = link.icon || 'fab fa-facebook-f';
+            html += `
+                <div class="social-link-card" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; margin-bottom: 0.75rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid ${isFollowed ? 'var(--success-color)' : 'rgba(255,255,255,0.1)'};">
+                    <div class="social-link-icon" style="width: 50px; height: 50px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="${iconClass}" style="font-size: 1.5rem; color: white;"></i>
+                    </div>
+                    <div class="social-link-info" style="flex: 1;">
+                        <h4 style="margin: 0 0 0.25rem; color: white;">${escapeHtml(link.title)}</h4>
+                        <p style="margin: 0; font-size: 0.85rem; color: var(--gray-color);">${escapeHtml(link.description || 'Follow us on ' + link.title)}</p>
+                    </div>
+                    <div class="social-link-actions">
+                        ${!isFollowed ? `
+                            <button class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="SocialLinksHelper.followAndVerify('${link.id}', '${escapeHtml(link.url)}')">
+                                <i class="fas fa-external-link-alt"></i> Follow
+                            </button>
+                        ` : `
+                            <span style="color: var(--success-color);"><i class="fas fa-check-circle"></i> Verified</span>
+                        `}
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+        // Update progress bar
+        const total = socialLinksList.length;
+        const percent = total > 0 ? (followedCount / total) * 100 : 0;
+        const progressFill = document.getElementById('socialProgressFill');
+        const progressCount = document.getElementById('socialProgressCount');
+        const verifyAllBtn = document.getElementById('socialVerifyAllBtn');
+        const reminder = document.getElementById('socialReminder');
+        if (progressFill) progressFill.style.width = `${percent}%`;
+        if (progressCount) progressCount.textContent = `${followedCount}/${total} Links Followed`;
+        if (verifyAllBtn) verifyAllBtn.style.display = (followedCount === total && total > 0) ? 'block' : 'none';
+        if (reminder) {
+            const remaining = total - followedCount;
+            if (remaining === 0) {
+                reminder.innerHTML = `<i class="fas fa-trophy"></i> <span>Congratulations! You've followed all our social media pages!</span>`;
+                reminder.style.background = 'rgba(46,204,113,0.2)';
+                reminder.style.color = '#2ecc71';
+            } else {
+                reminder.innerHTML = `<i class="fas fa-bell"></i> <span>Please follow ${remaining} more ${remaining === 1 ? 'page' : 'pages'} to complete all tasks</span>`;
+                reminder.style.background = 'rgba(255,166,43,0.2)';
+                reminder.style.color = 'var(--accent-color)';
+            }
+        }
+    }
+
+    async function followAndVerify(linkId, url) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+        setTimeout(async () => {
+            if (confirm('Have you successfully followed/followed this page? Click OK to verify.')) {
+                await verifySocialLink(linkId);
+            } else {
+                showNotif('Please follow the page and try again', 'warning');
+            }
+        }, 1500);
+    }
+
+    // ========== ADMIN CRUD OPERATIONS ==========
+    async function loadAdminTable() {
+        const tbody = document.getElementById('adminSocialLinksBody');
+        if (!tbody) return;
+        try {
+            const snapshot = await db.collection('socialLinks').orderBy('order', 'asc').get();
+            const links = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const total = links.length;
+            const active = links.filter(l => l.status === 'active').length;
+            document.getElementById('adminTotalLinks').textContent = total;
+            document.getElementById('adminActiveLinks').textContent = active;
+            if (total === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="no-data">No social links found. Click "Add New Link" to create one.</td></tr>';
+                return;
+            }
+            let html = '';
+            links.forEach(link => {
+                const iconClass = link.icon || 'fab fa-facebook-f';
+                const statusClass = link.status === 'active' ? 'status-success' : 'status-danger';
+                const statusText = link.status === 'active' ? 'Active' : 'Inactive';
+                html += `
+                    <tr>
+                        <td><i class="${iconClass}" style="font-size: 22px; color: var(--accent-color);"></i></td>
+                        <td><strong>${escapeHtml(link.title)}</strong></td>
+                        <td>${escapeHtml(link.description?.substring(0, 40) || '-')}</td>
+                        <td><a href="${escapeHtml(link.url)}" target="_blank" style="color: var(--accent-color);">${escapeHtml(link.url.substring(0, 35))}...</a></td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td class="action-buttons">
+                            <button class="btn-icon" onclick="SocialLinksHelper.editLink('${link.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon" onclick="SocialLinksHelper.deleteLink('${link.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        } catch (error) {
+            console.error('Error loading admin table:', error);
+            tbody.innerHTML = '<tr><td colspan="6" class="no-data">Error loading links</td></tr>';
+        }
+    }
+
+    function showAddForm() {
+        document.getElementById('socialLinkFormTitle').innerText = 'Add Social Link';
+        document.getElementById('socialLinkId').value = '';
+        document.getElementById('socialLinkIcon').value = 'fab fa-facebook-f';
+        document.getElementById('socialLinkTitle').value = '';
+        document.getElementById('socialLinkDescription').value = '';
+        document.getElementById('socialLinkUrl').value = '';
+        document.getElementById('socialLinkStatus').value = 'active';
+        document.getElementById('socialLinkOrder').value = '0';
+        updateIconPreview();
+        document.getElementById('socialLinkFormModal').classList.add('active');
+    }
+    
+
+    async function editLink(linkId) {
+        try {
+            const doc = await db.collection('socialLinks').doc(linkId).get();
+            if (!doc.exists) {
+                showNotif('Link not found', 'error');
+                return;
+            }
+            const link = doc.data();
+            document.getElementById('socialLinkFormTitle').innerText = 'Edit Social Link';
+            document.getElementById('socialLinkId').value = linkId;
+            document.getElementById('socialLinkIcon').value = link.icon || 'fab fa-facebook-f';
+            document.getElementById('socialLinkTitle').value = link.title || '';
+            document.getElementById('socialLinkDescription').value = link.description || '';
+            document.getElementById('socialLinkUrl').value = link.url || '';
+            document.getElementById('socialLinkStatus').value = link.status || 'active';
+            document.getElementById('socialLinkOrder').value = link.order || 0;
+            updateIconPreview();
+            document.getElementById('socialLinkFormModal').classList.add('active');
+        } catch (error) {
+            console.error('Error loading link for edit:', error);
+            showNotif('Error loading link', 'error');
+        }
+    }
+
+    function updateIconPreview() {
+        const iconClass = document.getElementById('socialLinkIcon').value;
+        const preview = document.getElementById('socialIconPreview');
+        if (preview) preview.innerHTML = `<i class="${iconClass}"></i>`;
+    }
+
+    async function saveLink() {
+        const id = document.getElementById('socialLinkId').value;
+        const icon = document.getElementById('socialLinkIcon').value;
+        const title = document.getElementById('socialLinkTitle').value.trim();
+        const description = document.getElementById('socialLinkDescription').value.trim();
+        const url = document.getElementById('socialLinkUrl').value.trim();
+        const status = document.getElementById('socialLinkStatus').value;
+        const order = parseInt(document.getElementById('socialLinkOrder').value) || 0;
+        if (!title || !url) {
+            showNotif('Please fill in all required fields', 'error');
+            return;
+        }
+        try {
+            const linkData = { icon, title, description, url, status, order, updatedAt: new Date().toISOString() };
+            if (id) {
+                await db.collection('socialLinks').doc(id).update(linkData);
+                showNotif('Social link updated successfully', 'success');
+            } else {
+                linkData.createdAt = new Date().toISOString();
+                await db.collection('socialLinks').add(linkData);
+                showNotif('Social link added successfully', 'success');
+            }
+            closeFormModal();
+            await loadAdminTable();
+            // Also refresh the real-time data for users
+            await refreshUserData();
+            if (typeof renderSocialLinksModal === 'function') renderSocialLinksModal();
+        } catch (error) {
+            console.error('Error saving social link:', error);
+            showNotif('Error saving link', 'error');
+        }
+    }
+
+    async function deleteLink(linkId) {
+        if (!confirm('Are you sure you want to delete this social link?\nUsers will no longer need to follow it.')) return;
+        try {
+            await db.collection('socialLinks').doc(linkId).delete();
+            showNotif('Social link deleted', 'success');
+            await loadAdminTable();
+            await refreshUserData();
+            if (typeof renderSocialLinksModal === 'function') renderSocialLinksModal();
+        } catch (error) {
+            console.error('Error deleting social link:', error);
+            showNotif('Error deleting link', 'error');
+        }
+    }
+
+    function closeFormModal() {
+        document.getElementById('socialLinkFormModal').classList.remove('active');
+    }
+
+    // ========== INITIALIZATION ==========
+    async function init() {
+        console.log('🔗 Initializing Social Links Helper...');
+        await refreshUserData();
+        // Setup real-time listener for social links changes
+        if (socialLinksUnsubscribe) socialLinksUnsubscribe();
+        socialLinksUnsubscribe = db.collection('socialLinks')
+            .where('status', '==', 'active')
+            .orderBy('order', 'asc')
+            .onSnapshot(async (snapshot) => {
+                socialLinksList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log(`🔄 Social links updated: ${socialLinksList.length} active links`);
+                if (getCurrentUser()) {
+                    await loadUserFollowedStatus();
+                    if (isSocialModalVisible && typeof renderSocialLinksModal === 'function') {
+                        renderSocialLinksModal();
+                    }
+                    updateAutoPopupStatus();
+                }
+            }, (error) => console.error('Social links listener error:', error));
+        // Initial auto-popup after login
+        if (getCurrentUser() && !hasFollowedAllSocialLinks() && socialLinksList.length > 0) {
+            setTimeout(() => openSocialLinksModal(), INITIAL_DELAY_MS);
+        }
+    }
+
+    function updateAutoPopupStatus() {
+        if (hasFollowedAllSocialLinks() || socialLinksList.length === 0) {
+            stopAutoPopup();
+        } else {
+            startAutoPopup();
+        }
+    }
+
+    function cleanup() {
+        stopAutoPopup();
+        if (socialLinksUnsubscribe) {
+            socialLinksUnsubscribe();
+            socialLinksUnsubscribe = null;
+        }
+    }
+
+    // Public API
+    return {
+        init,
+        cleanup,
+        openModal: openSocialLinksModal,
+        closeModal: closeSocialLinksModal,
+        followAndVerify,
+        verifyAll: verifyAllSocialLinks,
+        // Admin methods
+        loadAdminTable,
+        showAddForm,
+        editLink,
+        saveLink,
+        deleteLink,
+        closeFormModal,
+        // Getters (for debugging)
+        getSocialLinks: () => [...socialLinksList],
+        getUserFollowed: () => [...userFollowedLinksList],
+        hasAllFollowed: hasFollowedAllSocialLinks,
+        unfollowedCount: getUnfollowedLinksCount
+    };
+})();
+
+// Make globally available
+window.SocialLinksHelper = SocialLinksHelper;
+
+// Auto-initialize when auth is ready
+const initSocialLinksOnAuth = setInterval(() => {
+    if (window.authManager?.user) {
+        clearInterval(initSocialLinksOnAuth);
+        SocialLinksHelper.init();
+    }
+}, 1000);
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    SocialLinksHelper.cleanup();
+});
+
+console.log('✅ Social Links Helper loaded');
+
+function openAdminSocialLinksModal() {
+    SocialLinksHelper.loadAdminTable();
+    document.getElementById('adminSocialLinksModal').classList.add('active');
+}
+window.openAdminSocialLinksModal = openAdminSocialLinksModal;
+
+// ==================== SOCIAL LINKS INTEGRATION HELPER ====================
+// This ensures social links modal works after login/signup
+
+const SocialIntegration = {
+    initialized: false,
+    popupInterval: null,
+    isModalOpen: false,
+    socialLinks: [],
+    followedLinks: [],
+    unsubscribe: null,
+
+    // Main initialization after user is logged in
+    async initAfterAuth() {
+        console.log('🔗 Initializing Social Links after authentication...');
+        
+        // Check if user is logged in
+        const user = window.authManager?.user;
+        const userData = window.authManager?.userData;
+        
+        if (!user || !userData) {
+            console.log('No user logged in, skipping social links init');
+            return;
+        }
+        
+        // Only proceed for regular users (not admins)
+        if (userData.role === 'admin' || userData.role === 'superadmin') {
+            console.log('Admin user - skipping social links popup');
+            return;
+        }
+        
+        this.initialized = true;
+        
+        // Load social links and user followed status
+        await this.loadSocialLinks();
+        await this.loadUserFollowedStatus();
+        
+        // Setup real-time listener
+        this.setupRealtimeListener();
+        
+        // Add menu item to hamburger menu
+        this.addMenuItem();
+        
+        // Update notification badge
+        this.updateNotificationBadge();
+        
+        // Show modal after 2 seconds if not all links followed
+        if (!this.hasFollowedAll() && this.socialLinks.length > 0) {
+            console.log('⏰ Scheduling social modal to open in 2 seconds');
+            setTimeout(() => {
+                this.openModal();
+            }, 2000);
+        }
+        
+        // Start auto-popup interval
+        this.startAutoPopup();
+        
+        console.log('✅ Social Links integration complete');
+    },
+
+    // Load active social links from Firestore
+    async loadSocialLinks() {
+        try {
+            const snapshot = await db.collection('socialLinks')
+                .where('status', '==', 'active')
+                .orderBy('order', 'asc')
+                .get();
+            
+            this.socialLinks = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            
+            console.log(`📱 Loaded ${this.socialLinks.length} social links`);
+            return this.socialLinks;
+        } catch (error) {
+            console.error('Error loading social links:', error);
+            this.socialLinks = [];
+            return [];
+        }
+    },
+    
+// Add this method to SocialIntegration object
+showConfetti() {
+    const colors = ['#ffa62b', '#2ecc71', '#3498db', '#e74c3c', '#f1c40f'];
+    for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.width = Math.random() * 8 + 4 + 'px';
+        confetti.style.height = confetti.style.width;
+        confetti.style.animationDelay = Math.random() * 2 + 's';
+        document.body.appendChild(confetti);
+        setTimeout(() => confetti.remove(), 3000);
+    }
+},
+
+
+    // Load user's followed links from their profile
+    async loadUserFollowedStatus() {
+        const userId = window.authManager?.user?.uid;
+        if (!userId) return;
+        
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            const userData = userDoc.data();
+            this.followedLinks = userData?.followedSocialLinks || [];
+            console.log(`👤 User has followed ${this.followedLinks.length} of ${this.socialLinks.length} links`);
+        } catch (error) {
+            console.error('Error loading followed status:', error);
+            this.followedLinks = [];
+        }
+    },
+
+    // Setup real-time listener for social links changes
+    setupRealtimeListener() {
+        if (this.unsubscribe) {
+            this.unsubscribe();
+        }
+        
+        this.unsubscribe = db.collection('socialLinks')
+            .where('status', '==', 'active')
+            .orderBy('order', 'asc')
+            .onSnapshot(async (snapshot) => {
+                console.log('🔄 Social links updated in real-time');
+                this.socialLinks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                await this.loadUserFollowedStatus();
+                
+                // Update modal if open
+                if (this.isModalOpen) {
+                    this.renderModal();
+                }
+                
+                // Update notification badge
+                this.updateNotificationBadge();
+                
+                // Update auto-popup status
+                if (this.hasFollowedAll()) {
+                    this.stopAutoPopup();
+                } else {
+                    this.startAutoPopup();
+                }
+            }, (error) => {
+                console.error('Social links listener error:', error);
+            });
+    },
+
+    // Check if user has followed all links
+    hasFollowedAll() {
+        if (this.socialLinks.length === 0) return true;
+        return this.socialLinks.every(link => this.followedLinks.includes(link.id));
+    },
+
+    // Get count of unfollowed links
+    getUnfollowedCount() {
+        return this.socialLinks.filter(link => !this.followedLinks.includes(link.id)).length;
+    },
+
+    // Add menu item to hamburger menu
+    addMenuItem() {
+        // Wait for hamburger menu to exist
+        const checkInterval = setInterval(() => {
+            const menuItems = document.querySelector('.hamburger-menu .menu-items');
+            if (menuItems && !document.getElementById('socialMenuItem')) {
+                clearInterval(checkInterval);
+                
+                const socialItem = document.createElement('a');
+                socialItem.id = 'socialMenuItem';
+                socialItem.className = 'menu-item';
+                socialItem.href = '#';
+                socialItem.onclick = (e) => {
+                    e.preventDefault();
+                    this.openModal();
+                };
+                socialItem.innerHTML = `
+                    <i class="fab fa-superpowers"></i>
+                    <span>Social Links</span>
+                    <span class="menu-badge" id="socialMenuBadge" style="display: none;">!</span>
+                `;
+                
+                // Insert before SUPPORT
+                const supportItem = menuItems.querySelector('.menu-item[onclick*="userChatModal"]');
+                if (supportItem) {
+                    menuItems.insertBefore(socialItem, supportItem);
+                } else {
+                    menuItems.appendChild(socialItem);
+                }
+                
+                console.log('✅ Social links menu item added');
+            }
+        }, 500);
+    },
+
+    // Update notification badge on menu item
+    updateNotificationBadge() {
+        const badge = document.getElementById('socialMenuBadge');
+        if (badge) {
+            const unfollowed = this.getUnfollowedCount();
+            if (unfollowed > 0) {
+                badge.style.display = 'inline-block';
+                badge.textContent = unfollowed;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    },
+
+    // Open the social links modal
+    openModal() {
+        if (!window.authManager?.user) {
+            console.log('No user logged in');
+            return;
+        }
+        
+        if (this.isModalOpen) {
+            console.log('Modal already open');
+            return;
+        }
+        
+        // Refresh data before opening
+        Promise.all([this.loadSocialLinks(), this.loadUserFollowedStatus()]).then(() => {
+            if (this.hasFollowedAll()) {
+                console.log('All links followed, not opening modal');
+                this.stopAutoPopup();
+                return;
+            }
+            
+            this.renderModal();
+            const modal = document.getElementById('socialLinksModal');
+            if (modal) {
+                modal.classList.add('active');
+                this.isModalOpen = true;
+                document.body.style.overflow = 'hidden';
+                console.log('📢 Social links modal opened');
+            } else {
+                console.error('Social links modal not found in DOM');
+            }
+        });
+    },
+
+    // Close the social links modal
+    closeModal() {
+        const modal = document.getElementById('socialLinksModal');
+        if (modal) {
+            modal.classList.remove('active');
+            this.isModalOpen = false;
+            document.body.style.overflow = '';
+            console.log('Social links modal closed');
+        }
+    },
+
+    // Render the modal content
+    renderModal() {
+        const container = document.getElementById('socialLinksContainer');
+        if (!container) return;
+        
+        if (this.socialLinks.length === 0) {
+            container.innerHTML = `
+                <div class="social-loading" style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-info-circle"></i>
+                    <p>No social links available. Check back later!</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let followedCount = 0;
+        let html = '';
+        
+        this.socialLinks.forEach(link => {
+            const isFollowed = this.followedLinks.includes(link.id);
+            if (isFollowed) followedCount++;
+            const iconClass = link.icon || 'fab fa-facebook-f';
+            
+            html += `
+                <div class="social-link-card" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; margin-bottom: 0.75rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid ${isFollowed ? 'var(--success-color)' : 'rgba(255,255,255,0.1)'};">
+                    <div class="social-link-icon" style="width: 50px; height: 50px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="${iconClass}" style="font-size: 1.5rem; color: white;"></i>
+                    </div>
+                    <div class="social-link-info" style="flex: 1;">
+                        <h4 style="margin: 0 0 0.25rem; color: white;">${this.escapeHtml(link.title)}</h4>
+                        <p style="margin: 0; font-size: 0.85rem; color: var(--gray-color);">${this.escapeHtml(link.description || 'Follow us on ' + link.title)}</p>
+                    </div>
+                    <div class="social-link-actions">
+                        ${!isFollowed ? `
+                            <button class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="SocialIntegration.followAndVerify('${link.id}', '${this.escapeHtml(link.url)}')">
+                                <i class="fas fa-external-link-alt"></i> Follow
+                            </button>
+                        ` : `
+                            <span style="color: var(--success-color);"><i class="fas fa-check-circle"></i> Verified</span>
+                        `}
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        
+        // Update progress
+        const total = this.socialLinks.length;
+        const percent = total > 0 ? (followedCount / total) * 100 : 0;
+        const progressFill = document.getElementById('socialProgressFill');
+        const progressCount = document.getElementById('socialProgressCount');
+        const verifyAllBtn = document.getElementById('socialVerifyAllBtn');
+        const reminder = document.getElementById('socialReminder');
+        
+        if (progressFill) progressFill.style.width = `${percent}%`;
+        if (progressCount) progressCount.textContent = `${followedCount}/${total} Links Followed`;
+        if (verifyAllBtn) verifyAllBtn.style.display = (followedCount === total && total > 0) ? 'block' : 'none';
+        
+        if (reminder) {
+            const remaining = total - followedCount;
+            if (remaining === 0) {
+                reminder.innerHTML = `<i class="fas fa-trophy"></i> <span>Congratulations! You've followed all our social media pages!</span>`;
+                reminder.style.background = 'rgba(46,204,113,0.2)';
+                reminder.style.color = '#2ecc71';
+            } else {
+                reminder.innerHTML = `<i class="fas fa-bell"></i> <span>Please follow ${remaining} more ${remaining === 1 ? 'page' : 'pages'} to complete all tasks</span>`;
+                reminder.style.background = 'rgba(255,166,43,0.2)';
+                reminder.style.color = 'var(--accent-color)';
+            }
+        }
+    },
+
+    // Follow a link and verify
+    async followAndVerify(linkId, url) {
+        // Open link in new tab
+        window.open(url, '_blank', 'noopener,noreferrer');
+        
+        // Wait for user to confirm
+        setTimeout(async () => {
+            const confirmed = confirm('Have you successfully followed this page? Click OK to verify.');
+            if (confirmed) {
+                await this.verifyLink(linkId);
+            } else {
+                showNotification('Please follow the page and try again', 'warning');
+            }
+        }, 1500);
+    },
+
+    // Verify a single link
+    async verifyLink(linkId) {
+        const userId = window.authManager?.user?.uid;
+        if (!userId) {
+            showNotification('Please login first', 'error');
+            return;
+        }
+        
+        if (this.followedLinks.includes(linkId)) {
+            showNotification('You have already verified this link!', 'warning');
+            return;
+        }
+        
+        const link = this.socialLinks.find(l => l.id === linkId);
+        if (!link) {
+            showNotification('Link not found', 'error');
+            return;
+        }
+        
+        try {
+            const updated = [...this.followedLinks, linkId];
+            await db.collection('users').doc(userId).update({
+                followedSocialLinks: updated,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            this.followedLinks = updated;
+            showNotification(`✅ Verified! You followed ${link.title}`, 'success');
+            
+            // Re-render modal
+            if (this.isModalOpen) {
+                this.renderModal();
+            }
+            
+            // Update badge
+            this.updateNotificationBadge();
+            
+            // Check if all links are now followed
+            if (this.hasFollowedAll()) {
+                showNotification('🎉 Congratulations! You have followed all our social media pages!', 'success');
+                this.stopAutoPopup();
+                
+                // Auto-close modal after 2 seconds
+                setTimeout(() => {
+                    if (this.isModalOpen) {
+                        this.closeModal();
+                    }
+                }, 2000);
+            }
+            
+        } catch (error) {
+            console.error('Error verifying link:', error);
+            showNotification('Error verifying. Please try again.', 'error');
+        }
+    },
+
+    // Verify all links at once
+    async verifyAllLinks() {
+        const unverified = this.socialLinks.filter(link => !this.followedLinks.includes(link.id));
+        if (unverified.length === 0) {
+            showNotification('All links are already verified!', 'success');
+            this.closeModal();
+            return;
+        }
+        
+        if (!confirm(`⚠️ This will mark ALL ${unverified.length} unverified links as followed.\nOnly do this if you have actually followed all pages.\nContinue?`)) {
+            return;
+        }
+        
+        const userId = window.authManager?.user?.uid;
+        if (!userId) return;
+        
+        try {
+            const allIds = this.socialLinks.map(l => l.id);
+            await db.collection('users').doc(userId).update({
+                followedSocialLinks: allIds,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            this.followedLinks = allIds;
+            showNotification('✅ All social links verified successfully!', 'success');
+            
+            if (this.isModalOpen) {
+                this.renderModal();
+            }
+            
+            this.updateNotificationBadge();
+            this.stopAutoPopup();
+            
+            setTimeout(() => {
+                if (this.isModalOpen) {
+                    this.closeModal();
+                }
+            }, 1500);
+            
+        } catch (error) {
+            console.error('Error verifying all links:', error);
+            showNotification('Error verifying links', 'error');
+        }
+    },
+
+    // Start auto-popup interval (every 3 minutes)
+    startAutoPopup() {
+        if (this.popupInterval) clearInterval(this.popupInterval);
+        
+        if (this.hasFollowedAll() || this.socialLinks.length === 0) return;
+        
+        this.popupInterval = setInterval(() => {
+            const user = window.authManager?.user;
+            if (user && !this.hasFollowedAll() && !this.isModalOpen && this.socialLinks.length > 0) {
+                console.log('🔄 Auto-showing social links modal (3-minute interval)');
+                this.openModal();
+            }
+        }, 180000); // 3 minutes
+        
+        console.log('⏰ Social popup interval started (every 3 minutes)');
+    },
+
+    // Stop auto-popup interval
+    stopAutoPopup() {
+        if (this.popupInterval) {
+            clearInterval(this.popupInterval);
+            this.popupInterval = null;
+            console.log('⏹️ Social popup interval stopped');
+        }
+    },
+
+    // Helper to escape HTML
+    escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    },
+
+    // Cleanup on logout
+    cleanup() {
+        this.stopAutoPopup();
+        if (this.unsubscribe) {
+            this.unsubscribe();
+            this.unsubscribe = null;
+        }
+        this.initialized = false;
+        this.isModalOpen = false;
+        console.log('Social Integration cleaned up');
+    }
+};
+
+// Make globally available
+window.SocialIntegration = SocialIntegration;
+
+// ==================== INTEGRATE WITH EXISTING AUTH FLOW ====================
+
+// Hook into AuthManager's showAppropriateDashboard
+const originalShowDashboard = window.authManager?.showAppropriateDashboard;
+if (window.authManager) {
+    window.authManager.showAppropriateDashboard = async function() {
+        // Call original
+        if (originalShowDashboard) {
+            await originalShowDashboard.call(this);
+        }
+        
+        // Initialize social links for regular users (not admins)
+        if (this.userData && this.userData.role !== 'admin' && this.userData.role !== 'superadmin') {
+            console.log('🎯 AuthManager: Initializing social links for user');
+            await SocialIntegration.initAfterAuth();
+        }
+    };
+}
+
+// Also listen for signup completion
+const originalHandleSignup = window.formHandler?.handleSignup;
+if (window.formHandler) {
+    window.formHandler.handleSignup = async function() {
+        // Call original
+        if (originalHandleSignup) {
+            await originalHandleSignup.call(this);
+        }
+        
+        // After successful signup, initialize social links
+        setTimeout(async () => {
+            if (window.authManager?.userData && window.authManager.userData.role !== 'admin') {
+                console.log('🎯 Signup: Initializing social links for new user');
+                await SocialIntegration.initAfterAuth();
+            }
+        }, 1500);
+    };
+}
+
+// Listen for logout to cleanup
+
+if (window.authManager?.auth) {
+    window.authManager.auth.signOut = async function() {
+        SocialIntegration.cleanup();
+        if (originalLogout) {
+            return originalLogout.call(this);
+        }
+        return firebase.auth().signOut();
+    };
+}
+
+// Also add a manual trigger for debugging
+window.triggerSocialModal = () => {
+    SocialIntegration.openModal();
+};
+
+console.log('✅ Social Links Integration Helper loaded - Will auto-show after login/signup');
 

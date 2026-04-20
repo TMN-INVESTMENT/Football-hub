@@ -251,945 +251,802 @@
     </div>
 </div>
 
-    <!-- ==================== USER DASHBOARD ==================== -->
-    <div id="user-dashboard" class="dashboard" style="display: none;">
-<!-- Top Navigation with Left and Right Sides -->
+<!-- ==================== USER DASHBOARD ==================== -->
+<div id="user-dashboard" class="dashboard" style="display: none;">
+    <!-- Top Navigation with Left and Right Sides -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <!-- LEFT SIDE - Logo and Brand -->
+            <div class="nav-left">
+                <div class="nav-brand">
+                    <i class="fas fa-futbol"></i>
+                    <h2>Football<span>Hub</span></h2>
+                </div>
+            </div>
 
-<!-- Top Navigation with Left and Right Sides -->
-<nav class="top-nav">
-    <div class="nav-container">
-        <!-- LEFT SIDE - Logo and Brand -->
-        <div class="nav-left">
-            <div class="nav-brand">
-                <i class="fas fa-futbol"></i>
-                <h2>Football<span>Hub</span></h2>
+            <!-- RIGHT SIDE - All User Menu Content -->
+            <div class="nav-right">
+                <!-- Desktop Menu (visible on larger screens) -->
+                <div class="desktop-menu">
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Loading...</div>
+                        <div class="user-role">
+                            <span id="userRoleBadge" class="role-badge badge-user">User</span>
+                        </div>
+                        <div class="user-balance">
+                            <i class="fas fa-wallet"></i>
+                            <span id="userBalance">Tsh 0.00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="language-switcher">
+                        <button id="dashboardLangToggle" class="lang-btn-dashboard" onclick="toggleLanguage()">
+                            <i class="fas fa-globe"></i>
+                            <span id="dashboardLangText">Kiswahili</span>
+                        </button>
+                    </div>
+                    
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <button class="logout-btn" id="userLogoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+
+                <!-- Mobile Menu Toggle (Hamburger) -->
+                <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
             </div>
         </div>
 
-        <!-- RIGHT SIDE - All User Menu Content -->
-        <div class="nav-right">
-            <!-- Desktop Menu (visible on larger screens) -->
-            
-                        <!-- Avatar exactly as original -->
-            <div class="user-avatar mobile-version" id="mobileUserAvatar">U</div>
-            
-            <div class="desktop-menu">
-                <div class="user-info">
-                    <div class="user-name" id="userName">Loading...</div>
+        <!-- Mobile Menu (Dropdown) -->
+        <div class="mobile-menu" id="mobileMenu">
+            <div class="mobile-menu-content">
+                <div class="user-info mobile-version">
+                    <div class="user-name" id="mobileUserName">Loading...</div>
                     <div class="user-role">
-                        <span id="userRoleBadge" class="role-badge badge-user">User</span>
+                        <span id="mobileUserRoleBadge" class="role-badge badge-user">User</span>
                     </div>
                     <div class="user-balance">
                         <i class="fas fa-wallet"></i>
-                        <span id="userBalance">Tsh 0.00</span>
+                        <span id="mobileUserBalance">Tsh 0.00</span>
                     </div>
                 </div>
-                
-                <div class="language-switcher">
-                    <button id="dashboardLangToggle" class="lang-btn-dashboard" onclick="toggleLanguage()">
+
+                <div class="mobile-divider"></div>
+
+                <div class="language-switcher mobile-version">
+                    <button class="lang-btn-dashboard mobile-lang" onclick="toggleLanguage()">
                         <i class="fas fa-globe"></i>
-                        <span id="dashboardLangText">Kiswahili</span>
+                        <span id="mobileLangText">Kiswahili</span>
                     </button>
                 </div>
-                
-                <div class="user-avatar" id="userAvatar">U</div>
-                <button class="logout-btn" id="userLogoutBtn">
+
+                <button class="logout-btn mobile-version" id="mobileLogoutBtn">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
-
-            <!-- Mobile Menu Toggle (Hamburger) - Visible only on mobile -->
-            <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu">
-                <span class="hamburger-line"></span>
-                <span class="hamburger-line"></span>
-                <span class="hamburger-line"></span>
-            </button>
         </div>
-    </div>
+    </nav>
 
-    <!-- Mobile Menu (Dropdown) - Contains all original content -->
-    <div class="mobile-menu" id="mobileMenu">
-        <div class="mobile-menu-content">
-            <!-- User Info exactly as original -->
-            <div class="user-info mobile-version">
-                <div class="user-name" id="mobileUserName">Loading...</div>
-                <div class="user-role">
-                    <span id="mobileUserRoleBadge" class="role-badge badge-user">User</span>
-                </div>
-                <div class="user-balance">
-                    <i class="fas fa-wallet"></i>
-                    <span id="mobileUserBalance">Tsh 0.00</span>
-                </div>
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- ===== WALLET SECTION ===== -->
+        <div class="content-section" id="walletSection">
+            <div class="dashboard-header">
+                <h2><i class="fas fa-wallet"></i> My Wallet</h2>
+                <p>Manage your transaction and bank account</p>
             </div>
 
-            <!-- Divider -->
-            <div class="mobile-divider"></div>
-
-            <!-- Language Switcher exactly as original -->
-            <div class="language-switcher mobile-version">
-                <button class="lang-btn-dashboard mobile-lang" onclick="toggleLanguage()">
-                    <i class="fas fa-globe"></i>
-                    <span id="mobileLangText">Kiswahili</span>
-                </button>
-            </div>
-
-            <!-- Logout Button exactly as original -->
-            <button class="logout-btn mobile-version" id="mobileLogoutBtn">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
-        </div>
-    </div>
-</nav>
-
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- User Dashboard Content -->
-            <div class="content-section" id="walletSection">
-                <div class="dashboard-header">
+            <div class="wallet-container">
+                <div class="wallet-header">
                     <h2><i class="fas fa-wallet"></i> My Wallet</h2>
-                    <p>Manage your transaction and bank account </p>
-                </div>
-<!-- Deposit/Withdrawal Sections for User Dashboard -->
-    <div class="wallet-container">
-        <div class="wallet-header">
-            <h2><i class="fas fa-wallet"></i> My Wallet</h2>
-            <div class="balance-card">
-                <div class="balance-label">Available Balance</div>
-                <div class="balance-amount" id="walletBalance">TZS 0.00</div>
-            </div>
-        </div>
-        
-        <div class="wallet-tabs">
-            <button class="wallet-tab active" onclick="switchWalletTab('deposit')">
-                <i class="fas fa-arrow-down"></i> Deposit
-            </button>
-            <button class="wallet-tab" onclick="switchWalletTab('withdraw')">
-                <i class="fas fa-arrow-up"></i> Withdraw
-            </button>
-            <button class="wallet-tab" onclick="switchWalletTab('Accounts')">
-                <i class="fas fa-wallet"></i> Account 
-            </button>
-        </div>
-        
-        <!-- Add this inside user-dashboard, after profileSection or as a new section -->
-<div id="AccountsSection" class="wallet-tab-content">
-    <div class="dashboard-header">
-        <h2><i class="fas fa-university"></i> My Withdrawal Accounts</h2>
-        <p>Add and manage your bank/mobile money accounts for withdrawals</p>
-    </div>
-    
-    <div class="accounts-management">
-        <!-- Add Account Form (providers hardcoded) -->
-        <div class="add-account-card">
-            <h3><i class="fas fa-plus-circle"></i> Add New Account</h3>
-            <form id="userAddAccountForm" class="add-account-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Account Type</label>
-                        <select id="userAccountType" class="form-input" required>
-                            <option value="">Select Type</option>
-                            <option value="mobile">Mobile Money</option>
-                            <option value="bank">Bank Account</option>
-                        </select>
-                    </div>
-                    <!-- Mobile Provider Select (hidden by default) -->
-                    <div class="form-group provider-group" id="mobileProviderGroup" style="display: none;">
-                        <label>Mobile Provider</label>
-                        <select id="userMobileProvider" class="form-input">
-                            <option value="">Select Mobile Provider</option>
-                            <option value="vodacom">Vodacom M-PESA</option>
-                            <option value="airtel">Airtel Money</option>
-                            <option value="tigo">Tigo Pesa</option>
-                            <option value="halotel">Halopesa</option>
-                            <option value="yas">YAS Mixx</option>
-                            <option value="easypesa">EasyPesa</option>
-                        </select>
-                    </div>
-                    <!-- Bank Provider Select (hidden by default) -->
-                    <div class="form-group provider-group" id="bankProviderGroup" style="display: none;">
-                        <label>Bank Provider</label>
-                        <select id="userBankProvider" class="form-input">
-                            <option value="">Select Bank</option>
-                            <option value="crdb">CRDB Bank</option>
-                            <option value="nmb">NMB Bank</option>
-                            <option value="kcb">KCB Bank</option>
-                            <option value="dtb">DTB Bank</option>
-                            <option value="exim">Exim Bank</option>
-                            <option value="barclays">Barclays Bank</option>
-                        </select>
+                    <div class="balance-card">
+                        <div class="balance-label">Available Balance</div>
+                        <div class="balance-amount" id="walletBalance">TZS 0.00</div>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Account Name</label>
-                        <input type="text" id="userAccountName" class="form-input" placeholder="e.g., My Account" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Account Number</label>
-                        <input type="text" id="userAccountNumber" class="form-input" placeholder="Account number" required>
-                    </div>
-                </div>
-                <div class="form-group checkbox">
-                    <label>
-                        <input type="checkbox" id="userAccountDefault"> Set as default withdrawal account
-                    </label>
-                </div>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Save Account
-                </button>
-            </form>
-        </div>
-        
-        <!-- Accounts List -->
-        <div class="user-accounts-list">
-            <h3>Your Accounts</h3>
-            <div id="userAccountsContainer">
-                <!-- Accounts will be loaded here -->
-                <div class="loading-state">
-                    <i class="fas fa-spinner fa-spin"></i> Loading accounts...
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-        <!-- Deposit Section -->
-        <div id="depositSection" class="wallet-tab-content active">
-            <div class="deposit-steps">
-                <div class="step active" id="step1">
-                    <span class="step-number">1</span>
-                    <span class="step-title">Choose Payment Method</span>
-                </div>
-                <div class="step" id="step2">
-                    <span class="step-number">2</span>
-                    <span class="step-title">Fill Details</span>
-                </div>
-                <div class="step" id="step3">
-                    <span class="step-number">3</span>
-                    <span class="step-title">Confirm Transaction</span>
-                </div>
-            </div>
-            
-            <!-- Step 1: Payment Method Selection -->
-<div id="depositStep1" class="step-content active">
-    <h3>Select Payment Method</h3>
-    <div class="payment-methods-grid">
-        <div class="payment-method" onclick="selectPaymentMethod('vodacom')">
-            <img src="https://www.google.com/s2/favicons?domain=vodacom.co.tz&sz=64" 
-                 alt="Vodacom M-PESA" 
-                 onerror="this.src='https://via.placeholder.com/64?text=M-PESA'">
-            <span>Vodacom M-PESA</span>
-        </div>
-        <div class="payment-method" onclick="selectPaymentMethod('airtel')">
-            <img src="https://i1.sndcdn.com/artworks-000057339143-xnv3wk-t500x500.jpg" 
-                 alt="Airtel Money" 
-                 onerror="this.src='https://via.placeholder.com/64?text=Airtel'">
-            <span>Airtel Money</span>
-        </div>
-        <div class="payment-method" onclick="selectPaymentMethod('halopesa')">
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRmXoZyMQ8upMoN3BgSod5iWI0djvDtRc1Y-kh9VrWdzA&s=10" 
-                 alt="Halopesa" 
-                 onerror="this.src='https://via.placeholder.com/64?text=Halopesa'">
-            <span>Halopesa</span>
-        </div>
-        <div class="payment-method" onclick="selectPaymentMethod('lipa')">
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ2LCGO5BlMC8soIRayVXFKmuQNq2_K2f-V8hzqAxXfrvtFJr_W1iT2jCYC&s=10" 
-                 alt="Lipa kwa Simu" 
-                 onerror="this.src='https://via.placeholder.com/64?text=lipa'">
-            <span>Lipa kwa Simu</span>
-        </div>
-        <div class="payment-method" onclick="selectPaymentMethod('crdb')">
-            <img src="https://images.africanfinancials.com/tz-crdb-logo.png" 
-                 alt="CRDB" 
-                 onerror="this.src='https://via.placeholder.com/64?text=CRDB'">
-            <span>CRDB</span>
-        </div>
-        <div class="payment-method" onclick="selectPaymentMethod('nmb')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/8/88/Nmb_logo.jpg" 
-                 alt="NMB" 
-                 onerror="this.src='https://via.placeholder.com/64?text=NMB'">
-            <span>NMB</span>
-        </div>
-        <div class="payment-method" onclick="selectPaymentMethod('Pesa')">
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSfvBPfTF6yYdrmgtQ8aC4OUMgt7xOa-j8inMtIz27uzuxCsX8nVgrcWWg&s=10" 
-                 alt="T-PESA" 
-                 onerror="this.src='https://via.placeholder.com/64?text=T-PESA'">
-            <span>T-PESA</span>
-        </div>
-        <div class="payment-method" onclick="selectPaymentMethod('yas')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Yas_Tanzania.svg" 
-                 alt="Yas Mixx" 
-                 onerror="this.src='https://via.placeholder.com/64?text=YAS'">
-            <span>YAS Mixx</span>
-        </div>
-    </div>
-</div>
-            
-            <!-- Step 2: Fill Details -->
-            <div id="depositStep2" class="step-content">
-                <h3>Enter Your Details</h3>
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" id="depositFullName" class="form-input" placeholder="Enter your full name">
-                </div>
-                <div class="form-group">
-                    <label>Mobile Number</label>
-                    <input type="tel" id="depositMobile" class="form-input" placeholder="e.g., 0712345678">
-                </div>
-                <div class="form-group">
-                    <label>Amount (TZS)</label>
-                    <input type="number" id="depositAmount" class="form-input" min="1000" placeholder="Enter amount">
-                </div>
-                <button class="btn btn-primary" onclick="goToDepositStep3()">
-                    Continue <i class="fas fa-arrow-right"></i>
-                </button>
-            </div>
-            
-            <!-- Step 3: Confirm Transaction -->
-            <div id="depositStep3" class="step-content">
-                <div class="payment-instructions">
-                    <h3>Payment Instructions</h3>
-                    <div class="bank-details" id="bankDetails">
-                        <!-- Dynamically filled based on selected payment method -->
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Transaction ID / Reference Number</label>
-                        <input type="text" id="transactionId" class="form-input" placeholder="Enter transaction ID from your SMS">
-                    </div>
-                    
-                    <div class="upload-section">
-                        <label>Upload Payment Screenshot (Optional)</label>
-                        <input type="file" id="paymentScreenshot" accept="image/*" class="form-input">
-                    </div>
-                    
-                    <button class="btn btn-success" onclick="submitDepositRequest()">
-                        <i class="fas fa-check-circle"></i> Submit for Approval
+                
+                <div class="wallet-tabs">
+                    <button class="wallet-tab active" onclick="switchWalletTab('deposit')">
+                        <i class="fas fa-arrow-down"></i> Deposit
+                    </button>
+                    <button class="wallet-tab" onclick="switchWalletTab('withdraw')">
+                        <i class="fas fa-arrow-up"></i> Withdraw
+                    </button>
+                    <button class="wallet-tab" onclick="switchWalletTab('Accounts')">
+                        <i class="fas fa-wallet"></i> Account 
                     </button>
                 </div>
-            </div>
-        </div>
-        
-<!-- Withdraw Section -->
-<div id="withdrawSection" class="wallet-tab-content">
-    <div class="withdraw-form">
-        <h3>Request Withdrawal</h3>
-        
-        <div class="current-balance-info">
-            Current Balance: <span id="withdrawCurrentBalance">TZS 0.00</span>
-        </div>
-        
-        <div class="form-group">
-            <label>Amount to Withdraw (TZS)</label>
-            <input type="number" id="withdrawAmount" class="form-input" min="5000" 
-                   oninput="calculateWithdrawalDeduction()" placeholder="Enter amount" required>
-        </div>
-        
-        <div class="deduction-calculator">
-            <div class="calc-row">
-                <span>Withdrawal Amount:</span>
-                <span id="calcWithdrawAmount">TZS 0</span>
-            </div>
-            <div class="calc-row">
-                <span>Service Fee (15%):</span>
-                <span id="calcFee">TZS 0</span>
-            </div>
-            <div class="calc-row total">
-                <span>You'll Receive:</span>
-                <span id="calcNetAmount">TZS 0</span>
-            </div>
-        </div>
-        
-        <div class="form-group">
-            <label>Select Account</label>
-            <select id="withdrawBank" class="form-input" onchange="updateWithdrawAccountDetails()" required>
-                <option value="">Select Your Account</option>
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label>Account Full Name</label>
-            <input type="text" id="withdrawAccountName" class="form-input" readonly 
-                   placeholder="Auto-filled from account">
-        </div>
-        
-        <div class="form-group">
-            <label>Account Number</label>
-            <input type="text" id="withdrawAccountNumber" class="form-input" readonly 
-                   placeholder="Auto-filled from account">
-        </div>
-        
-        <div class="form-group">
-            <label>Mobile Number (for confirmation)</label>
-            <input type="tel" id="withdrawMobile" class="form-input" 
-                   placeholder="Enter your mobile number" required>
-        </div>
-        
-        <button class="btn btn-primary" onclick="submitWithdrawalRequest()">
-            <i class="fas fa-paper-plane"></i> Submit Withdrawal Request
-        </button>
-    </div>
-</div>
-    </div>
-</div>
-
-<!-- Matches Section with Responsive Search -->
-<div class="content-section active" id="matchesSection">
-    <!-- Dashboard Header - Keep your existing structure -->
-    <div class="dashboard-header">
-        <div>
-            <h2><i class="fas fa-home"></i> Welcome, <span id="welcomeName">User</span>!</h2>
-            <p>Your football community dashboard</p>
-        </div>
-    </div>
-
-    <div class="matches-container">
-        <!-- Search and Filter Section - Unique classes to avoid conflicts -->
-        <div class="matches-search-wrapper">
-            <!-- Search Bar -->
-            <div class="matches-search-box">
-                <i class="fas fa-search matches-search-icon"></i>
-                <input type="text" id="matchSearchInput" 
-                       class="matches-search-input" 
-                       placeholder="Search teams, leagues, venues...">
-                <button class="matches-clear-search" id="clearSearchBtn" style="display: none;">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-
-            <!-- Filter Toggle for Mobile -->
-            <div class="matches-filter-toggle" onclick="toggleMatchesFilters()">
-                <i class="fas fa-sliders-h"></i>
-                <span>Filters</span>
-                <span class="matches-filter-badge" id="matchesFilterCount">0</span>
-            </div>
-
-            <!-- Filters Container -->
-            <div class="matches-filters-panel" id="matchesFiltersPanel">
-                <!-- First Row -->
-                <div class="matches-filters-row">
-                    <!-- League Filter -->
-                    <div class="matches-filter-group">
-                        <label class="matches-filter-label">
-                            <i class="fas fa-trophy"></i> League
-                        </label>
-                        <select id="leagueFilter" class="matches-filter-select" onchange="filterMatches()">
-                            <option value="all">All Leagues</option>
-                        </select>
+                
+                <!-- Accounts Section -->
+                <div id="AccountsSection" class="wallet-tab-content">
+                    <div class="dashboard-header">
+                        <h2><i class="fas fa-university"></i> My Withdrawal Accounts</h2>
+                        <p>Add and manage your bank/mobile money accounts for withdrawals</p>
                     </div>
-
-                    <!-- Venue Filter -->
-                    <div class="matches-filter-group">
-                        <label class="matches-filter-label">
-                            <i class="fas fa-map-marker-alt"></i> Venue
-                        </label>
-                        <select id="venueFilter" class="matches-filter-select" onchange="filterMatches()">
-                            <option value="all">All Venues</option>
-                        </select>
-                    </div>
-
-                    <!-- Team Filter -->
-                    <div class="matches-filter-group">
-                        <label class="matches-filter-label">
-                            <i class="fas fa-users"></i> Team
-                        </label>
-                        <select id="teamFilter" class="matches-filter-select" onchange="filterMatches()">
-                            <option value="all">All Teams</option>
-                        </select>
+                    
+                    <div class="accounts-management">
+                        <div class="add-account-card">
+                            <h3><i class="fas fa-plus-circle"></i> Add New Account</h3>
+                            <form id="userAddAccountForm" class="add-account-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Account Type</label>
+                                        <select id="userAccountType" class="form-input" required>
+                                            <option value="">Select Type</option>
+                                            <option value="mobile">Mobile Money</option>
+                                            <option value="bank">Bank Account</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group provider-group" id="mobileProviderGroup" style="display: none;">
+                                        <label>Mobile Provider</label>
+                                        <select id="userMobileProvider" class="form-input">
+                                            <option value="">Select Mobile Provider</option>
+                                            <option value="vodacom">Vodacom M-PESA</option>
+                                            <option value="airtel">Airtel Money</option>
+                                            <option value="tigo">Tigo Pesa</option>
+                                            <option value="halotel">Halopesa</option>
+                                            <option value="yas">YAS Mixx</option>
+                                            <option value="easypesa">EasyPesa</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group provider-group" id="bankProviderGroup" style="display: none;">
+                                        <label>Bank Provider</label>
+                                        <select id="userBankProvider" class="form-input">
+                                            <option value="">Select Bank</option>
+                                            <option value="crdb">CRDB Bank</option>
+                                            <option value="nmb">NMB Bank</option>
+                                            <option value="kcb">KCB Bank</option>
+                                            <option value="dtb">DTB Bank</option>
+                                            <option value="exim">Exim Bank</option>
+                                            <option value="barclays">Barclays Bank</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Account Name</label>
+                                        <input type="text" id="userAccountName" class="form-input" placeholder="e.g., My Account" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Account Number</label>
+                                        <input type="text" id="userAccountNumber" class="form-input" placeholder="Account number" required>
+                                    </div>
+                                </div>
+                                <div class="form-group checkbox">
+                                    <label>
+                                        <input type="checkbox" id="userAccountDefault"> Set as default withdrawal account
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Account
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <div class="user-accounts-list">
+                            <h3>Your Accounts</h3>
+                            <div id="userAccountsContainer">
+                                <div class="loading-state">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading accounts...
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Second Row -->
-                <div class="matches-filters-row">
-                    <!-- Date Filter -->
-                    <div class="matches-filter-group">
-                        <label class="matches-filter-label">
-                            <i class="fas fa-calendar"></i> Date
-                        </label>
-                        <select id="dateFilter" class="matches-filter-select" onchange="filterMatches()">
-                            <option value="all">All Dates</option>
-                            <option value="today">Today</option>
-                            <option value="tomorrow">Tomorrow</option>
-                            <option value="week">This Week</option>
-                            <option value="weekend">This Weekend</option>
-                            <option value="next7">Next 7 Days</option>
-                        </select>
+                <!-- Deposit Section -->
+                <div id="depositSection" class="wallet-tab-content active">
+                    <div class="deposit-steps">
+                        <div class="step active" id="step1">
+                            <span class="step-number">1</span>
+                            <span class="step-title">Choose Payment Method</span>
+                        </div>
+                        <div class="step" id="step2">
+                            <span class="step-number">2</span>
+                            <span class="step-title">Fill Details</span>
+                        </div>
+                        <div class="step" id="step3">
+                            <span class="step-number">3</span>
+                            <span class="step-title">Confirm Transaction</span>
+                        </div>
                     </div>
-
-                    <!-- Sort By -->
-                    <div class="matches-filter-group">
-                        <label class="matches-filter-label">
-                            <i class="fas fa-sort-amount-down"></i> Sort By
-                        </label>
-                        <select id="sortFilter" class="matches-filter-select" onchange="filterMatches()">
-                            <option value="date">Date (Latest)</option>
-                            <option value="date-asc">Date (Earliest)</option>
-                            <option value="league">League</option>
-                        </select>
+                    
+                    <!-- Step 1: Payment Method Selection -->
+                    <div id="depositStep1" class="step-content active">
+                        <h3>Select Payment Method</h3>
+                        <div class="payment-methods-grid">
+                            <div class="payment-method" onclick="selectPaymentMethod('vodacom')">
+                                <img src="https://www.google.com/s2/favicons?domain=vodacom.co.tz&sz=64" alt="Vodacom M-PESA" onerror="this.src='https://via.placeholder.com/64?text=M-PESA'">
+                                <span>Vodacom M-PESA</span>
+                            </div>
+                            <div class="payment-method" onclick="selectPaymentMethod('airtel')">
+                                <img src="https://i1.sndcdn.com/artworks-000057339143-xnv3wk-t500x500.jpg" alt="Airtel Money" onerror="this.src='https://via.placeholder.com/64?text=Airtel'">
+                                <span>Airtel Money</span>
+                            </div>
+                            <div class="payment-method" onclick="selectPaymentMethod('halopesa')">
+                                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRmXoZyMQ8upMoN3BgSod5iWI0djvDtRc1Y-kh9VrWdzA&s=10" alt="Halopesa" onerror="this.src='https://via.placeholder.com/64?text=Halopesa'">
+                                <span>Halopesa</span>
+                            </div>
+                            <div class="payment-method" onclick="selectPaymentMethod('lipa')">
+                                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ2LCGO5BlMC8soIRayVXFKmuQNq2_K2f-V8hzqAxXfrvtFJr_W1iT2jCYC&s=10" alt="Lipa kwa Simu" onerror="this.src='https://via.placeholder.com/64?text=lipa'">
+                                <span>Lipa kwa Simu</span>
+                            </div>
+                            <div class="payment-method" onclick="selectPaymentMethod('crdb')">
+                                <img src="https://images.africanfinancials.com/tz-crdb-logo.png" alt="CRDB" onerror="this.src='https://via.placeholder.com/64?text=CRDB'">
+                                <span>CRDB</span>
+                            </div>
+                            <div class="payment-method" onclick="selectPaymentMethod('nmb')">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/8/88/Nmb_logo.jpg" alt="NMB" onerror="this.src='https://via.placeholder.com/64?text=NMB'">
+                                <span>NMB</span>
+                            </div>
+                            <div class="payment-method" onclick="selectPaymentMethod('Pesa')">
+                                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSfvBPfTF6yYdrmgtQ8aC4OUMgt7xOa-j8inMtIz27uzuxCsX8nVgrcWWg&s=10" alt="T-PESA" onerror="this.src='https://via.placeholder.com/64?text=T-PESA'">
+                                <span>T-PESA</span>
+                            </div>
+                            <div class="payment-method" onclick="selectPaymentMethod('yas')">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/f/f2/Yas_Tanzania.svg" alt="Yas Mixx" onerror="this.src='https://via.placeholder.com/64?text=YAS'">
+                                <span>YAS Mixx</span>
+                            </div>
+                        </div>
                     </div>
-
-                    <!-- Clear Filters Button -->
-                    <div class="matches-filter-group matches-filter-actions">
-                        <button class="matches-clear-filters" onclick="clearMatchesFilters()">
-                            <i class="fas fa-times"></i> Clear
+                    
+                    <!-- Step 2: Fill Details -->
+                    <div id="depositStep2" class="step-content">
+                        <h3>Enter Your Details</h3>
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="depositFullName" class="form-input" placeholder="Enter your full name">
+                        </div>
+                        <div class="form-group">
+                            <label>Mobile Number</label>
+                            <input type="tel" id="depositMobile" class="form-input" placeholder="e.g., 0712345678">
+                        </div>
+                        <div class="form-group">
+                            <label>Amount (TZS)</label>
+                            <input type="number" id="depositAmount" class="form-input" min="1000" placeholder="Enter amount">
+                        </div>
+                        <button class="btn btn-primary" onclick="goToDepositStep3()">
+                            Continue <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Step 3: Confirm Transaction -->
+                    <div id="depositStep3" class="step-content">
+                        <div class="payment-instructions">
+                            <h3>Payment Instructions</h3>
+                            <div class="bank-details" id="bankDetails"></div>
+                            
+                            <div class="form-group">
+                                <label>Transaction ID / Reference Number</label>
+                                <input type="text" id="transactionId" class="form-input" placeholder="Enter transaction ID from your SMS">
+                            </div>
+                            
+                            <div class="upload-section">
+                                <label>Upload Payment Screenshot (Optional)</label>
+                                <input type="file" id="paymentScreenshot" accept="image/*" class="form-input">
+                            </div>
+                            
+                            <button class="btn btn-success" onclick="submitDepositRequest()">
+                                <i class="fas fa-check-circle"></i> Submit for Approval
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Withdraw Section -->
+                <div id="withdrawSection" class="wallet-tab-content">
+                    <div class="withdraw-form">
+                        <h3>Request Withdrawal</h3>
+                        
+                        <div class="current-balance-info">
+                            Current Balance: <span id="withdrawCurrentBalance">TZS 0.00</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Amount to Withdraw (TZS)</label>
+                            <input type="number" id="withdrawAmount" class="form-input" min="5000" oninput="calculateWithdrawalDeduction()" placeholder="Enter amount" required>
+                        </div>
+                        
+                        <div class="deduction-calculator">
+                            <div class="calc-row">
+                                <span>Withdrawal Amount:</span>
+                                <span id="calcWithdrawAmount">TZS 0</span>
+                            </div>
+                            <div class="calc-row">
+                                <span>Service Fee (15%):</span>
+                                <span id="calcFee">TZS 0</span>
+                            </div>
+                            <div class="calc-row total">
+                                <span>You'll Receive:</span>
+                                <span id="calcNetAmount">TZS 0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Select Account</label>
+                            <select id="withdrawBank" class="form-input" onchange="updateWithdrawAccountDetails()" required>
+                                <option value="">Select Your Account</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Account Full Name</label>
+                            <input type="text" id="withdrawAccountName" class="form-input" readonly placeholder="Auto-filled from account">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Account Number</label>
+                            <input type="text" id="withdrawAccountNumber" class="form-input" readonly placeholder="Auto-filled from account">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Mobile Number (for confirmation)</label>
+                            <input type="tel" id="withdrawMobile" class="form-input" placeholder="Enter your mobile number" required>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="submitWithdrawalRequest()">
+                            <i class="fas fa-paper-plane"></i> Submit Withdrawal Request
                         </button>
                     </div>
                 </div>
             </div>
-
-            <!-- Active Filters Display -->
-            <div class="matches-active-filters" id="matchesActiveFilters"></div>
-
-            <!-- Results Info -->
-            <div class="matches-results-info">
-                <span id="matchesCount"><i class="fas fa-futbol"></i> Loading matches...</span>
-                <span id="showingMatches"></span>
-            </div>
         </div>
 
-        <!-- VIP Multi-Bet Slip -->
-        <div id="vipBetSlipContainer"></div>
-        
-        <!-- Matches Container -->
-        <div id="matchesContainer" class="matches-grid">
-            <div class="matches-loading-state">
-                <div class="spinner"></div>
-                <div>Loading matches...</div>
-            </div>
-        </div>
-    </div>
-</div>
-            <!-- Matches Section -->
-            <div class="content-section" id="mybetSection">
-                <div class="dashboard-header">
-                    <div>
-                        <h2><i class="fas fa-history"></i> Betting Records</h2>
-                        <p>Predict outcomes and earn points</p>
-                    </div>
-                </div>
-                <div class="container">
-                        <h2 style="margin-bottom: 1.5rem; color: white;">My Betting History</h2>
-        <table class="my-bets-table">
-                            <thead>
-                                <tr>
-                                    <th>Match/Bet</th>
-                                    <th>Type</th>
-                                    <th>Stake (TZS)</th>
-                                    <th>Odds</th>
-                                    <th>Profit</th>
-                                    <th>Status</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody id="myBetsTable">
-                                <tr>
-                                    <td colspan="7" style="text-align: center; padding: 3rem; color: var(--gray-color);">
-                                        <div class="spinner"></div>
-                                        <div style="margin-top: 1rem;">Loading bets...</div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+        <!-- ===== MATCHES SECTION ===== -->
+        <div class="content-section active" id="matchesSection">
+            <div class="dashboard-header">
+                <div>
+                    <h2><i class="fas fa-home"></i> Welcome, <span id="welcomeName">User</span>!</h2>
+                    <p>Your football community dashboard</p>
                 </div>
             </div>
 
-            <div class="content-section" id="aboutsection">
-                <div class="dashboard-header">
-                    <h2><i class="fas fa-edit"></i>             ⧉ What We Do</h2>
-                    <p>About ou service</p>
-                </div>
-    <div class="card-tabs-container">
-        <h2>
-            ⧉ What We Do
-            <span>FOOTBALLHUB</span>
-        </h2>
-
-        <!-- tab navigation (card-style buttons) -->
-        <ul class="tab-list" role="tablist" aria-label="card tab example">
-            <li class="tab active" role="tab" id="tab-1" aria-selected="true" aria-controls="panel-1" tabindex="0">
-                About Us
-            </li>
-            <li class="tab" role="tab" id="tab-2" aria-selected="false" aria-controls="panel-2" tabindex="0">
-                FAQ's
-            </li>
-            <li class="tab" role="tab" id="tab-3" aria-selected="false" aria-controls="panel-3" tabindex="0">
-               Privacy Policy 
-            </li>
-            <li class="tab" role="tab" id="tab-4" aria-selected="false" aria-controls="panel-4" tabindex="0">
-                Terms & Conditionst
-            </li>
-        </ul>
-
-        <!-- panels (each is a card-like container) -->
-        <div class="panels-container">
-            <div id="panel-1" class="tab-panel active-panel" role="tabpanel" aria-labelledby="tab-1">
-                <div class="card-content">
-                    <h3>📋 Welcome to Football Canvas Hub</h3>
-                    <p>Football Canvas Hub is a premier online community for football enthusiasts. We offer a unique platform where fans can predict match outcomes, compete with friends, and earn rewards – all while celebrating the beautiful game.</p>
-                    <div class="badge-list">
-                        <span class="badge">Our Mission</span>
-                        <span class="badge">Our Values</span>
-                        <span class="badge">Our Team</span>
+            <div class="matches-container">
+                <div class="matches-search-wrapper">
+                    <div class="matches-search-box">
+                        <i class="fas fa-search matches-search-icon"></i>
+                        <input type="text" id="matchSearchInput" class="matches-search-input" placeholder="Search teams, leagues, venues...">
+                        <button class="matches-clear-search" id="clearSearchBtn" style="display: none;">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
-                    <hr>
-                    <h4>Our Mission</h4>
-                <p>To enhance the football experience by providing an interactive, transparent, and rewarding environment for fans worldwide. We believe every match is an opportunity to engage, learn, and win.</p>
+
+                    <div class="matches-filter-toggle" onclick="toggleMatchesFilters()">
+                        <i class="fas fa-sliders-h"></i>
+                        <span>Filters</span>
+                        <span class="matches-filter-badge" id="matchesFilterCount">0</span>
+                    </div>
+
+                    <div class="matches-filters-panel" id="matchesFiltersPanel">
+                        <div class="matches-filters-row">
+                            <div class="matches-filter-group">
+                                <label class="matches-filter-label"><i class="fas fa-trophy"></i> League</label>
+                                <select id="leagueFilter" class="matches-filter-select" onchange="filterMatches()">
+                                    <option value="all">All Leagues</option>
+                                </select>
+                            </div>
+                            <div class="matches-filter-group">
+                                <label class="matches-filter-label"><i class="fas fa-map-marker-alt"></i> Venue</label>
+                                <select id="venueFilter" class="matches-filter-select" onchange="filterMatches()">
+                                    <option value="all">All Venues</option>
+                                </select>
+                            </div>
+                            <div class="matches-filter-group">
+                                <label class="matches-filter-label"><i class="fas fa-users"></i> Team</label>
+                                <select id="teamFilter" class="matches-filter-select" onchange="filterMatches()">
+                                    <option value="all">All Teams</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="matches-filters-row">
+                            <div class="matches-filter-group">
+                                <label class="matches-filter-label"><i class="fas fa-calendar"></i> Date</label>
+                                <select id="dateFilter" class="matches-filter-select" onchange="filterMatches()">
+                                    <option value="all">All Dates</option>
+                                    <option value="today">Today</option>
+                                    <option value="tomorrow">Tomorrow</option>
+                                    <option value="week">This Week</option>
+                                    <option value="weekend">This Weekend</option>
+                                    <option value="next7">Next 7 Days</option>
+                                </select>
+                            </div>
+                            <div class="matches-filter-group">
+                                <label class="matches-filter-label"><i class="fas fa-sort-amount-down"></i> Sort By</label>
+                                <select id="sortFilter" class="matches-filter-select" onchange="filterMatches()">
+                                    <option value="date">Date (Latest)</option>
+                                    <option value="date-asc">Date (Earliest)</option>
+                                    <option value="league">League</option>
+                                </select>
+                            </div>
+                            <div class="matches-filter-group matches-filter-actions">
+                                <button class="matches-clear-filters" onclick="clearMatchesFilters()">
+                                    <i class="fas fa-times"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="matches-active-filters" id="matchesActiveFilters"></div>
+                    <div class="matches-results-info">
+                        <span id="matchesCount"><i class="fas fa-futbol"></i> Loading matches...</span>
+                        <span id="showingMatches"></span>
+                    </div>
+                </div>
+
+                <div id="vipBetSlipContainer"></div>
                 
-                <h4>What We Offer</h4>
-                <ul>
-                    <li><strong>Live Match Predictions:</strong> Predict outcomes of upcoming matches and earn points.</li>
-                    <li><strong>VIP Multi-Bets:</strong> Combine multiple selections for higher returns.</li>
-                    <li><strong>Secure Wallet:</strong> Easy deposits and withdrawals with 15% fee on withdrawals.</li>
-                    <li><strong>Referral Program:</strong> Earn 10% commission on your friends' first deposits.</li>
-                    <li><strong>24/7 Support:</strong> Real‑time chat with our support team.</li>
+                <div id="matchesContainer" class="matches-grid">
+                    <div class="matches-loading-state">
+                        <div class="spinner"></div>
+                        <div>Loading matches...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== MY BETS SECTION ===== -->
+        <div class="content-section" id="mybetSection">
+            <div class="dashboard-header">
+                <div>
+                    <h2><i class="fas fa-history"></i> Betting Records</h2>
+                    <p>Predict outcomes and earn points</p>
+                </div>
+            </div>
+            <div class="container">
+                <h2 style="margin-bottom: 1.5rem; color: white;">My Betting History</h2>
+                <table class="my-bets-table">
+                    <thead>
+                        <tr>
+                            <th>Match/Bet</th>
+                            <th>Type</th>
+                            <th>Stake (TZS)</th>
+                            <th>Odds</th>
+                            <th>Profit</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="myBetsTable">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 3rem; color: var(--gray-color);">
+                                <div class="spinner"></div>
+                                <div style="margin-top: 1rem;">Loading bets...</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== ABOUT SECTION ===== -->
+        <div class="content-section" id="aboutsection">
+            <div class="dashboard-header">
+                <h2><i class="fas fa-edit"></i> ⧉ What We Do</h2>
+                <p>About our service</p>
+            </div>
+            
+            <div class="card-tabs-container">
+                <h2>⧉ What We Do <span>FOOTBALLHUB</span></h2>
+
+                <!-- Announcements Slideshow -->
+                <div class="slideshow-card">
+                    <h1><span class="dashboard-header">⚽ ANNOUNCEMENTS ⚽</span></h1>
+                    <div class="slideshow-container" id="slideshowContainer">
+                        <div class="slides" id="slides"></div>
+                        <button class="prev" id="prevBtn">❮</button>
+                        <button class="next" id="nextBtn">❯</button>
+                        <div class="dots-container" id="dotsContainer"></div>
+                    </div>
+                    <div class="footnote">📢 Live announcements from admin</div>
+                </div>
+
+                <!-- User Announcements Cards -->
+                <div class="announcement-grid" id="userAnnouncementsSection">
+                    <div class="section-title">📢 Latest announcements (cards)</div>
+                    <div class="cards-container" id="announcementsContainer">Loading announcements...</div>
+                </div>
+
+                <!-- Tab Navigation -->
+                <ul class="tab-list" role="tablist">
+                    <li class="tab active" role="tab" id="tab-1" aria-selected="true" aria-controls="panel-1" tabindex="0">About Us</li>
+                    <li class="tab" role="tab" id="tab-2" aria-selected="false" aria-controls="panel-2" tabindex="0">FAQ's</li>
+                    <li class="tab" role="tab" id="tab-3" aria-selected="false" aria-controls="panel-3" tabindex="0">Privacy Policy</li>
+                    <li class="tab" role="tab" id="tab-4" aria-selected="false" aria-controls="panel-4" tabindex="0">Terms & Conditions</li>
                 </ul>
-                
-                <h4>Our Values</h4>
-                <p><strong>Transparency:</strong> Clear rules and instant payouts. <strong>Community:</strong> A place for fans to connect. <strong>Innovation:</strong> Continuously improving the platform.</p>
-                
-                <h4>Our Team</h4>
-                <p>We are a group of football lovers and tech enthusiasts dedicated to building the ultimate fan experience. Based in Tanzania, we serve users across Africa and beyond.</p>
-                
-                    <div class="meta-note">
-                        <span>✨</span> <p style="margin-top: 2rem; font-style: italic; color: var(--gray-color);">Join us and turn your football knowledge into rewards!</p>
+
+                <!-- Tab Panels -->
+                <div class="panels-container">
+                    <div id="panel-1" class="tab-panel active-panel" role="tabpanel" aria-labelledby="tab-1">
+                        <div class="card-content">
+                            <h3>📋 Welcome to Football Canvas Hub</h3>
+                            <p>Football Canvas Hub is a premier online community for football enthusiasts. We offer a unique platform where fans can predict match outcomes, compete with friends, and earn rewards – all while celebrating the beautiful game.</p>
+                            <div class="badge-list">
+                                <span class="badge">Our Mission</span>
+                                <span class="badge">Our Values</span>
+                                <span class="badge">Our Team</span>
+                            </div>
+                            <hr>
+                            <h4>Our Mission</h4>
+                            <p>To enhance the football experience by providing an interactive, transparent, and rewarding environment for fans worldwide. We believe every match is an opportunity to engage, learn, and win.</p>
+                            <h4>What We Offer</h4>
+                            <ul>
+                                <li><strong>Live Match Predictions:</strong> Predict outcomes of upcoming matches and earn points.</li>
+                                <li><strong>VIP Multi-Bets:</strong> Combine multiple selections for higher returns.</li>
+                                <li><strong>Secure Wallet:</strong> Easy deposits and withdrawals with 15% fee on withdrawals.</li>
+                                <li><strong>Referral Program:</strong> Earn 10% commission on your friends' first deposits.</li>
+                                <li><strong>24/7 Support:</strong> Real‑time chat with our support team.</li>
+                            </ul>
+                            <h4>Our Values</h4>
+                            <p><strong>Transparency:</strong> Clear rules and instant payouts. <strong>Community:</strong> A place for fans to connect. <strong>Innovation:</strong> Continuously improving the platform.</p>
+                            <h4>Our Team</h4>
+                            <p>We are a group of football lovers and tech enthusiasts dedicated to building the ultimate fan experience. Based in Tanzania, we serve users across Africa and beyond.</p>
+                            <div class="meta-note">
+                                <span>✨</span> <p style="margin-top: 2rem; font-style: italic; color: var(--gray-color);">Join us and turn your football knowledge into rewards!</p>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div id="panel-2" class="tab-panel" role="tabpanel" aria-labelledby="tab-2">
-                <div class="card-content">
-                    <h3>🔥 Frequently Asked Questions</h3>
-                    <hr>
-
-                    <h4>❓ How do I deposit money?</h4>
-                    <p>Go to your Wallet, choose Deposit, select a payment method (Vodacom M-PESA, Airtel Money, etc.), enter the amount, and follow the instructions. You'll receive a transaction ID after payment. Submit it for approval – funds are added once confirmed.</p>
- 
-                    <h4>❓ How do I withdraw my winnings?</h4>
-                    <p>In the Wallet, choose Withdraw. Select your bank account, enter the amount (minimum TZS 5,000), and confirm. A 15% fee applies. Withdrawals are processed after admin approval (usually within 24 hours).</p>
-
-                    <h4>❓ What are the betting rules?</h4>
-                    <p>You bet on match outcomes (Home Win, Draw, Away Win). If the actual result is <strong>opposite</strong> to your selection, you win a percentage of your stake based on the match odds. If the result matches your bet, you lose the stake. Multi‑bets combine several selections – all must win to get the combined payout.</p>             
-
-                    <h4>❓ How does the referral program work?</h4>
-                    <p>Share your unique referral code or link. When a friend signs up and makes their <strong>first deposit</strong>, you earn 10% of that deposit instantly. There's no limit on referrals – the more you refer, the more you earn.</p>
-                
-                    <h4>❓ I forgot my password. What should I do?</h4>
-                    <p>Click "Forgot Password?" on the login page. Enter your email, and we'll send a reset link. Follow the instructions to set a new password.</p>
-                
-                    <h4>❓ Why is my account blocked?</h4>
-                    <p>Accounts may be blocked for suspicious activity, violation of terms, or security reasons. Contact support via chat to resolve the issue.</p>
-                
-                    <h4>❓ How long do withdrawals take?</h4>
-                    <p>Withdrawals are usually processed within 24 hours after admin approval. Once approved, the money is sent to your account (bank or mobile money) and may take additional time depending on the provider.</p>
-                
-                
-                
-                    <h4>❓ Can I change my personal information?</h4>
-                    <p>Yes, go to Profile → Account Settings. You can update your name, phone, country, and favorite team. Email cannot be changed for security reasons.</p>
-                
-                
-                    <h4>❓ Is my information secure?</h4>
-                    <p>Absolutely. We use industry‑standard encryption and Firebase security. Your personal data is never shared with third parties without your consent.</p>
-                    <div class="meta-note">
-                        <span>⚡</span> question many people asking.
+                    <div id="panel-2" class="tab-panel" role="tabpanel" aria-labelledby="tab-2">
+                        <div class="card-content">
+                            <h3>🔥 Frequently Asked Questions</h3>
+                            <hr>
+                            <h4>❓ How do I deposit money?</h4>
+                            <p>Go to your Wallet, choose Deposit, select a payment method (Vodacom M-PESA, Airtel Money, etc.), enter the amount, and follow the instructions. You'll receive a transaction ID after payment. Submit it for approval – funds are added once confirmed.</p>
+                            <h4>❓ How do I withdraw my winnings?</h4>
+                            <p>In the Wallet, choose Withdraw. Select your bank account, enter the amount (minimum TZS 5,000), and confirm. A 15% fee applies. Withdrawals are processed after admin approval (usually within 24 hours).</p>
+                            <h4>❓ What are the betting rules?</h4>
+                            <p>You bet on match outcomes (Home Win, Draw, Away Win). If the actual result is <strong>opposite</strong> to your selection, you win a percentage of your stake based on the match odds. If the result matches your bet, you lose the stake. Multi‑bets combine several selections – all must win to get the combined payout.</p>
+                            <h4>❓ How does the referral program work?</h4>
+                            <p>Share your unique referral code or link. When a friend signs up and makes their <strong>first deposit</strong>, you earn 10% of that deposit instantly. There's no limit on referrals – the more you refer, the more you earn.</p>
+                            <h4>❓ I forgot my password. What should I do?</h4>
+                            <p>Click "Forgot Password?" on the login page. Enter your email, and we'll send a reset link. Follow the instructions to set a new password.</p>
+                            <h4>❓ Why is my account blocked?</h4>
+                            <p>Accounts may be blocked for suspicious activity, violation of terms, or security reasons. Contact support via chat to resolve the issue.</p>
+                            <h4>❓ How long do withdrawals take?</h4>
+                            <p>Withdrawals are usually processed within 24 hours after admin approval. Once approved, the money is sent to your account (bank or mobile money) and may take additional time depending on the provider.</p>
+                            <h4>❓ Can I change my personal information?</h4>
+                            <p>Yes, go to Profile → Account Settings. You can update your name, phone, country, and favorite team. Email cannot be changed for security reasons.</p>
+                            <h4>❓ Is my information secure?</h4>
+                            <p>Absolutely. We use industry‑standard encryption and Firebase security. Your personal data is never shared with third parties without your consent.</p>
+                            <div class="meta-note"><span>⚡</span> question many people asking.</div>
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div id="panel-3" class="tab-panel" role="tabpanel" aria-labelledby="tab-3">
-                <div class="card-content">
-                    <h3>📐 Privacy Policy</h3>
-                    <hr>
-                 
-                    <h4>1. Information We Collect</h4>
-                <p>We collect personal information you provide when registering, such as name, email, phone number, and payment details. We also collect usage data through cookies and analytics.</p>
-                
-                <h4>2. How We Use Your Information</h4>
-                <p>We use your information to provide services, process transactions, improve our Platform, and communicate with you. We may use your email for service-related announcements.</p>
-                
-                <h4>3. Sharing of Information</h4>
-                <p>We do not sell your personal information. We may share it with trusted third-party service providers (payment processors, analytics) who are bound by confidentiality. We may disclose information if required by law.</p>
-                
-                <h4>4. Data Security</h4>
-                <p>We implement industry-standard security measures to protect your data. However, no method of transmission over the Internet is 100% secure. You are responsible for keeping your account credentials safe.</p>
-                
-                <h4>5. Cookies</h4>
-                <p>We use cookies to enhance your experience, remember preferences, and analyze traffic. You can disable cookies in your browser, but some features may not function properly.</p>
-                
-                <h4>6. Third-Party Links</h4>
-                <p>The Platform may contain links to external sites. We are not responsible for their privacy practices. We encourage you to review their policies.</p>
-                
-                <h4>7. Children's Privacy</h4>
-                <p>Our services are not directed to individuals under 18. We do not knowingly collect information from minors. If you become aware that a minor has provided data, please contact us.</p>
-                
-                <h4>8. Changes to This Policy</h4>
-                <p>We may update this Privacy Policy. Changes will be posted here with an updated revision date. Your continued use signifies acceptance.</p>
-                
-                <h4>9. Your Rights</h4>
-                <p>You have the right to access, correct, or delete your personal data. To exercise these rights, please contact us at privacy@footballcanvas.com.</p>
-                
-                <hr>
-                
-                    <p style="margin-top: 1.5rem;">The panels use a separate nested card (<code>.card-content</code>) to keep the white layered look. You can easily replace content with images, forms, or any elements.</p>        
-                </div>
-            </div>
-            <div id="panel-4" class="tab-panel" role="tabpanel" aria-labelledby="tab-4">
-                <div class="card-content">
-                    <h3>⭐ Terms and Conditions</h3>
-                    <hr>
-                    <h4>1. Acceptance of Terms</h4>
-                <p>By accessing or using Football Canvas Hub ("the Platform"), you agree to be bound by these Terms and Conditions. If you do not agree, please do not use the Platform.</p>
-                
-                <h4>2. Eligibility</h4>
-                <p>You must be at least 18 years old to use this Platform. By using the Platform, you represent and warrant that you are 18 or older.</p>
-                
-                <h4>3. Account Registration</h4>
-                <p>You are responsible for maintaining the confidentiality of your account credentials. You agree to notify us immediately of any unauthorized use. You are liable for all activities under your account.</p>
-                
-                <h4>4. Deposits and Withdrawals</h4>
-                <p>All deposits are processed through third-party payment providers. Withdrawals are subject to a 15% processing fee and may take up to 3 business days. Minimum withdrawal amount is TZS 5,000.</p>
-                
-                <h4>5. Betting Rules</h4>
-                <p>Users win when the match result is opposite to their selected outcome. Payouts are based on the odds percentages set for each match. The Platform reserves the right to void any bet if fraud is suspected.</p>
-                
-                <h4>6. Referral Program</h4>
-                <p>Referrers earn 10% commission on the first deposit of referred users. Commission is credited instantly upon deposit approval. Abuse of the referral system may result in forfeiture of earnings.</p>
-                
-                <h4>7. Prohibited Activities</h4>
-                <p>You may not use the Platform for any illegal activity, attempt to manipulate the system, or engage in any form of fraud. Violation may lead to account suspension and forfeiture of funds.</p>
-                
-                <h4>8. Limitation of Liability</h4>
-                <p>The Platform is provided "as is" without warranties of any kind. We are not liable for any indirect, incidental, or consequential damages arising from your use of the Platform.</p>
-                
-                <h4>9. Changes to Terms</h4>
-                <p>We may modify these Terms at any time. Continued use after changes constitutes acceptance. It is your responsibility to review the Terms periodically.</p>
-                
-                <h4>10. Contact Information</h4>
-                <p>For questions or concerns, please contact us at support@footballcanvas.com or through our support chat.</p>
-                
-                    <div style="display: flex; gap: 0.3rem; align-items: center; flex-wrap: wrap;">
-                        <span style="background: #2e3f5e; color: white; padding: 0.2rem 0.7rem; border-radius: 30px;">★ 2026</span>
-                        <span style="color: #456e9c;"> Last updated: February 2026</span>
+                    <div id="panel-3" class="tab-panel" role="tabpanel" aria-labelledby="tab-3">
+                        <div class="card-content">
+                            <h3>📐 Privacy Policy</h3>
+                            <hr>
+                            <h4>1. Information We Collect</h4>
+                            <p>We collect personal information you provide when registering, such as name, email, phone number, and payment details. We also collect usage data through cookies and analytics.</p>
+                            <h4>2. How We Use Your Information</h4>
+                            <p>We use your information to provide services, process transactions, improve our Platform, and communicate with you. We may use your email for service-related announcements.</p>
+                            <h4>3. Sharing of Information</h4>
+                            <p>We do not sell your personal information. We may share it with trusted third-party service providers (payment processors, analytics) who are bound by confidentiality. We may disclose information if required by law.</p>
+                            <h4>4. Data Security</h4>
+                            <p>We implement industry-standard security measures to protect your data. However, no method of transmission over the Internet is 100% secure. You are responsible for keeping your account credentials safe.</p>
+                            <h4>5. Cookies</h4>
+                            <p>We use cookies to enhance your experience, remember preferences, and analyze traffic. You can disable cookies in your browser, but some features may not function properly.</p>
+                            <h4>6. Third-Party Links</h4>
+                            <p>The Platform may contain links to external sites. We are not responsible for their privacy practices. We encourage you to review their policies.</p>
+                            <h4>7. Children's Privacy</h4>
+                            <p>Our services are not directed to individuals under 18. We do not knowingly collect information from minors. If you become aware that a minor has provided data, please contact us.</p>
+                            <h4>8. Changes to This Policy</h4>
+                            <p>We may update this Privacy Policy. Changes will be posted here with an updated revision date. Your continued use signifies acceptance.</p>
+                            <h4>9. Your Rights</h4>
+                            <p>You have the right to access, correct, or delete your personal data. To exercise these rights, please contact us at privacy@footballcanvas.com.</p>
+                            <hr>
+                            <p style="margin-top: 1.5rem;">The panels use a separate nested card to keep the white layered look. You can easily replace content with images, forms, or any elements.</p>
+                        </div>
+                    </div>
+                    <div id="panel-4" class="tab-panel" role="tabpanel" aria-labelledby="tab-4">
+                        <div class="card-content">
+                            <h3>⭐ Terms and Conditions</h3>
+                            <hr>
+                            <h4>1. Acceptance of Terms</h4>
+                            <p>By accessing or using Football Canvas Hub ("the Platform"), you agree to be bound by these Terms and Conditions. If you do not agree, please do not use the Platform.</p>
+                            <h4>2. Eligibility</h4>
+                            <p>You must be at least 18 years old to use this Platform. By using the Platform, you represent and warrant that you are 18 or older.</p>
+                            <h4>3. Account Registration</h4>
+                            <p>You are responsible for maintaining the confidentiality of your account credentials. You agree to notify us immediately of any unauthorized use. You are liable for all activities under your account.</p>
+                            <h4>4. Deposits and Withdrawals</h4>
+                            <p>All deposits are processed through third-party payment providers. Withdrawals are subject to a 15% processing fee and may take up to 3 business days. Minimum withdrawal amount is TZS 5,000.</p>
+                            <h4>5. Betting Rules</h4>
+                            <p>Users win when the match result is opposite to their selected outcome. Payouts are based on the odds percentages set for each match. The Platform reserves the right to void any bet if fraud is suspected.</p>
+                            <h4>6. Referral Program</h4>
+                            <p>Referrers earn 10% commission on the first deposit of referred users. Commission is credited instantly upon deposit approval. Abuse of the referral system may result in forfeiture of earnings.</p>
+                            <h4>7. Prohibited Activities</h4>
+                            <p>You may not use the Platform for any illegal activity, attempt to manipulate the system, or engage in any form of fraud. Violation may lead to account suspension and forfeiture of funds.</p>
+                            <h4>8. Limitation of Liability</h4>
+                            <p>The Platform is provided "as is" without warranties of any kind. We are not liable for any indirect, incidental, or consequential damages arising from your use of the Platform.</p>
+                            <h4>9. Changes to Terms</h4>
+                            <p>We may modify these Terms at any time. Continued use after changes constitutes acceptance. It is your responsibility to review the Terms periodically.</p>
+                            <h4>10. Contact Information</h4>
+                            <p>For questions or concerns, please contact us at support@footballcanvas.com or through our support chat.</p>
+                            <div style="display: flex; gap: 0.3rem; align-items: center; flex-wrap: wrap;">
+                                <span style="background: #2e3f5e; color: white; padding: 0.2rem 0.7rem; border-radius: 30px;">★ 2026</span>
+                                <span style="color: #456e9c;"> Last updated: February 2026</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+
+        <!-- ===== PROFILE SECTION ===== -->
+        <div class="content-section" id="profileSection">
+            <div class="dashboard-header">
+                <div class="header-left">
+                    <h2><i class="fas fa-user-circle"></i> My Profile</h2>
+                    <h2>Welcome, <span id="welcomeName1">User</span>! 👋</h2>
+                    <div id="vipBadgeContainer"></div>
+                </div>
+                <div class="header-right">
+                    <div class="balance-display">
+                        <i class="fas fa-wallet"></i>
+                        <span id="profileBalance">TZS 0.00</span>
+                    </div>
+                    <button class="hamburger-trigger" id="hamburgerTrigger">
+                        <div class="profile-avatar"><i class="fas fa-bars"></i></div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="profile-container">
+                <div class="profile-card">
+                    <div class="logo-section">
+                        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgtHSjM92r5Q9hWPeB1Ry25Be9arVskpLf73ujcpf64PH_UWzRKjZIGGfVEB7SGQGpnXX3zugZfbZVXur8mR4cnA9wyiKG7YqNzYmniApqIbSObYBgLeZVhu2vy4SWbAUX_yoE5rUspYjD326tA72-kbY7wcGD-a0389MgkA0jfNjAm9ncCqOkvYv6Znz8/s400/1001712231.png" alt="Football Hub Logo" class="logo-image">
+                    </div>
+                    <div class="profile-info">
+                        <h3 id="profileFullName">Full Name</h3>
+                        <div class="profile-badge" id="profileRoleBadge">
+                            <span class="badge-user">Member</span>
+                        </div>
+                        <div class="profile-details">
+                            <p><i class="fas fa-envelope"></i> <span id="profileEmail">Email</span></p>
+                            <p><i class="fas fa-phone"></i> <span id="profilePhone">Phone</span></p>
+                            <p><i class="fas fa-globe"></i> <span id="profileCountry">Country</span></p>
+                            <p><i class="fas fa-heart"></i> Favorite Team: <span id="profileFavoriteTeam">Team</span></p>
+                            <p><i class="fas fa-calendar"></i> Member Since: <span id="profileJoinDate">Date</span></p>
+                        </div>
+                    </div>
                 </div>
 
-            <!-- Profile Section -->
-            <div class="content-section" id="profileSection">
-                
-<div class="dashboard-header">
-    <div class="header-left">
-        <h2><i class="fas fa-user-circle"></i> My Profile</h2>
-        <h2>Welcome, <span id="welcomeName1">User</span>! 👋</h2>
-        <div id="vipBadgeContainer"></div>
-    </div>
-    <div class="header-right">
-        <div class="balance-display">
-            <i class="fas fa-wallet"></i>
-            <span id="userBalance">TZS 0.00</span>
-        </div>
-        <button class="hamburger-trigger" id="hamburgerTrigger">
-            <div class="profile-avatar" id="userAvatar"><i class="fas fa-bars"></i></div>
-        </button>
-    </div>
-</div>
-
-                <div class="profile-container">
-                    <div class="profile-card">
-                            <div class="logo-section">
-                                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgtHSjM92r5Q9hWPeB1Ry25Be9arVskpLf73ujcpf64PH_UWzRKjZIGGfVEB7SGQGpnXX3zugZfbZVXur8mR4cnA9wyiKG7YqNzYmniApqIbSObYBgLeZVhu2vy4SWbAUX_yoE5rUspYjD326tA72-kbY7wcGD-a0389MgkA0jfNjAm9ncCqOkvYv6Znz8/s400/1001712231.png" alt="Football Hub Logo" class="logo-image">
-                                </div>
-
-                        <div class="profile-info">
-                            <h3 id="profileFullName">Full Name</h3>
-                            <div class="profile-badge" id="profileRoleBadge">
-                                <span class="badge-user">Member</span>
-                            </div>
-                            <div class="profile-details">
-                                <p><i class="fas fa-envelope"></i> <span id="profileEmail">Email</span></p>
-                                <p><i class="fas fa-phone"></i> <span id="profilePhone">Phone</span></p>
-                                <p><i class="fas fa-globe"></i> <span id="profileCountry">Country</span></p>
-                                <p><i class="fas fa-heart"></i> Favorite Team: <span id="profileFavoriteTeam">Team</span></p>
-                                <p><i class="fas fa-calendar"></i> Member Since: <span id="profileJoinDate">Date</span></p>
-                            </div>
+                <div class="profile-stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="profileDaysActive">0</div>
+                            <div class="stat-label">Days Active</div>
                         </div>
                     </div>
-
-                    <div class="profile-stats-grid">
-                        <div class="stat-box">
-                            <div class="stat-icon">
-                                <i class="fas fa-calendar-check"></i>
-                            </div>
-                            <div class="stat-content">
-                                <div class="stat-value" id="profileDaysActive">0</div>
-                                <div class="stat-label">Days Active</div>
-                            </div>
-                        </div>
-
-                        <div class="stat-box">
-                            <div class="stat-icon">
-                                <i class="fas fa-bullseye"></i>
-                            </div>
-                            <div class="stat-content">
-                                <div class="stat-value" id="profileCorrectPredictions">0</div>
-                                <div class="stat-label">Correct Predictions</div>
-                            </div>
-                        </div>
-
-                        <div class="stat-box">
-                            <div class="stat-icon">
-                                <i class="fas fa-trophy"></i>
-                            </div>
-                            <div class="stat-content">
-                                <div class="stat-value" id="profileTotalPoints">0</div>
-                                <div class="stat-label">Total Points</div>
-                            </div>
-                        </div>
-
-                        <div class="stat-box">
-                            <div class="stat-icon">
-                                <i class="fas fa-chart-pie"></i>
-                            </div>
-                            <div class="stat-content">
-                                <div class="stat-value" id="profileWinRate">0%</div>
-                                <div class="stat-label">Win Rate</div>
-                            </div>
+                    <div class="stat-box">
+                        <div class="stat-icon"><i class="fas fa-bullseye"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="profileCorrectPredictions">0</div>
+                            <div class="stat-label">Correct Predictions</div>
                         </div>
                     </div>
-
-    <!-- slideshow card – now shows only announcements (no static images) -->
-    <div class="slideshow-card">
-        <h1><span class="dashboard-header">⚽ ANNOUNCEMENTS ⚽</span></h1>
-        <div class="slideshow-container" id="slideshowContainer">
-            <div class="slides" id="slides"></div> <!-- filled dynamically -->
-            <button class="prev" id="prevBtn">❮</button>
-            <button class="next" id="nextBtn">❯</button>
-            <div class="dots-container" id="dotsContainer"></div>
-        </div>
-        <div class="footnote">📢 Live announcements from admin</div>
-    </div>
-
-    <!-- USER ANNOUNCEMENTS SECTION (cards) -->
-    <div class="announcement-grid" id="userAnnouncementsSection">
-        <div class="section-title">📢 Latest announcements (cards)</div>
-        <div class="cards-container" id="announcementsContainer">Loading announcements...</div>
-    </div>
-
-
-<!-- Overlay -->
-<div class="menu-overlay" id="menuOverlay"></div>
-
-<!-- Hamburger Menu (slides from right) -->
-<div class="hamburger-menu" id="hamburgerMenu">
-    <div class="menu-header">
-        <div class="menu-user-info">
-            <div class="menu-avatar" id="menuAvatar">U</div>
-            <div class="menu-user-details">
-                <span class="menu-user-name" id="menuUserName">User Name</span>
-                <span class="menu-user-email" id="menuUserEmail">user@email.com</span>
+                    <div class="stat-box">
+                        <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="profileTotalPoints">0</div>
+                            <div class="stat-label">Total Points</div>
+                        </div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-icon"><i class="fas fa-chart-pie"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="profileWinRate">0%</div>
+                            <div class="stat-label">Win Rate</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <button class="menu-close" id="menuClose">
-            <i class="fas fa-times"></i>
-        </button>
     </div>
-    
-    <div class="menu-stats">
-        <div class="stat-item">
-            <span class="stat-label">Balance</span>
-            <span class="stat-value" id="menuBalance">TZS 0</span>
+
+    <!-- Hamburger Menu Overlay -->
+    <div class="menu-overlay" id="menuOverlay"></div>
+
+    <!-- Hamburger Menu -->
+    <div class="hamburger-menu" id="hamburgerMenu">
+        <div class="menu-header">
+            <div class="menu-user-info">
+                <div class="menu-avatar" id="menuAvatar">U</div>
+                <div class="menu-user-details">
+                    <span class="menu-user-name" id="menuUserName">User Name</span>
+                    <span class="menu-user-email" id="menuUserEmail">user@email.com</span>
+                </div>
+            </div>
+            <button class="menu-close" id="menuClose"><i class="fas fa-times"></i></button>
         </div>
-        <div class="stat-item">
-            <span class="stat-label">Referrals</span>
-            <span class="stat-value" id="menuReferralCount">0</span>
-        </div>
-    </div>
-    
-    <div class="menu-items">
-        <a href="#" class="menu-item" data-modal="referralsModal">
-            <i class="fas fa-users"></i>
-            <span>Referrals</span>
-            <span class="menu-badge" id="menuReferralBadge">0</span>
-        </a>
         
-    <a href="https://freewebsitetoapp.cloudserverbox.com/app-data/free-apps/38970097417/gTsRLdg/app-debug.apk" 
-   class="menu-item"
-   target="_blank" 
-   rel="noopener noreferrer">
-    <i class="fas fa-download"></i>
-   Download APK
+        <div class="menu-stats">
+            <div class="stat-item">
+                <span class="stat-label">Balance</span>
+                <span class="stat-value" id="menuBalance">TZS 0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Referrals</span>
+                <span class="stat-value" id="menuReferralCount">0</span>
+            </div>
+        </div>
+        
+        <div class="menu-items">
+            <a href="#" class="menu-item" data-modal="referralsModal">
+                <i class="fas fa-users"></i>
+                <span>Referrals</span>
+                <span class="menu-badge" id="menuReferralBadge">0</span>
+            </a>
+            <a href="https://freewebsitetoapp.cloudserverbox.com/app-data/free-apps/38970097417/gTsRLdg/app-debug.apk" class="menu-item" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-download"></i>
+                <span>Download APK</span>
+            </a>
+            <a href="#" class="menu-item" data-modal="historyModal">
+                <i class="fas fa-history"></i>
+                <span>History</span>
+            </a>
+            <a href="#" class="menu-item" data-modal="bankCardsModal">
+                <i class="fas fa-credit-card"></i>
+                <span>My Bank Cards</span>
+            </a>
+            <div class="menu-divider"></div>
+            <a href="#" class="menu-item" onclick="openModal('userChatModal')">
+                <i class="fas fa-headset"></i>
+                <span>SUPPORT</span>
+            </a>
+            <a href="#" class="menu-item" onclick="SocialLinksHelper.openModal(); return false;">
+    <i class="fab fa-superpowers"></i>
+    <span>Social Links</span>
+    <span class="menu-badge" id="socialNotificationBadge" style="display: none;">!</span>
 </a>
+            <a href="#" class="menu-item logout-item" id="menuLogoutBtn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
         
-        <a href="#" class="menu-item" data-modal="historyModal">
-            <i class="fas fa-history"></i>
-            <span>history</span>
-        </a>
-        <a href="#" class="menu-item" data-modal="bankCardsModal">
-            <i class="fas fa-credit-card"></i>
-            <span>My Bank Cards</span>
-        </a>
-        
-        <div class="menu-divider"></div>
-        
-        <a href="#" class="menu-item" onclick="openModal('userChatModal')">
-            <i class="fas fa-headset"></i>
-            <span>SUPPORT</span>
-        </a>
-        
-        <a href="#" class="menu-item logout-item" id="menuLogoutBtn">
-            <i class="fas fa-sign-out-alt"></i>
-            <span>Logout</span>
-        </a>
+        <div class="menu-footer">
+            <p>Football Canvas Hub v1.0</p>
+        </div>
     </div>
-    
-    <div class="menu-footer">
-        <p>Football Canvas Hub v1.0</p>
+
+    <!-- Chat Button -->
+    <div id="chat-button">
+        <button class="chat-button" aria-label="Open chat" onclick="openModal('userChatModal')">
+            <i class="fas fa-comment-dots"></i>
+            <span class="chat-notification-badge" id="chat-notification" style="display: none;">3</span>
+            <span class="chat-pulse-effect"></span>
+        </button>
     </div>
-</div>
-</div>
-</div>
-</div>
 
-<!-- Chat Button -->
-<div id="chat-button">
-    <button class="chat-button" aria-label="Open chat" onclick="openModal('userChatModal')">
-        <i class="fas fa-comment-dots"></i>
-        <span class="chat-notification-badge" id="chat-notification" style="display: none;">3</span>
-        <span class="chat-pulse-effect"></span>
-    </button>
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item" data-section="walletSection">
+            <i class="fas fa-wallet nav-icon"></i>
+            <span class="nav-label">My Wallet</span>
+        </a>
+        <a href="#" class="nav-item" data-section="mybetSection">
+            <i class="fas fa-history nav-icon"></i>
+            <span class="nav-label">My bet</span>
+        </a>
+        <a href="#" class="nav-item active" data-section="matchesSection">
+            <i class="fas fa-futbol nav-icon"></i>
+            <span class="nav-label">Matches</span>
+        </a>
+        <a href="#" class="nav-item" data-section="profileSection">
+            <i class="fas fa-user nav-icon"></i>
+            <span class="nav-label">Profile</span>
+        </a>
+        <a href="#" class="nav-item" data-section="aboutsection">
+            <i class="fas fa-headset nav-icon"></i>
+            <span class="nav-label">Announcements</span>
+        </a>
+    </nav>
 </div>
-
-
-        
-        <!-- Bottom Navigation -->
-        <nav class="bottom-nav">
-            <a href="#" class="nav-item" data-section="walletSection">
-                <i class="fas fa-wallet nav-icon"></i>
-                <span class="nav-label">My Wallet</span>
-            </a>
-            
-            <a href="#" class="nav-item" data-section="mybetSection">
-                <i class="fas fa-history nav-icon"></i>
-                <span class="nav-label">My bet</span>
-            </a>
-            
-            <a href="#" class="nav-item" data-section="matchesSection">
-                <i class="fas fa-futbol nav-icon"></i>
-                <span class="nav-label">Matches</span>
-            </a>
-            
-            <a href="#" class="nav-item" data-section="profileSection">
-                <i class="fas fa-user nav-icon"></i>
-                <span class="nav-label">Profile</span>
-            </a>
-            
-            <a href="#" class="nav-item" data-section="aboutsection">
-                <i class="fas fa-headset nav-icon"></i>
-                <span class="nav-label">About Us</span>
-            </a>
-        </nav>
-    </div>
 
     <!-- ==================== ADMIN DASHBOARD ==================== -->
     <div id="admin-dashboard" class="dashboard" style="display: none;">
@@ -1782,35 +1639,39 @@
 </div>
 </div>
 
-        <!-- Admin Bottom Navigation -->
-        <nav class="bottom-nav">
-            <a href="#" class="nav-item active" data-section="adminChatSection">
-                <i class="fas fa-comments nav-icon"></i>
-                <span class="nav-label">Chat</span>
-            </a>
-            
-            <a href="#" class="nav-item" data-section="adminTransactionApproval">
-                <i class="fas fa-flag nav-icon"></i>
-                <span class="nav-label">Approval</span>
-            </a>
-            
-            <a href="#" class="nav-item" data-section="adminmatchesSection">
-                <i class="fas fa-futbol nav-icon"></i>
-                <span class="nav-label">Matches</span>
-            </a>
-            
-            <a href="#" class="nav-item" data-section="adminBankingSettings">
-                <i class="fas fa-chart-bar nav-icon"></i>
-                <span class="nav-label">Banking Settings</span>
-            </a>
-            
-            <a href="#" class="nav-item" data-section="announcementAdminSection">
-                <i class="fas fa-cog nav-icon"></i>
-                <span class="nav-label">Announcement</span>
-            </a>
-        </nav>
-    </div>
-
+<!-- Admin Bottom Navigation -->
+<nav class="bottom-nav">
+    <a href="#" class="nav-item" data-section="adminChatSection">
+        <i class="fas fa-comments nav-icon"></i>
+        <span class="nav-label">Chat</span>
+    </a>
+    
+    <a href="#" class="nav-item active" data-section="adminTransactionApproval">
+        <i class="fas fa-flag nav-icon"></i>
+        <span class="nav-label">Approval</span>
+    </a>
+    
+    <a href="#" class="nav-item" data-section="adminmatchesSection">
+        <i class="fas fa-futbol nav-icon"></i>
+        <span class="nav-label">Matches</span>
+    </a>
+    
+    <a href="#" class="nav-item" data-section="adminBankingSettings">
+        <i class="fas fa-chart-bar nav-icon"></i>
+        <span class="nav-label">Banking Settings</span>
+    </a>
+    
+<a href="#" class="nav-item" onclick="SocialLinksHelper.loadAdminTable(); document.getElementById('adminSocialLinksModal').classList.add('active'); return false;">
+    <i class="fab fa-superpowers nav-icon"></i>
+    <span class="nav-label">Social Links</span>
+</a>
+    
+    <a href="#" class="nav-item" data-section="announcementAdminSection">
+        <i class="fas fa-cog nav-icon"></i>
+        <span class="nav-label">Announcement</span>
+    </a>
+</nav>
+</div>
     <!-- ==================== SUPER ADMIN DASHBOARD ==================== -->
     <div id="super-admin-dashboard" class="dashboard" style="display: none;">
         <!-- Top Navigation -->
@@ -2675,6 +2536,26 @@
         </div>
         <div class="modal-body">
             <!-- How it works info banner -->
+            <!-- Add this inside the referrals modal body, after the stats cards -->
+<div style="margin-bottom: 1.5rem;">
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
+        <div style="background: rgba(255,166,43,0.1); border-radius: 12px; padding: 1rem; text-align: center;">
+            <div style="color: var(--accent-color); font-size: 1.5rem; font-weight: bold;">10%</div>
+            <div style="color: var(--gray-color); font-size: 0.75rem;">Level 1 Bonus</div>
+            <div style="color: var(--gray-color); font-size: 0.7rem;">Direct Referrals</div>
+        </div>
+        <div style="background: rgba(255,166,43,0.08); border-radius: 12px; padding: 1rem; text-align: center;">
+            <div style="color: var(--accent-color); font-size: 1.5rem; font-weight: bold;">2%</div>
+            <div style="color: var(--gray-color); font-size: 0.75rem;">Level 2 Bonus</div>
+            <div style="color: var(--gray-color); font-size: 0.7rem;">Referral's Referral</div>
+        </div>
+        <div style="background: rgba(255,166,43,0.06); border-radius: 12px; padding: 1rem; text-align: center;">
+            <div style="color: var(--accent-color); font-size: 1.5rem; font-weight: bold;">1%</div>
+            <div style="color: var(--gray-color); font-size: 0.75rem;">Level 3 Bonus</div>
+            <div style="color: var(--gray-color); font-size: 0.7rem;">Third Level Referrals</div>
+        </div>
+    </div>
+</div>
             <div style="background: linear-gradient(135deg, rgba(255,166,43,0.2), rgba(255,166,43,0.05)); border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem;">
                 <div style="background: var(--accent-color); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-gift" style="color: white; font-size: 1.2rem;"></i>
@@ -3166,6 +3047,165 @@
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save"></i> Save Changes
                     </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Social Links Modal -->
+<div id="socialLinksModal" class="modal-overlay">
+    <div class="modal-container" style="max-width: 550px;">
+        <div class="modal-header">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <i class="fas fa-share-alt" style="font-size: 2rem; color: var(--accent-color);"></i>
+                <div>
+                    <h2 style="margin: 0;">Follow Our Social Media</h2>
+                    <p style="margin: 0; opacity: 0.8;">Follow us to stay updated with latest news and promotions!</p>
+                </div>
+            </div>
+            <button class="close-modal" onclick="closeSocialLinksModal()">&times;</button>
+        </div>
+        
+        <!-- Progress Section -->
+        <div class="social-progress-section">
+            <div class="social-progress-info">
+                <span><i class="fas fa-chart-line"></i> Completion Progress</span>
+                <span id="socialProgressCount">0/0 Links Followed</span>
+            </div>
+            <div class="social-progress-bar">
+                <div class="social-progress-fill" id="socialProgressFill" style="width: 0%;"></div>
+            </div>
+        </div>
+        
+        <!-- Links Container -->
+        <div id="socialLinksContainer" style="padding: 1.5rem; max-height: 400px; overflow-y: auto;">
+            <div style="text-align: center; padding: 2rem;">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading social links...</p>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="social-modal-footer">
+            <div id="socialReminder" style="background: rgba(255,166,43,0.1); padding: 0.75rem; border-radius: 10px; display: flex; align-items: center; gap: 0.75rem;">
+                <i class="fas fa-bell"></i>
+                <span style="flex: 1;">Please follow all links above to continue</span>
+            </div>
+            <button id="socialVerifyAllBtn" onclick="verifyAllSocialLinks()" style="display: none; margin-top: 1rem; width: 100%; padding: 0.75rem; background: #2ecc71; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer;">
+                <i class="fas fa-check-double"></i> Verify All
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== ADMIN SOCIAL LINKS MANAGEMENT MODAL ==================== -->
+<div id="adminSocialLinksModal" class="modal-overlay">
+    <div class="modal-container" style="max-width: 900px;">
+        <div class="modal-header">
+            <h2><i class="fab fa-superpowers"></i> Social Links Management</h2>
+            <button class="close-modal" onclick="closeAdminSocialLinksModal()">&times;</button>
+        </div>
+        
+        <div class="admin-social-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+            <button class="btn btn-primary" onclick="showAddSocialLinkForm()">
+                <i class="fas fa-plus"></i> Add New Link
+            </button>
+            <div class="admin-social-stats" style="display: flex; gap: 1rem;">
+                <span>Total: <strong id="adminTotalLinks">0</strong></span>
+                <span>Active: <strong id="adminActiveLinks">0</strong></span>
+            </div>
+        </div>
+        
+        <div class="social-table-container" style="overflow-x: auto;">
+            <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th>Icon</th>
+                        <th>Platform</th>
+                        <th>Description</th>
+                        <th>Link</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="adminSocialLinksBody">
+                    <tr><td colspan="6" style="text-align: center; padding: 2rem;">Loading social links...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== ADD/EDIT SOCIAL LINK FORM MODAL ==================== -->
+<div id="socialLinkFormModal" class="modal-overlay">
+    <div class="modal-container" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 id="socialLinkFormTitle">Add Social Link</h2>
+            <button class="close-modal" onclick="closeSocialLinkFormModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="socialLinkForm" onsubmit="event.preventDefault(); saveSocialLink();">
+                <input type="hidden" id="socialLinkId">
+                
+                <div class="form-group">
+                    <label>Platform Icon *</label>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <select id="socialLinkIcon" onchange="updateSocialIconPreview()" class="form-input" style="flex: 1;" required>
+                            <option value="fab fa-facebook-f">📘 Facebook</option>
+                            <option value="fab fa-twitter">🐦 Twitter / X</option>
+                            <option value="fab fa-instagram">📷 Instagram</option>
+                            <option value="fab fa-youtube">📺 YouTube</option>
+                            <option value="fab fa-whatsapp">💬 WhatsApp</option>
+                            <option value="fab fa-tiktok">🎵 TikTok</option>
+                            <option value="fab fa-twitch">🎮 Twitch</option>
+                            <option value="fab fa-telegram">✈️ Telegram</option>
+                            <option value="fab fa-discord">🎧 Discord</option>
+                            <option value="fab fa-linkedin-in">🔗 LinkedIn</option>
+                            <option value="fab fa-pinterest">📌 Pinterest</option>
+                            <option value="fab fa-snapchat">👻 Snapchat</option>
+                            <option value="fab fa-reddit-alien">🤖 Reddit</option>
+                            <option value="fab fa-github">🐙 GitHub</option>
+                            <option value="fas fa-globe">🌐 Website</option>
+                            <option value="fas fa-link">🔗 Other</option>
+                        </select>
+                        <div class="icon-preview-box" id="socialIconPreview" style="width: 45px; height: 45px; background: var(--accent-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                            <i class="fab fa-facebook-f"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Platform Name *</label>
+                    <input type="text" id="socialLinkTitle" class="form-input" placeholder="e.g., Facebook, Twitter" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Description (Optional)</label>
+                    <textarea id="socialLinkDescription" class="form-input" rows="2" placeholder="Follow us for updates..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Link URL *</label>
+                    <input type="url" id="socialLinkUrl" class="form-input" placeholder="https://facebook.com/yourpage" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="socialLinkStatus" class="form-input">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Display Order</label>
+                    <input type="number" id="socialLinkOrder" class="form-input" value="0" min="0">
+                </div>
+                
+                <div class="form-actions" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button type="submit" class="btn btn-primary">Save Link</button>
+                    <button type="button" onclick="closeSocialLinkFormModal()" class="btn btn-secondary">Cancel</button>
                 </div>
             </form>
         </div>
