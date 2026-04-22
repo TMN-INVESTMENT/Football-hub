@@ -22080,3 +22080,527 @@ window.addNewUser = addNewUser;
 window.filterUsers = () => userManagement?.filterUsers();
 window.resetUserFilters = () => userManagement?.resetFilters();
 window.exportUsers = () => userManagement?.exportUsers();
+
+// ==================== REFERRAL LINK HANDLER ====================
+
+class ReferralLinkHandler {
+    constructor() {
+        this.referralCode = null;
+        this.init();
+    }
+
+    init() {
+        console.log('🔗 Initializing Referral Link Handler...');
+        this.parseReferralFromUrl();
+        this.setupEventListeners();
+    }
+
+    /**
+     * Parse referral code from URL parameters
+     * Supports formats:
+     * - ?ref=CODE123
+     * - ?referral=CODE123
+     * - ?code=CODE123
+     * - /ref/CODE123 (if using path-based routing)
+     */
+    parseReferralFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Check multiple possible parameter names
+        this.referralCode = urlParams.get('ref') || 
+                           urlParams.get('referral') || 
+                           urlParams.get('code') ||
+                           urlParams.get('r');
+        
+        // Also check path-based referral (e.g., /ref/CODE123)
+        if (!this.referralCode) {
+            const pathMatch = window.location.pathname.match(/\/ref\/([A-Za-z0-9]+)/);
+            if (pathMatch) {
+                this.referralCode = pathMatch[1].toUpperCase();
+            }
+        }
+
+        if (this.referralCode) {
+            this.referralCode = this.referralCode.toUpperCase().trim();
+            console.log('📎 Referral code detected from URL:', this.referralCode);
+            
+            // Store in session storage for persistence
+            sessionStorage.setItem('pendingReferralCode', this.referralCode);
+            
+            // Also store in localStorage for longer persistence
+            localStorage.setItem('lastReferralCode', this.referralCode);
+            localStorage.setItem('referralTimestamp', Date.now());
+        } else {
+            // Check if there's a pending referral from session
+            const pendingCode = sessionStorage.getItem('pendingReferralCode');
+            if (pendingCode) {
+                this.referralCode = pendingCode;
+                console.log('📎 Using pending referral code:', this.referralCode);
+            }
+        }
+    }
+
+    setupEventListeners() {
+        // When signup form is shown, auto-fill referral code
+        document.addEventListener('formSwitched', (e) => {
+            if (e.detail?.form === 'signup') {
+                this.autoFillReferralCode();
+            }
+        });
+
+        // When signup button is clicked
+        const signupSwitch = document.getElementById('signupSwitch');
+        if (signupSwitch) {
+            signupSwitch.addEventListener('click', () => {
+                setTimeout(() => this.autoFillReferralCode(), 100);
+            });
+        }
+
+        // When switch-link to signup is clicked
+        document.querySelectorAll('.switch-link[data-form="signup"]').forEach(link => {
+            link.addEventListener('click', () => {
+                setTimeout(() => this.autoFillReferralCode(), 100);
+            });
+        });
+
+        // Also auto-fill when signup form becomes visible
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.target.classList.contains('active')) {
+                    const signupForm = document.getElementById('signupForm');
+                    if (signupForm && signupForm.classList.contains('active')) {
+                        this.autoFillReferralCode();
+                    }
+                }
+            });
+        });
+
+        const signupForm = document.getElementById('signupForm');
+        if (signupForm) {
+            observer.observe(signupForm, { attributes: true, attributeFilter: ['class'] });
+        }
+    }
+
+    /**
+     * Auto-fill the referral code in the signup form
+     */
+    autoFillReferralCode() {
+        const referralInput = document.getElementById('referralCodeInput');
+        if (!referralInput) {
+            console.log('⏳ Referral input not found, retrying...');
+            setTimeout(() => this.autoFillReferralCode(), 200);
+            return;
+        }
+
+        // Get the code from various sources
+        let code = this.referralCode;
+        
+        if (!code) {
+            // Try session storage
+            code = sessionStorage.getItem('pendingReferralCode');
+        }
+        
+        if (!code) {
+            // Try localStorage (if not expired - within 7 days)
+            const lastCode = localStorage.getItem('lastReferralCode');
+            const timestamp = localStorage.getItem('referralTimestamp');
+            if (lastCode && timestamp) {
+                const daysSince = (Date.now() - parseInt(timestamp)) / (1000 * 60 * 60 * 24);
+                if (daysSince < 7) {
+                    code = lastCode;
+                }
+            }
+        }
+
+        if (code && !referralInput.value) {
+            referralInput.value = code;
+            referralInput.classList.add('auto-filled');
+            
+            // Add visual indicator
+            this.showReferralIndicator(code);
+            
+            console.log('✅ Referral code auto-filled:', code);
+            
+            // Clear from session storage after filling
+            sessionStorage.removeItem('pendingReferralCode');
+        }
+    }
+
+    /**
+     * Show visual indicator that referral code was applied
+     */
+    showReferralIndicator(code) {
+        const referralInput = document.getElementById('referralCodeInput');
+        if (!referralInput) return;
+
+        // Check if indicator already exists
+        if (document.getElementById('referralIndicator')) return;
+
+        const indicator = document.createElement('div');
+        indicator.id = 'referralIndicator';
+        indicator.style.cssText = `
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.05));
+            border-left: 4px solid #2ecc71;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: #2ecc71;
+            animation: slideDown 0.3s ease;
+        `;
+        indicator.innerHTML = `
+            <i class="fas fa-check-circle"></i>
+            <span>Referral code <strong>${this.escapeHtml(code)}</strong> applied! You'll get a bonus on your first deposit.</span>
+        `;
+
+        referralInput.parentNode.insertBefore(indicator, referralInput.nextSibling);
+
+        // Also highlight the input
+        referralInput.style.borderColor = '#2ecc71';
+        referralInput.style.backgroundColor = 'rgba(46, 204, 113, 0.05)';
+    }
+
+    /**
+     * Get the current referral code
+     */
+    getReferralCode() {
+        return this.referralCode || sessionStorage.getItem('pendingReferralCode');
+    }
+
+    /**
+     * Generate a shareable referral link
+     */
+    generateReferralLink(code) {
+        const baseUrl = window.location.origin + window.location.pathname;
+        return `${baseUrl}?ref=${code}`;
+    }
+
+    /**
+     * Copy referral link to clipboard
+     */
+    async copyReferralLink(link) {
+        try {
+            await navigator.clipboard.writeText(link);
+            return true;
+        } catch (error) {
+            console.error('Failed to copy:', error);
+            return false;
+        }
+    }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+}
+
+// Initialize referral handler
+let referralHandler = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    referralHandler = new ReferralLinkHandler();
+    window.referralHandler = referralHandler;
+});
+
+// ==================== ENHANCED REFERRAL MODAL FUNCTIONS ====================
+
+/**
+ * Load referral data into the modal
+ */
+async function loadReferralsData() {
+    const userId = window.authManager?.user?.uid;
+    if (!userId) {
+        showNotification('Please login first', 'error');
+        return;
+    }
+    
+    const loadingEl = document.getElementById('referralsLoading');
+    const tbody = document.getElementById('referralsTableBody');
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (tbody) tbody.innerHTML = '';
+    
+    try {
+        // Get user's referral code
+        const userDoc = await db.collection('users').doc(userId).get();
+        const userData = userDoc.data();
+        const referralCode = userData.referralCode || 'N/A';
+        
+        // Update referral code display
+        const modalReferralCode = document.getElementById('modalReferralCode');
+        if (modalReferralCode) modalReferralCode.value = referralCode;
+        
+        // Generate and display referral link
+        const baseUrl = window.location.origin + window.location.pathname;
+        const referralLink = `${baseUrl}?ref=${referralCode}`;
+        const modalReferralLink = document.getElementById('modalReferralLink');
+        if (modalReferralLink) modalReferralLink.value = referralLink;
+        
+        // Get referral statistics
+        let stats = { totalReferrals: 0, activeReferrals: 0, totalEarnings: 0, recentEarnings: [], earningsByLevel: { 1: { count: 0, total: 0 }, 2: { count: 0, total: 0 }, 3: { count: 0, total: 0 } } };
+        
+        if (window.referralBonusSystem) {
+            stats = await window.referralBonusSystem.getReferralStats(userId);
+        } else {
+            // Fallback: get data directly
+            const referredUsersSnapshot = await db.collection('users')
+                .where('referredBy', '==', userId)
+                .get();
+            
+            const earningsSnapshot = await db.collection('referralEarnings')
+                .where('referrerId', '==', userId)
+                .orderBy('createdAt', 'desc')
+                .get();
+            
+            stats.totalReferrals = referredUsersSnapshot.size;
+            stats.activeReferrals = earningsSnapshot.size;
+            
+            earningsSnapshot.forEach(doc => {
+                const earning = doc.data();
+                stats.totalEarnings += earning.amount;
+                stats.recentEarnings.push({ ...earning, date: earning.createdAt?.toDate?.() || new Date() });
+                
+                const level = earning.level || 1;
+                if (stats.earningsByLevel[level]) {
+                    stats.earningsByLevel[level].count++;
+                    stats.earningsByLevel[level].total += earning.amount;
+                }
+            });
+        }
+        
+        // Update stats display
+        document.getElementById('modalTotalReferrals').textContent = stats.totalReferrals;
+        document.getElementById('modalActiveReferrals').textContent = stats.activeReferrals;
+        document.getElementById('modalTotalEarnings').textContent = `TZS ${stats.totalEarnings.toFixed(2)}`;
+        
+        // Build referrals table
+        let html = '';
+        
+        // Show earnings by level summary
+        html += `
+            <tr style="background: rgba(255,166,43,0.1);">
+                <td colspan="4" style="padding: 1rem;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; text-align: center;">
+                        <div>
+                            <div style="color: var(--accent-color); font-weight: bold;">Level 1 (10%)</div>
+                            <div>${stats.earningsByLevel[1].count} referrals</div>
+                            <div style="color: #2ecc71;">TZS ${stats.earningsByLevel[1].total.toFixed(2)}</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--accent-color); font-weight: bold;">Level 2 (2%)</div>
+                            <div>${stats.earningsByLevel[2].count} referrals</div>
+                            <div style="color: #2ecc71;">TZS ${stats.earningsByLevel[2].total.toFixed(2)}</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--accent-color); font-weight: bold;">Level 3 (1%)</div>
+                            <div>${stats.earningsByLevel[3].count} referrals</div>
+                            <div style="color: #2ecc71;">TZS ${stats.earningsByLevel[3].total.toFixed(2)}</div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+        
+        if (stats.recentEarnings.length === 0 && stats.totalReferrals === 0) {
+            html += `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 2rem; color: var(--gray-color);">
+                        <i class="fas fa-users" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem; display: block;"></i>
+                        <p>No referrals yet</p>
+                        <small>Share your link to start earning!</small>
+                    </td>
+                </tr>
+            `;
+        } else {
+            // Show recent earnings
+            stats.recentEarnings.slice(0, 5).forEach(earning => {
+                const date = earning.date instanceof Date ? earning.date : new Date(earning.createdAt?.toDate?.() || Date.now());
+                const formattedDate = date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+                
+                html += `
+                    <tr style="background: rgba(46, 204, 113, 0.05);">
+                        <td style="padding: 0.75rem 0.5rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-user-check" style="color: #2ecc71;"></i>
+                                <span style="color: white;">${earning.referredUserName || 'User'}</span>
+                            </div>
+                        </td>
+                        <td style="padding: 0.75rem 0.5rem; color: var(--gray-color);">${formattedDate}</td>
+                        <td style="padding: 0.75rem 0.5rem;">
+                            <span class="status-badge active" style="background: rgba(46,204,113,0.2); color: #2ecc71;">
+                                Level ${earning.level || 1}
+                            </span>
+                        </td>
+                        <td style="padding: 0.75rem 0.5rem; text-align: right; color: #2ecc71; font-weight: bold;">
+                            TZS ${earning.amount.toFixed(2)}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        if (tbody) tbody.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error loading referral data:', error);
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 2rem; color: var(--danger-color);">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Error loading referrals</p>
+                        <button class="btn btn-secondary" onclick="loadReferralsData()">Retry</button>
+                    </td>
+                </tr>
+            `;
+        }
+    } finally {
+        if (loadingEl) loadingEl.style.display = 'none';
+    }
+}
+
+/**
+ * Copy referral code to clipboard
+ */
+async function copyReferralCode() {
+    const codeInput = document.getElementById('modalReferralCode');
+    if (!codeInput) return;
+    
+    codeInput.select();
+    codeInput.setSelectionRange(0, 99999);
+    
+    try {
+        await navigator.clipboard.writeText(codeInput.value);
+        showNotification('✅ Referral code copied! Share it with friends.', 'success');
+        
+        // Visual feedback
+        const btn = event.currentTarget;
+        btn.style.background = '#2ecc71';
+        setTimeout(() => btn.style.background = '', 500);
+    } catch (err) {
+        // Fallback
+        codeInput.select();
+        document.execCommand('copy');
+        showNotification('✅ Referral code copied!', 'success');
+    }
+}
+
+/**
+ * Copy referral link to clipboard
+ */
+async function copyReferralLink() {
+    const linkInput = document.getElementById('modalReferralLink');
+    if (!linkInput) return;
+    
+    linkInput.select();
+    linkInput.setSelectionRange(0, 99999);
+    
+    try {
+        await navigator.clipboard.writeText(linkInput.value);
+        showNotification('✅ Referral link copied! Share it with friends.', 'success');
+        
+        // Visual feedback
+        const btn = event.currentTarget;
+        btn.style.background = '#2ecc71';
+        setTimeout(() => btn.style.background = '', 500);
+    } catch (err) {
+        linkInput.select();
+        document.execCommand('copy');
+        showNotification('✅ Referral link copied!', 'success');
+    }
+}
+
+/**
+ * Share referral link via social media
+ */
+function shareReferralLink(platform) {
+    const userData = window.authManager?.userData;
+    if (!userData || !userData.referralCode) {
+        showNotification('Please login to get your referral link', 'error');
+        return;
+    }
+    
+    const baseUrl = window.location.origin + window.location.pathname;
+    const link = `${baseUrl}?ref=${userData.referralCode}`;
+    const message = `🎮 Join me on Football Canvas Hub! Use my referral link to get a bonus on your first deposit: ${link}`;
+    const shortMessage = `Join Football Canvas Hub and get a bonus! ${link}`;
+    
+    let shareUrl = '';
+    
+    switch (platform) {
+        case 'whatsapp':
+            shareUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            break;
+        case 'telegram':
+            shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Join me on Football Canvas Hub!')}`;
+            break;
+        case 'facebook':
+            shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}&quote=${encodeURIComponent(message)}`;
+            break;
+        case 'twitter':
+            shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shortMessage)}`;
+            break;
+        case 'email':
+            shareUrl = `mailto:?subject=${encodeURIComponent('Join me on Football Canvas Hub')}&body=${encodeURIComponent(message)}`;
+            break;
+        case 'sms':
+            shareUrl = `sms:?body=${encodeURIComponent(shortMessage)}`;
+            break;
+        case 'copy':
+            copyReferralLink();
+            return;
+    }
+    
+    if (shareUrl) {
+        window.open(shareUrl, '_blank', 'width=600,height=400');
+    }
+}
+
+// Make functions globally available
+window.loadReferralsData = loadReferralsData;
+window.copyReferralCode = copyReferralCode;
+window.copyReferralLink = copyReferralLink;
+window.shareReferralLink = shareReferralLink;
+
+// ==================== SWITCH TO SIGNUP WITH REFERRAL ====================
+
+/**
+ * Switch to signup form and pre-fill referral code
+ * Can be called from anywhere to show signup with a referral code
+ */
+function switchToSignupWithReferral(referralCode) {
+    // Switch to signup form
+    if (window.formHandler) {
+        window.formHandler.switchForm('signup');
+    } else {
+        // Manual switch
+        document.getElementById('login')?.classList.remove('active');
+        document.getElementById('signupSwitch')?.classList.add('active');
+        document.getElementById('formSlider')?.classList.add('signup-active');
+        document.getElementById('loginForm')?.classList.remove('active');
+        document.getElementById('signupForm')?.classList.add('active');
+    }
+    
+    // Pre-fill referral code
+    setTimeout(() => {
+        const referralInput = document.getElementById('referralCodeInput');
+        if (referralInput && referralCode) {
+            referralInput.value = referralCode.toUpperCase();
+            
+            // Show indicator
+            if (window.referralHandler) {
+                window.referralHandler.showReferralIndicator(referralCode);
+            }
+        }
+    }, 200);
+}
+
+window.switchToSignupWithReferral = switchToSignupWithReferral;
