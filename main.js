@@ -1841,7 +1841,7 @@ createMatchCard(match, isVIP = false) {
                     <div style="flex: 1;">
                         <label class="form-label">Stake Amount (TZS)</label>
 <input type="number" id="multiStakeAmount" class="form-input" 
-       min="10000" max="${userData?.balance || 0}" value="10000" 
+       min="5000" max="${userData?.balance || 0}" value="5000" 
        oninput="bettingSystem.calculateMultiProfit()">
                         <div style="color: var(--gray-color); font-size: 0.85rem; margin-top: 0.25rem;">
                             Available: TZS ${(userData?.balance || 0).toFixed(2)}
@@ -1938,8 +1938,8 @@ createMatchCard(match, isVIP = false) {
             return;
         }
         
-        if (stake < 10000) {
-    showNotification('Minimum stake is TZS 10,000', 'error');
+        if (stake < 5000) {
+    showNotification('Minimum stake is TZS 5,000', 'error');
     const placeBtn = document.getElementById('placeMultiBetBtn');
     if (placeBtn) {
         placeBtn.disabled = false;
@@ -2407,8 +2407,8 @@ addToMultiBet(matchId, type, teamName, percentage, matchTitle, competition) {
                 
                 <div class="form-group">
                     <label class="form-label">Stake Amount (TZS)</label>
-<input type="number" id="stakeAmount" class="form-input" min="10000" 
-       max="${this.getUserData()?.balance || 0}" value="10000" oninput="bettingSystem.calculateSingleProfit(${percentage})">
+<input type="number" id="stakeAmount" class="form-input" min="5000" 
+       max="${this.getUserData()?.balance || 0}" value="5000" oninput="bettingSystem.calculateSingleProfit(${percentage})">
                     <div style="color: var(--gray-color); font-size: 0.85rem; margin-top: 0.5rem;">
                         Available: TZS ${(this.getUserData()?.balance || 0).toFixed(2)}
                     </div>
@@ -2417,7 +2417,7 @@ addToMultiBet(matchId, type, teamName, percentage, matchTitle, competition) {
                 <div class="profit-calc">
                     <div class="calc-row">
                         <span>Stake:</span>
-                        <span id="stakeDisplay">TZS 10,000.00</span>
+                        <span id="stakeDisplay">TZS 5,000.00</span>
                     </div>
                     <div class="calc-row">
                         <span>Win Percentage:</span>
@@ -2425,11 +2425,11 @@ addToMultiBet(matchId, type, teamName, percentage, matchTitle, competition) {
                     </div>
                     <div class="calc-row">
                         <span>Potential Profit:</span>
-                        <span style="color: var(--success-color); font-weight: bold;" id="profitDisplay">TZS ${(10000 * percentage / 100).toFixed(2)}</span>
+                        <span style="color: var(--success-color); font-weight: bold;" id="profitDisplay">TZS ${(5000 * percentage / 100).toFixed(2)}</span>
                     </div>
                     <div class="calc-row total">
                         <span>Total Return:</span>
-                        <span id="totalReturnDisplay">TZS ${(10000 + (10000 * percentage / 100)).toFixed(2)}</span>
+                        <span id="totalReturnDisplay">TZS ${(5000 + (5000 * percentage / 100)).toFixed(2)}</span>
                     </div>
                 </div>
                 
@@ -2465,8 +2465,8 @@ addToMultiBet(matchId, type, teamName, percentage, matchTitle, competition) {
             showNotification("Please enter a valid stake amount!", "error");
             return;
         }
-        if (stake < 10000) {
-    showNotification('Minimum stake is TZS 10,000', 'error');
+        if (stake < 5000) {
+    showNotification('Minimum stake is TZS 5,000', 'error');
     const confirmBtn = document.getElementById('confirmBetBtn');
     if (confirmBtn) {
         confirmBtn.disabled = false;
@@ -7496,7 +7496,7 @@ init() {
 checkAutomatedResponse(text) {
     const lower = text.toLowerCase();
      if (lower.includes('how to deposit') || (lower.includes('deposit') && !lower.includes('withdraw'))) {
-        this.sendAutomatedMessage('To deposit, go to the Wallet section, choose Deposit, select a payment method, enter the amount, and follow the instructions. You\'ll receive a transaction ID after payment, which you need to submit for approval, The minimum deposit amount is TZS 10,000. Maximum per transaction is TZS 10,000,000.');
+        this.sendAutomatedMessage('To deposit, go to the Wallet section, choose Deposit, select a payment method, enter the amount, and follow the instructions. You\'ll receive a transaction ID after payment, which you need to submit for approval, The minimum deposit amount is TZS 5,000. Maximum per transaction is TZS 10,000,000.');
     }
     // How to withdraw
     else if (lower.includes('how to withdraw') || (lower.includes('withdraw') && !lower.includes('deposit'))) {
@@ -11251,7 +11251,7 @@ const translations = {
         withdrawalSubmitted: "Withdrawal request submitted!",
         betPlaced: "Bet placed! Potential return: TZS {0}",
         insufficientBalance: "Insufficient balance!",
-        minimumStake: "Minimum stake is TZS 10,000",
+        minimumStake: "Minimum stake is TZS 5,000",
         minimumDeposit: "Minimum deposit is TZS 1,000",
         minimumWithdrawal: "Minimum withdrawal is TZS 5,000",
         pleaseLogin: "Please login first",
@@ -11789,7 +11789,7 @@ const translations = {
         withdrawalSubmitted: "Ombi la kutoa pesa limetumwa!",
         betPlaced: "Dau limewekwa! Marejesho yanayowezekana: TZS {0}",
         insufficientBalance: "Salio lako halitoshi!",
-        minimumStake: "Dau la chini ni TZS 10,000",
+        minimumStake: "Dau la chini ni TZS 5,000",
         minimumDeposit: "Amana ya chini ni TZS 1,000",
         minimumWithdrawal: "Utoaji wa chini ni TZS 5,000",
         pleaseLogin: "Tafadhali ingia kwanza",
@@ -17374,472 +17374,6 @@ document.addEventListener('modalOpened', (e) => {
     }
 });
 
-
-
-
-
-
-
-
-
-
-// ==================== UPDATED WITHDRAWAL SYSTEM WITH WIN REQUIREMENTS ====================
-
-class WithdrawalManager {
-    constructor() {
-        this.MIN_WINS_REQUIRED = 5; // Minimum matches that must be won
-        this.REQUIRE_ALL_WINS = true; // All selected matches must be won
-        this.init();
-    }
-
-    async init() {
-        console.log("💰 Withdrawal Manager initialized - Win requirements: 5+ matches won");
-    }
-
-    /**
-     * Check if user is eligible for withdrawal based on won matches
-     * @param {string} userId - User ID to check
-     * @returns {Promise<Object>} Eligibility status with details
-     */
-    async checkWithdrawalEligibility(userId) {
-        try {
-            // Get all won bets for this user
-            const wonBetsSnapshot = await db.collection('bets')
-                .where('userId', '==', userId)
-                .where('status', '==', 'won')
-                .get();
-            
-            let totalWonMatches = 0;
-            let wonMatchesList = [];
-            
-            // Process each won bet
-            for (const doc of wonBetsSnapshot.docs) {
-                const bet = doc.data();
-                
-                if (bet.type === 'single') {
-                    // Single bet - one match won
-                    totalWonMatches++;
-                    wonMatchesList.push({
-                        betId: doc.id,
-                        type: 'single',
-                        match: bet.match || `${bet.matchId}`,
-                        stake: bet.stake,
-                        profit: bet.potentialProfit,
-                        wonAt: bet.updatedAt?.toDate?.() || bet.createdAt?.toDate?.()
-                    });
-                } else if (bet.type === 'multi') {
-                    // Multi-bet - check how many selections were won
-                    const selections = bet.selections || [];
-                    const wonSelections = selections.filter(s => s.status === 'won');
-                    
-                    if (this.REQUIRE_ALL_WINS) {
-                        // Only count if ALL selections were won
-                        if (wonSelections.length === selections.length && selections.length > 0) {
-                            totalWonMatches += selections.length;
-                            wonMatchesList.push({
-                                betId: doc.id,
-                                type: 'multi',
-                                matchCount: selections.length,
-                                selections: wonSelections,
-                                stake: bet.stake,
-                                profit: bet.potentialReturn - bet.stake,
-                                wonAt: bet.updatedAt?.toDate?.() || bet.createdAt?.toDate?.()
-                            });
-                        }
-                    } else {
-                        // Count each won selection individually
-                        totalWonMatches += wonSelections.length;
-                        wonSelections.forEach(selection => {
-                            wonMatchesList.push({
-                                betId: doc.id,
-                                type: 'multi_selection',
-                                match: selection.matchTitle || 'Unknown match',
-                                selection: selection.betAgainst,
-                                wonAt: bet.updatedAt?.toDate?.() || bet.createdAt?.toDate?.()
-                            });
-                        });
-                    }
-                }
-            }
-            
-            // Check eligibility
-            const isEligible = totalWonMatches >= this.MIN_WINS_REQUIRED;
-            const remainingWins = Math.max(0, this.MIN_WINS_REQUIRED - totalWonMatches);
-            
-            return {
-                isEligible: isEligible,
-                totalWonMatches: totalWonMatches,
-                requiredWins: this.MIN_WINS_REQUIRED,
-                remainingWins: remainingWins,
-                wonMatchesList: wonMatchesList,
-                canWithdraw: isEligible,
-                message: isEligible 
-                    ? `✅ You have won ${totalWonMatches} matches! You are eligible to withdraw.`
-                    : `❌ You need to win ${remainingWins} more match(es) to be eligible for withdrawal. (${totalWonMatches}/${this.MIN_WINS_REQUIRED} won)`
-            };
-            
-        } catch (error) {
-            console.error("Error checking withdrawal eligibility:", error);
-            return {
-                isEligible: false,
-                totalWonMatches: 0,
-                requiredWins: this.MIN_WINS_REQUIRED,
-                remainingWins: this.MIN_WINS_REQUIRED,
-                wonMatchesList: [],
-                canWithdraw: false,
-                message: "Error checking eligibility. Please try again.",
-                error: error.message
-            };
-        }
-    }
-
-    /**
-     * Get detailed win statistics for a user
-     * @param {string} userId 
-     * @returns {Promise<Object>}
-     */
-    async getWinStatistics(userId) {
-        try {
-            // Get all bets (won, lost, pending)
-            const allBetsSnapshot = await db.collection('bets')
-                .where('userId', '==', userId)
-                .get();
-            
-            let totalBets = 0;
-            let totalWon = 0;
-            let totalLost = 0;
-            let totalPending = 0;
-            let totalProfit = 0;
-            let totalStake = 0;
-            
-            // Track wins by date for chart
-            const winsByDate = {};
-            
-            for (const doc of allBetsSnapshot.docs) {
-                const bet = doc.data();
-                totalBets++;
-                totalStake += bet.stake || 0;
-                
-                if (bet.status === 'won') {
-                    totalWon++;
-                    const profit = bet.type === 'multi' 
-                        ? (bet.potentialReturn - bet.stake) 
-                        : (bet.potentialProfit || 0);
-                    totalProfit += profit;
-                    
-                    // Track by date
-                    const date = bet.updatedAt?.toDate?.() || bet.createdAt?.toDate?.() || new Date();
-                    const dateKey = date.toISOString().split('T')[0];
-                    winsByDate[dateKey] = (winsByDate[dateKey] || 0) + 1;
-                    
-                } else if (bet.status === 'lost') {
-                    totalLost++;
-                } else if (bet.status === 'pending') {
-                    totalPending++;
-                }
-            }
-            
-            const winRate = totalBets > 0 ? (totalWon / totalBets) * 100 : 0;
-            
-            return {
-                totalBets,
-                totalWon,
-                totalLost,
-                totalPending,
-                winRate: winRate.toFixed(1),
-                totalProfit,
-                totalStake,
-                netProfit: totalProfit - totalStake,
-                winsByDate,
-                isEligibleForWithdrawal: totalWon >= this.MIN_WINS_REQUIRED
-            };
-            
-        } catch (error) {
-            console.error("Error getting win statistics:", error);
-            return null;
-        }
-    }
-
-    /**
-     * Display withdrawal eligibility in UI
-     * @param {string} userId 
-     */
-    async displayWithdrawalEligibility(userId) {
-        const eligibility = await this.checkWithdrawalEligibility(userId);
-        const stats = await this.getWinStatistics(userId);
-        
-        // Update withdrawal section UI
-        const withdrawSection = document.getElementById('withdrawSection');
-        if (!withdrawSection) return;
-        
-        // Create or update eligibility banner
-        let eligibilityBanner = document.getElementById('withdrawalEligibilityBanner');
-        if (!eligibilityBanner) {
-            eligibilityBanner = document.createElement('div');
-            eligibilityBanner.id = 'withdrawalEligibilityBanner';
-            withdrawSection.insertBefore(eligibilityBanner, withdrawSection.firstChild);
-        }
-        
-        const progressPercent = (eligibility.totalWonMatches / eligibility.requiredWins) * 100;
-        
-        eligibilityBanner.innerHTML = `
-            <div class="eligibility-banner ${eligibility.isEligible ? 'eligible' : 'not-eligible'}">
-                <div class="eligibility-header">
-                    <i class="fas ${eligibility.isEligible ? 'fa-check-circle' : 'fa-lock'}"></i>
-                    <div class="eligibility-title">
-                        <h4>Withdrawal Eligibility</h4>
-                        <p>${eligibility.message}</p>
-                    </div>
-                </div>
-                
-                <div class="progress-container">
-                    <div class="progress-label">
-                        <span>Matches Won: ${eligibility.totalWonMatches} / ${eligibility.requiredWins}</span>
-                        <span>${progressPercent.toFixed(0)}%</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${progressPercent}%"></div>
-                    </div>
-                </div>
-                
-                ${stats && stats.totalWon > 0 ? `
-                    <div class="win-stats">
-                        <div class="stat-item">
-                            <span class="stat-label">Total Wins:</span>
-                            <span class="stat-value">${stats.totalWon}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Win Rate:</span>
-                            <span class="stat-value">${stats.winRate}%</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Total Profit:</span>
-                            <span class="stat-value profit">TZS ${stats.totalProfit.toFixed(2)}</span>
-                        </div>
-                    </div>
-                ` : ''}
-                
-                ${!eligibility.isEligible && eligibility.remainingWins > 0 ? `
-                    <div class="next-win-info">
-                        <i class="fas fa-info-circle"></i>
-                        <span>Win ${eligibility.remainingWins} more match${eligibility.remainingWins > 1 ? 'es' : ''} to unlock withdrawals!</span>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-        
-        // Enable/disable withdrawal button
-        const withdrawBtn = document.querySelector('#withdrawSection .btn-primary, #withdrawSection button[onclick*="submitWithdrawalRequest"]');
-        if (withdrawBtn) {
-            withdrawBtn.disabled = !eligibility.isEligible;
-            if (!eligibility.isEeligible) {
-                withdrawBtn.title = `Need to win ${eligibility.remainingWins} more matches first`;
-            }
-        }
-        
-        return eligibility;
-    }
-}
-
-// ==================== UPDATED SUBMIT WITHDRAWAL FUNCTION ====================
-
-async function submitWithdrawalRequest() {
-    const userData = window.authManager?.userData;
-    if (!userData) {
-        showNotification('Please login first', 'error');
-        return;
-    }
-    
-    // Check withdrawal eligibility first
-    const withdrawalManager = window.withdrawalManager;
-    if (!withdrawalManager) {
-        showNotification('Withdrawal system not ready', 'error');
-        return;
-    }
-    
-    const eligibility = await withdrawalManager.checkWithdrawalEligibility(userData.uid);
-    
-    if (!eligibility.isEligible) {
-        showNotification(
-            `❌ Withdrawal not available. You need to win ${eligibility.remainingWins} more match(es) first. (${eligibility.totalWonMatches}/${eligibility.requiredWins} won)`,
-            'error',
-            { duration: 5000 }
-        );
-        return;
-    }
-    
-    // Get form values
-    const amount = parseFloat(document.getElementById('withdrawAmount').value);
-    const bankId = document.getElementById('withdrawBank').value;
-    const accountName = document.getElementById('withdrawAccountName').value.trim();
-    const accountNumber = document.getElementById('withdrawAccountNumber').value.trim();
-    const mobile = document.getElementById('withdrawMobile').value.trim();
-    
-    // Validate inputs
-    if (!amount || amount < 5000) {
-        showNotification('Minimum withdrawal amount is TZS 5,000', 'error');
-        return;
-    }
-    
-    if (amount > userData.balance) {
-        showNotification('Insufficient balance', 'error');
-        return;
-    }
-    
-    if (!bankId) {
-        showNotification('Please select an account', 'error');
-        return;
-    }
-    
-    if (!accountName || !accountNumber || !mobile) {
-        showNotification('Please fill all fields', 'error');
-        return;
-    }
-    
-    // Calculate fees
-    const fee = amount * 0.15;
-    const netAmount = amount - fee;
-    
-    try {
-        showLoading('Processing withdrawal request...');
-        
-        // Get provider from selected option
-        const select = document.getElementById('withdrawBank');
-        const selectedOption = select.options[select.selectedIndex];
-        const provider = selectedOption.getAttribute('data-provider') || 'Unknown';
-        
-        // Determine account type
-        const mobileProviders = ['vodacom', 'airtel', 'lipa', 'halotel', 'yas', 'pesa'];
-        const accountType = mobileProviders.includes(provider) ? 'mobile' : 'bank';
-        
-        // Create withdrawal request data with win verification
-        const withdrawalData = {
-            userId: userData.uid,
-            userEmail: userData.email,
-            userName: userData.fullName || userData.username,
-            amount: amount,
-            fee: fee,
-            netAmount: netAmount,
-            bankId: bankId,
-            bankName: accountName,
-            bankProvider: provider,
-            bankType: accountType,
-            accountName: accountName,
-            accountNumber: accountNumber,
-            mobile: mobile,
-            status: 'pending',
-            type: 'withdrawal',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            
-            // Add win verification data
-            withdrawalVerification: {
-                totalWonMatches: eligibility.totalWonMatches,
-                requiredWins: eligibility.requiredWins,
-                verifiedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                verifiedBy: 'system'
-            }
-        };
-        
-        // Use transaction to ensure data consistency
-        await db.runTransaction(async (transaction) => {
-            // Verify user still has sufficient balance
-            const userRef = db.collection('users').doc(userData.uid);
-            const userDoc = await transaction.get(userRef);
-            
-            if (!userDoc.exists) {
-                throw new Error('User not found');
-            }
-            
-            const currentBalance = userDoc.data().balance || 0;
-            if (currentBalance < amount) {
-                throw new Error('Insufficient balance');
-            }
-            
-            // Re-check eligibility within transaction to prevent race conditions
-            const freshEligibility = await withdrawalManager.checkWithdrawalEligibility(userData.uid);
-            if (!freshEligibility.isEligible) {
-                throw new Error(`Withdrawal not available. Need ${freshEligibility.remainingWins} more wins.`);
-            }
-            
-            // Deduct amount immediately
-            transaction.update(userRef, {
-                balance: firebase.firestore.FieldValue.increment(-amount),
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                lastWithdrawalRequest: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            
-            // Save withdrawal request
-            const transRef = db.collection('transactions').doc();
-            transaction.set(transRef, withdrawalData);
-        });
-        
-        // Update local balance
-        if (window.authManager.userData) {
-            window.authManager.userData.balance -= amount;
-        }
-        
-        // Clear form
-        document.getElementById('withdrawAmount').value = '';
-        document.getElementById('withdrawBank').value = '';
-        document.getElementById('withdrawAccountName').value = '';
-        document.getElementById('withdrawAccountNumber').value = '';
-        document.getElementById('withdrawMobile').value = '';
-        
-        // Reset calculator displays
-        if (typeof calculateWithdrawalDeduction === 'function') {
-            calculateWithdrawalDeduction();
-        }
-        
-        // Update balance display
-        if (window.bankingSystem) {
-            window.bankingSystem.updateBalanceDisplay();
-        }
-        
-        hideLoading();
-        showNotification(
-            `✅ Withdrawal request submitted! You have won ${eligibility.totalWonMatches} matches.`,
-            'success'
-        );
-        
-        // Show receipt
-        if (window.bankingSystem) {
-            window.bankingSystem.showReceipt({
-                ...withdrawalData,
-                type: 'withdrawal',
-                status: 'pending'
-            });
-        }
-        
-    } catch (error) {
-        hideLoading();
-        console.error("Error submitting withdrawal:", error);
-        showNotification('Error: ' + error.message, 'error');
-    }
-}
-
-// Initialize withdrawal manager
-let withdrawalManager;
-
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(() => {
-        withdrawalManager = new WithdrawalManager();
-        window.withdrawalManager = withdrawalManager;
-        console.log("💰 Withdrawal Manager initialized - 5+ wins required");
-    }, 2000);
-});
-
-// Also check eligibility when withdrawal section becomes active
-document.addEventListener('sectionChanged', async (e) => {
-    if (e.detail.sectionId === 'withdrawSection' || e.detail.sectionId === 'walletSection') {
-        const user = window.authManager?.user;
-        if (user && window.withdrawalManager) {
-            setTimeout(() => {
-                window.withdrawalManager.displayWithdrawalEligibility(user.uid);
-            }, 500);
-        }
-    }
-});
-
 // Debug function to check if referral is working
 async function debugReferral(userEmail) {
     try {
@@ -19525,3 +19059,3024 @@ window.triggerSocialModal = () => {
 
 console.log('✅ Social Links Integration Helper loaded - Will auto-show after login/signup');
 
+// ==================== REAL-TIME STATUS UPDATE SYSTEM ====================
+
+// ==================== COMPLETE STATUS UPDATE SYSTEM ====================
+
+class StatusUpdateManager {
+    constructor() {
+        this.listeners = new Map();
+        this.statusCheckInterval = null;
+        this.STATUS_CHECK_INTERVAL = 30000; // 30 seconds
+        this.MATCH_DURATION = 7200000; // 2 hours in milliseconds
+        this.isInitialized = false;
+    }
+
+    /**
+     * Initialize the status update system
+     */
+    async init() {
+        if (this.isInitialized) {
+            console.log('Status system already initialized');
+            return;
+        }
+
+        console.log('🔄 Initializing Status Update Manager...');
+        
+        // Check if user is logged in
+        const user = window.authManager?.user;
+        if (!user) {
+            console.log('No user logged in, waiting...');
+            return;
+        }
+
+        // Setup all real-time listeners
+        await this.setupMatchStatusListener();
+        await this.setupBetStatusListener();
+        await this.setupTransactionStatusListener();
+        await this.setupNotificationListener();
+
+        // Start periodic status checks
+        this.startPeriodicChecks();
+
+        // Initial status update
+        await this.updateAllMatchStatuses();
+        await this.checkPendingBets();
+
+        this.isInitialized = true;
+        console.log('✅ Status Update Manager initialized');
+    }
+
+    // ========== MATCH STATUS LISTENER ==========
+    
+    async setupMatchStatusListener() {
+        console.log('📡 Setting up match status listener...');
+        
+        const matchesRef = db.collection('matches');
+        
+        // Listen for match status changes
+        const unsubscribe = matchesRef.onSnapshot(async (snapshot) => {
+            const batch = db.batch();
+            let updatesCount = 0;
+            const now = new Date();
+
+            snapshot.docChanges().forEach(change => {
+                const match = { id: change.doc.id, ...change.doc.data() };
+                const matchDate = this.getMatchDate(match);
+                
+                let newStatus = null;
+                let shouldUpdate = false;
+
+                // UPCOMING → LIVE (match time reached)
+                if (match.status === 'upcoming' && matchDate <= now) {
+                    const timeSinceStart = now - matchDate;
+                    if (timeSinceStart >= 0 && timeSinceStart <= this.MATCH_DURATION) {
+                        newStatus = 'live';
+                        shouldUpdate = true;
+                        console.log(`⚽ Match ${match.id} is now LIVE: ${match.homeTeam} vs ${match.awayTeam}`);
+                        this.showMatchStatusNotification(match, 'live');
+                    }
+                }
+
+                // LIVE → FINISHED (after 2 hours)
+                if (match.status === 'live' && matchDate) {
+                    const timeSinceStart = now - matchDate;
+                    if (timeSinceStart > this.MATCH_DURATION) {
+                        newStatus = 'finished';
+                        shouldUpdate = true;
+                        console.log(`🏁 Match ${match.id} marked as FINISHED: ${match.homeTeam} vs ${match.awayTeam}`);
+                        this.showMatchStatusNotification(match, 'finished');
+                    }
+                }
+
+                // FINISHED without result → needs result
+                if (match.status === 'finished' && !match.result) {
+                    // Don't change status, just notify
+                    console.log(`⚠️ Match ${match.id} is finished but has no result`);
+                }
+
+                if (shouldUpdate && newStatus) {
+                    batch.update(change.doc.ref, {
+                        status: newStatus,
+                        statusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        previousStatus: match.status
+                    });
+                    updatesCount++;
+                }
+            });
+
+            if (updatesCount > 0) {
+                await batch.commit();
+                console.log(`✅ Updated ${updatesCount} match statuses`);
+                this.refreshAllMatchDisplays();
+            }
+        }, (error) => {
+            console.error('Match status listener error:', error);
+        });
+
+        this.listeners.set('matches', unsubscribe);
+    }
+
+    // ========== BET STATUS LISTENER ==========
+    
+    async setupBetStatusListener() {
+        const userId = window.authManager?.user?.uid;
+        if (!userId) return;
+
+        console.log(`📡 Setting up bet status listener for user: ${userId}`);
+
+        const betsRef = db.collection('bets')
+            .where('userId', '==', userId);
+
+        const unsubscribe = betsRef.onSnapshot((snapshot) => {
+            const changes = [];
+            
+            snapshot.docChanges().forEach(change => {
+                const bet = { id: change.doc.id, ...change.doc.data() };
+                
+                if (change.type === 'added') {
+                    changes.push({ type: 'added', bet });
+                } else if (change.type === 'modified') {
+                    const oldData = change.doc.data();
+                    changes.push({ type: 'modified', bet, oldData });
+                    this.handleBetStatusChange(bet, change.doc.data());
+                } else if (change.type === 'removed') {
+                    changes.push({ type: 'removed', bet });
+                }
+            });
+
+            if (changes.length > 0) {
+                console.log(`📊 Bet changes detected: ${changes.length}`);
+                this.refreshBetDisplays();
+                this.updateProfileStats();
+            }
+        }, (error) => {
+            console.error('Bet status listener error:', error);
+        });
+
+        this.listeners.set('bets', unsubscribe);
+    }
+
+    /**
+     * Handle individual bet status change
+     */
+    handleBetStatusChange(bet, oldData) {
+        const userId = window.authManager?.user?.uid;
+        if (bet.userId !== userId) return;
+
+        console.log(`🔄 Bet ${bet.id} status: ${oldData?.status || 'new'} → ${bet.status}`);
+
+        // Show notification based on status
+        const notifications = {
+            won: {
+                title: '🎉 BET WON!',
+                message: `Your bet won! +TZS ${(bet.actualReturn || bet.potentialReturn || 0).toFixed(2)}`,
+                type: 'success',
+                icon: 'fa-trophy'
+            },
+            lost: {
+                title: '❌ BET LOST',
+                message: `Your bet on ${bet.match || 'match'} was lost.`,
+                type: 'error',
+                icon: 'fa-times-circle'
+            },
+            refunded: {
+                title: '💰 BET REFUNDED',
+                message: `TZS ${(bet.stake || 0).toFixed(2)} has been refunded to your balance.`,
+                type: 'warning',
+                icon: 'fa-undo-alt'
+            },
+            cancelled: {
+                title: '🚫 REFUND CANCELLED',
+                message: `The refund for your bet has been cancelled. Bet status reverted to lost.`,
+                type: 'error',
+                icon: 'fa-ban'
+            },
+            pending: {
+                title: '⏳ BET PENDING',
+                message: `Your bet is waiting for match result.`,
+                type: 'info',
+                icon: 'fa-clock'
+            }
+        };
+
+        const notification = notifications[bet.status];
+        if (notification) {
+            this.showNotification(notification.title, notification.message, notification.type);
+            
+            // Update balance display if won or refunded
+            if (bet.status === 'won' || bet.status === 'refunded') {
+                updateAllBalanceDisplays();
+            }
+
+            // Show celebration for big wins
+            if (bet.status === 'won' && bet.actualReturn > bet.stake * 3) {
+                this.showWinCelebration(bet.actualReturn);
+            }
+        }
+    }
+
+    // ========== TRANSACTION STATUS LISTENER ==========
+    
+    async setupTransactionStatusListener() {
+        const userId = window.authManager?.user?.uid;
+        if (!userId) return;
+
+        console.log(`📡 Setting up transaction listener for user: ${userId}`);
+
+        const transactionsRef = db.collection('transactions')
+            .where('userId', '==', userId)
+            .orderBy('date', 'desc')
+            .limit(50);
+
+        const unsubscribe = transactionsRef.onSnapshot((snapshot) => {
+            snapshot.docChanges().forEach(change => {
+                const transaction = change.doc.data();
+                
+                if (change.type === 'added') {
+                    this.handleNewTransaction(transaction);
+                } else if (change.type === 'modified') {
+                    this.handleTransactionUpdate(transaction);
+                }
+            });
+
+            this.refreshTransactionDisplays();
+            updateAllBalanceDisplays();
+        }, (error) => {
+            console.error('Transaction listener error:', error);
+        });
+
+        this.listeners.set('transactions', unsubscribe);
+    }
+
+    /**
+     * Handle new transaction
+     */
+    handleNewTransaction(transaction) {
+        console.log(`💰 New transaction: ${transaction.type} - TZS ${transaction.amount}`);
+
+        const messages = {
+            deposit: {
+                pending: '⏳ Deposit submitted for approval',
+                approved: '✅ Deposit approved! Funds added to balance',
+                rejected: '❌ Deposit rejected'
+            },
+            withdrawal: {
+                pending: '⏳ Withdrawal request submitted',
+                approved: '✅ Withdrawal approved!',
+                rejected: '❌ Withdrawal rejected - amount returned to balance'
+            },
+            bet: {
+                pending: '🎲 Bet placed successfully',
+                completed: '🎲 Bet settled'
+            },
+            win: {
+                completed: '🏆 Winnings credited to your balance'
+            },
+            refund: {
+                completed: '💰 Refund credited to your balance'
+            },
+            referral_bonus: {
+                completed: '🎁 Referral bonus received!'
+            }
+        };
+
+        const typeMessages = messages[transaction.type];
+        if (typeMessages) {
+            const message = typeMessages[transaction.status] || typeMessages.completed;
+            if (message) {
+                const isSuccess = transaction.status === 'approved' || transaction.status === 'completed';
+                this.showNotification(
+                    transaction.type.toUpperCase(),
+                    message,
+                    isSuccess ? 'success' : transaction.status === 'rejected' ? 'error' : 'info'
+                );
+            }
+        }
+    }
+
+    /**
+     * Handle transaction status update
+     */
+    handleTransactionUpdate(transaction) {
+        console.log(`🔄 Transaction ${transaction.type} status: ${transaction.status}`);
+        this.handleNewTransaction(transaction);
+    }
+
+    // ========== NOTIFICATION LISTENER ==========
+    
+    async setupNotificationListener() {
+        const userId = window.authManager?.user?.uid;
+        if (!userId) return;
+
+        console.log(`📡 Setting up notification listener for user: ${userId}`);
+
+        const notificationsRef = db.collection('notifications')
+            .where('userId', '==', userId)
+            .where('read', '==', false)
+            .orderBy('createdAt', 'desc')
+            .limit(10);
+
+        const unsubscribe = notificationsRef.onSnapshot((snapshot) => {
+            snapshot.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                    const notification = change.doc.data();
+                    this.showNotification(
+                        notification.title,
+                        notification.message,
+                        notification.type || 'info'
+                    );
+                    
+                    // Mark as read after showing
+                    change.doc.ref.update({ read: true });
+                }
+            });
+        }, (error) => {
+            console.error('Notification listener error:', error);
+        });
+
+        this.listeners.set('notifications', unsubscribe);
+    }
+
+    // ========== PERIODIC STATUS CHECKS ==========
+    
+    startPeriodicChecks() {
+        if (this.statusCheckInterval) {
+            clearInterval(this.statusCheckInterval);
+        }
+
+        this.statusCheckInterval = setInterval(async () => {
+            console.log('⏰ Running periodic status check...');
+            await this.updateAllMatchStatuses();
+            await this.checkPendingBets();
+            await this.checkExpiredMatches();
+        }, this.STATUS_CHECK_INTERVAL);
+
+        console.log(`⏰ Periodic checks started (every ${this.STATUS_CHECK_INTERVAL / 1000}s)`);
+    }
+
+    /**
+     * Update all match statuses (fallback check)
+     */
+    async updateAllMatchStatuses() {
+        try {
+            const now = new Date();
+            
+            // UPCOMING → LIVE
+            const upcomingSnapshot = await db.collection('matches')
+                .where('status', '==', 'upcoming')
+                .where('date', '<=', now)
+                .get();
+
+            if (!upcomingSnapshot.empty) {
+                const batch = db.batch();
+                upcomingSnapshot.forEach(doc => {
+                    const match = doc.data();
+                    const matchDate = this.getMatchDate(match);
+                    const timeSinceStart = now - matchDate;
+                    
+                    if (timeSinceStart <= this.MATCH_DURATION) {
+                        batch.update(doc.ref, {
+                            status: 'live',
+                            statusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            previousStatus: 'upcoming'
+                        });
+                        console.log(`⚽ Match ${doc.id} updated to LIVE`);
+                    }
+                });
+                await batch.commit();
+            }
+
+            // LIVE → FINISHED
+            const twoHoursAgo = new Date(now - this.MATCH_DURATION);
+            const liveSnapshot = await db.collection('matches')
+                .where('status', '==', 'live')
+                .where('date', '<=', twoHoursAgo)
+                .get();
+
+            if (!liveSnapshot.empty) {
+                const batch = db.batch();
+                liveSnapshot.forEach(doc => {
+                    batch.update(doc.ref, {
+                        status: 'finished',
+                        statusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        previousStatus: 'live'
+                    });
+                    console.log(`🏁 Match ${doc.id} updated to FINISHED`);
+                });
+                await batch.commit();
+            }
+
+        } catch (error) {
+            console.error('Error updating match statuses:', error);
+        }
+    }
+
+    /**
+     * Check pending bets for updates
+     */
+    async checkPendingBets() {
+        const userId = window.authManager?.user?.uid;
+        if (!userId) return;
+
+        try {
+            const pendingBets = await db.collection('bets')
+                .where('userId', '==', userId)
+                .where('status', '==', 'pending')
+                .get();
+
+            if (!pendingBets.empty) {
+                console.log(`📊 Found ${pendingBets.size} pending bets`);
+                
+                // Check each bet's match status
+                for (const doc of pendingBets.docs) {
+                    const bet = doc.data();
+                    if (bet.matchId) {
+                        const matchDoc = await db.collection('matches').doc(bet.matchId).get();
+                        if (matchDoc.exists) {
+                            const match = matchDoc.data();
+                            if (match.status === 'finished' && match.result) {
+                                console.log(`🎯 Bet ${doc.id} needs settlement - match finished`);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error checking pending bets:', error);
+        }
+    }
+
+    /**
+     * Check for expired matches without results
+     */
+    async checkExpiredMatches() {
+        try {
+            const oneDayAgo = new Date(Date.now() - 86400000);
+            
+            const expiredSnapshot = await db.collection('matches')
+                .where('status', '==', 'finished')
+                .where('date', '<=', oneDayAgo)
+                .get();
+
+            if (!expiredSnapshot.empty) {
+                console.log(`⚠️ Found ${expiredSnapshot.size} expired matches without results`);
+            }
+        } catch (error) {
+            console.error('Error checking expired matches:', error);
+        }
+    }
+
+    // ========== DISPLAY REFRESH METHODS ==========
+    
+    refreshAllMatchDisplays() {
+        if (window.bettingSystem?.loadMatches) {
+            window.bettingSystem.loadMatches();
+        }
+        if (window.bettingSystem?.loadAdminMatches) {
+            const userData = window.authManager?.userData;
+            if (userData?.role === 'admin' || userData?.role === 'superadmin') {
+                window.bettingSystem.loadAdminMatches();
+            }
+        }
+    }
+
+    refreshBetDisplays() {
+        if (window.bettingSystem?.loadMyBets) {
+            window.bettingSystem.loadMyBets();
+        }
+    }
+
+    refreshTransactionDisplays() {
+        if (window.bankingSystem?.loadTransactionHistory) {
+            window.bankingSystem.loadTransactionHistory();
+        }
+    }
+
+    updateProfileStats() {
+        if (typeof loadProfileStats === 'function') {
+            loadProfileStats();
+        }
+    }
+
+    // ========== NOTIFICATION METHODS ==========
+    
+    showNotification(title, message, type = 'info') {
+        if (typeof showNotification === 'function') {
+            showNotification(message, type);
+        }
+        
+        if (window.NotificationManager) {
+            NotificationManager.show(message, type, { duration: 5000 });
+        }
+        
+        console.log(`🔔 [${type.toUpperCase()}] ${title}: ${message}`);
+    }
+
+    showMatchStatusNotification(match, status) {
+        const messages = {
+            live: `⚽ ${match.homeTeam} vs ${match.awayTeam} is now LIVE!`,
+            finished: `🏁 ${match.homeTeam} vs ${match.awayTeam} has finished.`
+        };
+        
+        if (messages[status]) {
+            this.showNotification(
+                `Match ${status.toUpperCase()}`,
+                messages[status],
+                status === 'live' ? 'warning' : 'info'
+            );
+        }
+    }
+
+    showWinCelebration(amount) {
+        // Create confetti effect for big wins
+        if (amount > 50000) {
+            const colors = ['#ffa62b', '#2ecc71', '#3498db', '#e74c3c', '#f1c40f'];
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.style.cssText = `
+                        position: fixed;
+                        width: 10px;
+                        height: 10px;
+                        background: ${colors[Math.floor(Math.random() * colors.length)]};
+                        top: -10px;
+                        left: ${Math.random() * 100}%;
+                        transform: rotate(${Math.random() * 360}deg);
+                        animation: confettiFall 3s linear forwards;
+                        z-index: 10000;
+                        pointer-events: none;
+                    `;
+                    document.body.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 30);
+            }
+        }
+    }
+
+    // ========== UTILITY METHODS ==========
+    
+    getMatchDate(match) {
+        if (match.date?.toDate) {
+            return match.date.toDate();
+        }
+        if (match.date instanceof Date) {
+            return match.date;
+        }
+        return new Date(match.date);
+    }
+
+    getMatchStatus(match) {
+        const now = new Date();
+        const matchDate = this.getMatchDate(match);
+        
+        if (match.status === 'finished') {
+            return { text: 'FINISHED', class: 'finished' };
+        }
+        
+        if (match.status === 'live') {
+            return { text: '🔴 LIVE NOW', class: 'live' };
+        }
+        
+        if (match.status === 'upcoming') {
+            const timeUntil = matchDate - now;
+            if (timeUntil <= 3600000) {
+                return { text: '⏰ STARTING SOON', class: 'starting-soon' };
+            }
+            return { text: 'UPCOMING', class: 'upcoming' };
+        }
+        
+        return { text: match.status?.toUpperCase() || 'UNKNOWN', class: match.status || 'unknown' };
+    }
+
+    getBetStatusDisplay(bet) {
+        const displays = {
+            pending: { text: '⏳ PENDING', class: 'pending', color: '#f39c12' },
+            won: { text: '🎉 WON', class: 'won', color: '#2ecc71' },
+            lost: { text: '❌ LOST', class: 'lost', color: '#e74c3c' },
+            refunded: { text: '💰 REFUNDED', class: 'refunded', color: '#3498db' },
+            cancelled: { text: '🚫 CANCELLED', class: 'cancelled', color: '#95a5a6' }
+        };
+        
+        return displays[bet.status] || { 
+            text: bet.status?.toUpperCase() || 'UNKNOWN', 
+            class: bet.status || 'unknown', 
+            color: '#666' 
+        };
+    }
+
+    // ========== CLEANUP ==========
+    
+    cleanup() {
+        console.log('🧹 Cleaning up Status Update Manager...');
+        
+        if (this.statusCheckInterval) {
+            clearInterval(this.statusCheckInterval);
+            this.statusCheckInterval = null;
+        }
+
+        this.listeners.forEach((unsubscribe, key) => {
+            if (typeof unsubscribe === 'function') {
+                unsubscribe();
+                console.log(`Unsubscribed from ${key} listener`);
+            }
+        });
+        this.listeners.clear();
+
+        this.isInitialized = false;
+        console.log('✅ Status Update Manager cleaned up');
+    }
+}
+
+// ==================== INITIALIZATION ====================
+
+let statusUpdateManager = null;
+
+// Initialize when auth is ready
+function initStatusUpdateSystem() {
+    if (statusUpdateManager) {
+        statusUpdateManager.cleanup();
+    }
+    
+    statusUpdateManager = new StatusUpdateManager();
+    statusUpdateManager.init();
+    window.statusUpdateManager = statusUpdateManager;
+}
+
+// Listen for auth state changes
+document.addEventListener('authStateChanged', (e) => {
+    if (e.detail?.user) {
+        setTimeout(initStatusUpdateSystem, 1000);
+    } else {
+        if (statusUpdateManager) {
+            statusUpdateManager.cleanup();
+            statusUpdateManager = null;
+        }
+    }
+});
+
+// Initialize on DOM ready if user already logged in
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        if (window.authManager?.user) {
+            initStatusUpdateSystem();
+        }
+    }, 1500);
+});
+
+// Make globally available
+window.StatusUpdateManager = StatusUpdateManager;
+window.initStatusUpdateSystem = initStatusUpdateSystem;
+
+console.log('✅ Status Update System Loaded - Ready for initialization');
+
+// ==================== ADMIN SIDEBAR MANAGER ====================
+
+class AdminSidebarManager {
+    constructor() {
+        this.currentSection = 'adminDashboard';
+        this.charts = {};
+        this.init();
+    }
+
+    async init() {
+        console.log('🎛️ Initializing Admin Sidebar Manager...');
+        
+        this.setupSidebarToggle();
+        this.setupDropdowns();
+        this.setupNavigation();
+        this.setupSearch();
+        this.setupBottomNav();
+        
+        // Load dashboard data
+        await this.loadDashboardStats();
+        await this.loadCharts();
+        await this.loadRecentActivity();
+        
+        // Load counts for badges
+        await this.updateAllCounts();
+        
+        // Setup real-time listeners
+        this.setupRealtimeListeners();
+        
+        console.log('✅ Admin Sidebar Manager initialized');
+    }
+
+    // ========== SIDEBAR TOGGLE ==========
+    setupSidebarToggle() {
+        const toggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('adminSidebar');
+        
+        if (toggle && sidebar) {
+            toggle.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+                const isCollapsed = sidebar.classList.contains('collapsed');
+                localStorage.setItem('adminSidebarCollapsed', isCollapsed);
+            });
+            
+            // Restore state
+            const saved = localStorage.getItem('adminSidebarCollapsed');
+            if (saved === 'true') {
+                sidebar.classList.add('collapsed');
+            }
+        }
+        
+        // Mobile menu toggle
+        this.setupMobileMenu();
+    }
+
+    setupMobileMenu() {
+        // Add mobile menu button if not exists
+        if (!document.getElementById('mobileMenuBtn')) {
+            const btn = document.createElement('button');
+            btn.id = 'mobileMenuBtn';
+            btn.className = 'mobile-menu-btn';
+            btn.innerHTML = '<i class="fas fa-bars"></i>';
+            btn.style.cssText = `
+                position: fixed;
+                top: 15px;
+                left: 15px;
+                z-index: 1001;
+                background: #ffa62b;
+                color: white;
+                border: none;
+                width: 45px;
+                height: 45px;
+                border-radius: 10px;
+                font-size: 1.2rem;
+                cursor: pointer;
+                display: none;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            `;
+            document.body.appendChild(btn);
+            
+            btn.addEventListener('click', () => {
+                const sidebar = document.getElementById('adminSidebar');
+                sidebar.classList.toggle('mobile-open');
+            });
+        }
+        
+        // Show/hide based on screen size
+        const checkMobile = () => {
+            const btn = document.getElementById('mobileMenuBtn');
+            if (btn) {
+                btn.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+            }
+        };
+        
+        window.addEventListener('resize', checkMobile);
+        checkMobile();
+    }
+
+    // ========== DROPDOWN MANAGEMENT ==========
+    setupDropdowns() {
+        const dropdowns = document.querySelectorAll('.sidebar-dropdown');
+        
+        dropdowns.forEach(dropdown => {
+            const toggle = dropdown.querySelector('.dropdown-toggle');
+            const menu = dropdown.querySelector('.dropdown-menu');
+            
+            if (toggle) {
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    // Close other dropdowns
+                    dropdowns.forEach(d => {
+                        if (d !== dropdown) {
+                            d.classList.remove('open');
+                        }
+                    });
+                    
+                    dropdown.classList.toggle('open');
+                });
+            }
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', () => {
+            dropdowns.forEach(d => d.classList.remove('open'));
+        });
+    }
+
+    // ========== NAVIGATION ==========
+    setupNavigation() {
+        // Sidebar items
+        document.querySelectorAll('.sidebar-item[data-section]').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const section = item.getAttribute('data-section');
+                if (section) {
+                    this.navigateTo(section);
+                }
+            });
+        });
+        
+        // Dropdown items
+        document.querySelectorAll('.dropdown-item[data-section]').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = item.getAttribute('data-section');
+                if (section) {
+                    this.navigateTo(section);
+                }
+            });
+        });
+    }
+
+    setupBottomNav() {
+        document.querySelectorAll('.bottom-nav-item[data-section]').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = item.getAttribute('data-section');
+                if (section) {
+                    this.navigateTo(section);
+                }
+            });
+        });
+    }
+
+    navigateTo(section) {
+        console.log(`📍 Navigating to: ${section}`);
+        
+        // Hide all sections
+        document.querySelectorAll('.content-section').forEach(s => {
+            s.classList.remove('active');
+        });
+        
+        // Show target section
+        const targetSection = document.getElementById(section);
+        if (targetSection) {
+            targetSection.classList.add('active');
+            this.currentSection = section;
+        }
+        
+        // Update active states
+        this.updateActiveStates(section);
+        
+        // Load section-specific data
+        this.loadSectionData(section);
+        
+        // Close mobile sidebar
+        if (window.innerWidth <= 768) {
+            document.getElementById('adminSidebar')?.classList.remove('mobile-open');
+        }
+    }
+
+    updateActiveStates(section) {
+        // Sidebar items
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('data-section') === section) {
+                item.classList.add('active');
+            }
+        });
+        
+        // Dropdown items
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('data-section') === section) {
+                item.classList.add('active');
+                // Open parent dropdown
+                item.closest('.sidebar-dropdown')?.classList.add('open');
+            }
+        });
+        
+        // Bottom nav items
+        document.querySelectorAll('.bottom-nav-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('data-section') === section) {
+                item.classList.add('active');
+            }
+        });
+    }
+
+    // ========== SEARCH ==========
+    setupSearch() {
+        const searchInput = document.getElementById('sidebarSearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                this.filterSidebarItems(term);
+            });
+        }
+    }
+
+    filterSidebarItems(term) {
+        const items = document.querySelectorAll('.sidebar-item, .dropdown-item');
+        
+        items.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            const parent = item.closest('.sidebar-dropdown');
+            
+            if (text.includes(term)) {
+                item.style.display = 'flex';
+                if (parent) {
+                    parent.style.display = 'block';
+                    parent.classList.add('open');
+                }
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        
+        // Hide empty dropdowns
+        document.querySelectorAll('.sidebar-dropdown').forEach(dropdown => {
+            const visibleItems = dropdown.querySelectorAll('.dropdown-item[style*="display: flex"]');
+            if (visibleItems.length === 0) {
+                dropdown.style.display = 'none';
+            }
+        });
+        
+        // Reset if search is empty
+        if (!term) {
+            items.forEach(item => item.style.display = '');
+            document.querySelectorAll('.sidebar-dropdown').forEach(d => {
+                d.style.display = '';
+                d.classList.remove('open');
+            });
+        }
+    }
+
+    // ========== DASHBOARD STATS ==========
+    async loadDashboardStats() {
+        try {
+            // Get user stats
+            const usersSnapshot = await db.collection('users').get();
+            const totalUsers = usersSnapshot.size;
+            const activeUsers = usersSnapshot.docs.filter(d => d.data().status !== 'blocked').length;
+            const newToday = usersSnapshot.docs.filter(d => {
+                const created = d.data().createdAt?.toDate?.() || new Date();
+                return created > new Date(Date.now() - 86400000);
+            }).length;
+            
+            // Get transaction stats
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const transactionsSnapshot = await db.collection('transactions').get();
+            
+            let totalDeposits = 0;
+            let totalWithdrawals = 0;
+            let todayDeposits = 0;
+            let todayWithdrawals = 0;
+            let pendingApprovals = 0;
+            
+            transactionsSnapshot.forEach(doc => {
+                const t = doc.data();
+                const date = t.date?.toDate?.() || t.createdAt?.toDate?.() || new Date();
+                
+                if (t.type === 'deposit' && t.status === 'approved') {
+                    totalDeposits += t.amount || 0;
+                    if (date >= today) todayDeposits += t.amount || 0;
+                }
+                
+                if (t.type === 'withdrawal' && t.status === 'approved') {
+                    totalWithdrawals += t.amount || 0;
+                    if (date >= today) todayWithdrawals += t.amount || 0;
+                }
+                
+                if (t.status === 'pending') {
+                    pendingApprovals++;
+                }
+            });
+            
+            // Company profit = deposits - withdrawals + fees
+            const companyProfit = totalDeposits - totalWithdrawals;
+            const profitMargin = totalDeposits > 0 ? ((companyProfit / totalDeposits) * 100).toFixed(1) : 0;
+            
+            // Update UI
+            document.getElementById('statTotalUsers').textContent = totalUsers;
+            document.getElementById('statActiveUsers').textContent = activeUsers;
+            document.getElementById('statTotalDeposits').textContent = `TZS ${this.formatNumber(totalDeposits)}`;
+            document.getElementById('statTotalWithdrawals').textContent = `TZS ${this.formatNumber(totalWithdrawals)}`;
+            document.getElementById('statCompanyProfit').textContent = `TZS ${this.formatNumber(companyProfit)}`;
+            document.getElementById('statPendingApprovals').textContent = pendingApprovals;
+            
+            document.getElementById('statNewUsers').textContent = `+${newToday} today`;
+            document.getElementById('statTodayDeposits').textContent = `+TZS ${this.formatNumber(todayDeposits)} today`;
+            document.getElementById('statTodayWithdrawals').textContent = `-TZS ${this.formatNumber(todayWithdrawals)} today`;
+            document.getElementById('statActiveRate').textContent = `${((activeUsers / totalUsers) * 100).toFixed(1)}%`;
+            document.getElementById('statProfitMargin').textContent = `${profitMargin}% margin`;
+            
+        } catch (error) {
+            console.error('Error loading dashboard stats:', error);
+        }
+    }
+
+    // ========== CHARTS ==========
+    async loadCharts() {
+        await this.loadRevenueChart();
+        await this.loadUserGrowthChart();
+    }
+
+    async loadRevenueChart(period = 30) {
+        const ctx = document.getElementById('revenueChart')?.getContext('2d');
+        if (!ctx) return;
+        
+        try {
+            const dates = [];
+            const deposits = [];
+            const withdrawals = [];
+            const profits = [];
+            
+            for (let i = period - 1; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                date.setHours(0, 0, 0, 0);
+                dates.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                
+                const nextDate = new Date(date);
+                nextDate.setDate(nextDate.getDate() + 1);
+                
+                const snapshot = await db.collection('transactions')
+                    .where('date', '>=', date)
+                    .where('date', '<', nextDate)
+                    .where('status', '==', 'approved')
+                    .get();
+                
+                let dayDeposits = 0;
+                let dayWithdrawals = 0;
+                
+                snapshot.forEach(doc => {
+                    const t = doc.data();
+                    if (t.type === 'deposit') dayDeposits += t.amount || 0;
+                    if (t.type === 'withdrawal') dayWithdrawals += t.amount || 0;
+                });
+                
+                deposits.push(dayDeposits);
+                withdrawals.push(dayWithdrawals);
+                profits.push(dayDeposits - dayWithdrawals);
+            }
+            
+            if (this.charts.revenue) {
+                this.charts.revenue.destroy();
+            }
+            
+            this.charts.revenue = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Deposits',
+                            data: deposits,
+                            borderColor: '#2ecc71',
+                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Withdrawals',
+                            data: withdrawals,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Profit',
+                            data: profits,
+                            borderColor: '#ffa62b',
+                            backgroundColor: 'rgba(255, 166, 43, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => `${ctx.dataset.label}: TZS ${ctx.raw.toLocaleString()}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: (value) => 'TZS ' + value.toLocaleString()
+                            }
+                        }
+                    }
+                }
+            });
+            
+        } catch (error) {
+            console.error('Error loading revenue chart:', error);
+        }
+    }
+
+    async loadUserGrowthChart(period = 30) {
+        const ctx = document.getElementById('userGrowthChart')?.getContext('2d');
+        if (!ctx) return;
+        
+        try {
+            const dates = [];
+            const newUsers = [];
+            const cumulativeUsers = [];
+            let cumulative = 0;
+            
+            // Get all users
+            const usersSnapshot = await db.collection('users').get();
+            const users = usersSnapshot.docs.map(d => ({
+                ...d.data(),
+                created: d.data().createdAt?.toDate?.() || new Date()
+            }));
+            
+            for (let i = period - 1; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                date.setHours(0, 0, 0, 0);
+                dates.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                
+                const nextDate = new Date(date);
+                nextDate.setDate(nextDate.getDate() + 1);
+                
+                const dayUsers = users.filter(u => 
+                    u.created >= date && u.created < nextDate
+                ).length;
+                
+                newUsers.push(dayUsers);
+                cumulative += dayUsers;
+                cumulativeUsers.push(cumulative);
+            }
+            
+            if (this.charts.userGrowth) {
+                this.charts.userGrowth.destroy();
+            }
+            
+            this.charts.userGrowth = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'New Users',
+                            data: newUsers,
+                            backgroundColor: '#3498db',
+                            borderRadius: 5,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Total Users',
+                            data: cumulativeUsers,
+                            type: 'line',
+                            borderColor: '#ffa62b',
+                            backgroundColor: 'transparent',
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            position: 'left',
+                            title: { display: true, text: 'New Users' }
+                        },
+                        y1: {
+                            beginAtZero: true,
+                            position: 'right',
+                            title: { display: true, text: 'Total Users' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+            
+        } catch (error) {
+            console.error('Error loading user growth chart:', error);
+        }
+    }
+
+    // ========== RECENT ACTIVITY ==========
+    async loadRecentActivity() {
+        await this.loadRecentTransactions();
+        await this.loadRecentUsers();
+        await this.loadRecentBets();
+    }
+
+    async loadRecentTransactions() {
+        const container = document.getElementById('recentTransactions');
+        if (!container) return;
+        
+        try {
+            const snapshot = await db.collection('transactions')
+                .orderBy('date', 'desc')
+                .limit(10)
+                .get();
+            
+            if (snapshot.empty) {
+                container.innerHTML = '<div class="no-data">No transactions yet</div>';
+                return;
+            }
+            
+            let html = '';
+            snapshot.forEach(doc => {
+                const t = doc.data();
+                const date = t.date?.toDate?.() || new Date();
+                const timeAgo = this.getTimeAgo(date);
+                
+                html += `
+                    <div class="activity-item">
+                        <div class="activity-icon ${t.type}">
+                            <i class="fas ${this.getTransactionIcon(t.type)}"></i>
+                        </div>
+                        <div class="activity-info">
+                            <div class="activity-title">${t.description || t.type}</div>
+                            <div class="activity-meta">${t.userEmail || t.userId?.substring(0, 8)} • ${timeAgo}</div>
+                        </div>
+                        <div class="activity-amount ${t.type === 'deposit' ? 'positive' : 'negative'}">
+                            ${t.type === 'deposit' ? '+' : '-'} TZS ${this.formatNumber(t.amount)}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading recent transactions:', error);
+        }
+    }
+
+    async loadRecentUsers() {
+        const container = document.getElementById('recentUsers');
+        if (!container) return;
+        
+        try {
+            const snapshot = await db.collection('users')
+                .orderBy('createdAt', 'desc')
+                .limit(10)
+                .get();
+            
+            if (snapshot.empty) {
+                container.innerHTML = '<div class="no-data">No users yet</div>';
+                return;
+            }
+            
+            let html = '';
+            snapshot.forEach(doc => {
+                const user = doc.data();
+                const date = user.createdAt?.toDate?.() || new Date();
+                const timeAgo = this.getTimeAgo(date);
+                const initials = (user.fullName || user.email || 'U').charAt(0).toUpperCase();
+                
+                html += `
+                    <div class="activity-item">
+                        <div class="user-avatar-small" style="background: ${user.avatarColor || '#ffa62b'}">${initials}</div>
+                        <div class="activity-info">
+                            <div class="activity-title">${user.fullName || user.username || user.email}</div>
+                            <div class="activity-meta">${user.email} • ${timeAgo}</div>
+                        </div>
+                        <div class="activity-status">
+                            <span class="status-badge ${user.status || 'active'}">${user.status || 'active'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading recent users:', error);
+        }
+    }
+
+    async loadRecentBets() {
+        const container = document.getElementById('recentBets');
+        if (!container) return;
+        
+        try {
+            const snapshot = await db.collection('bets')
+                .orderBy('createdAt', 'desc')
+                .limit(10)
+                .get();
+            
+            if (snapshot.empty) {
+                container.innerHTML = '<div class="no-data">No bets yet</div>';
+                return;
+            }
+            
+            let html = '';
+            snapshot.forEach(doc => {
+                const bet = doc.data();
+                const date = bet.createdAt?.toDate?.() || new Date();
+                const timeAgo = this.getTimeAgo(date);
+                
+                html += `
+                    <div class="activity-item">
+                        <div class="activity-icon bet">
+                            <i class="fas fa-ticket-alt"></i>
+                        </div>
+                        <div class="activity-info">
+                            <div class="activity-title">${bet.match || 'Multi-Bet'}</div>
+                            <div class="activity-meta">Stake: TZS ${this.formatNumber(bet.stake)} • ${timeAgo}</div>
+                        </div>
+                        <div class="activity-status">
+                            <span class="status-badge ${bet.status}">${bet.status}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading recent bets:', error);
+        }
+    }
+
+    // ========== COUNT BADGES ==========
+    async updateAllCounts() {
+        await this.updateUserCounts();
+        await this.updateTransactionCounts();
+        await this.updateMatchCounts();
+        await this.updateChatCounts();
+    }
+
+    async updateUserCounts() {
+        try {
+            const snapshot = await db.collection('users').get();
+            const users = snapshot.docs.map(d => d.data());
+            
+            document.getElementById('totalUsersCount').textContent = users.length;
+            document.getElementById('activeUsersCount').textContent = users.filter(u => u.status !== 'blocked').length;
+            document.getElementById('blockedUsersCount').textContent = users.filter(u => u.status === 'blocked').length;
+            document.getElementById('vipUsersCount').textContent = users.filter(u => u.role === 'vip').length;
+            
+        } catch (error) {
+            console.error('Error updating user counts:', error);
+        }
+    }
+
+    async updateTransactionCounts() {
+        try {
+            const snapshot = await db.collection('transactions')
+                .where('status', '==', 'pending')
+                .get();
+            
+            let pendingDeposits = 0;
+            let pendingWithdrawals = 0;
+            
+            snapshot.forEach(doc => {
+                const t = doc.data();
+                if (t.type === 'deposit') pendingDeposits++;
+                if (t.type === 'withdrawal') pendingWithdrawals++;
+            });
+            
+            const pendingDepositsEl = document.getElementById('pendingDepositsCount');
+            const pendingWithdrawalsEl = document.getElementById('pendingWithdrawalsCount');
+            
+            if (pendingDepositsEl) {
+                pendingDepositsEl.textContent = pendingDeposits;
+                pendingDepositsEl.style.display = pendingDeposits > 0 ? 'inline' : 'none';
+            }
+            
+            if (pendingWithdrawalsEl) {
+                pendingWithdrawalsEl.textContent = pendingWithdrawals;
+                pendingWithdrawalsEl.style.display = pendingWithdrawals > 0 ? 'inline' : 'none';
+            }
+            
+            // Update dashboard badge
+            const dashboardBadge = document.getElementById('dashboardBadge');
+            if (dashboardBadge) {
+                const total = pendingDeposits + pendingWithdrawals;
+                dashboardBadge.textContent = total;
+                dashboardBadge.style.display = total > 0 ? 'inline' : 'none';
+            }
+            
+        } catch (error) {
+            console.error('Error updating transaction counts:', error);
+        }
+    }
+
+    async updateMatchCounts() {
+        try {
+            const snapshot = await db.collection('matches').get();
+            const matches = snapshot.docs.map(d => d.data());
+            
+            const liveCount = matches.filter(m => m.status === 'live').length;
+            
+            const liveMatchesEl = document.getElementById('liveMatchesCount');
+            if (liveMatchesEl) {
+                liveMatchesEl.textContent = liveCount;
+                liveMatchesEl.style.display = liveCount > 0 ? 'inline' : 'none';
+            }
+            
+        } catch (error) {
+            console.error('Error updating match counts:', error);
+        }
+    }
+
+    async updateChatCounts() {
+        try {
+            const snapshot = await db.collection('chats')
+                .where('unreadByAdmin', '==', true)
+                .get();
+            
+            const unreadCount = snapshot.size;
+            
+            const unreadChatsEl = document.getElementById('unreadChatsCount');
+            if (unreadChatsEl) {
+                unreadChatsEl.textContent = unreadCount;
+                unreadChatsEl.style.display = unreadCount > 0 ? 'inline' : 'none';
+            }
+            
+        } catch (error) {
+            console.error('Error updating chat counts:', error);
+        }
+    }
+
+    // ========== REAL-TIME LISTENERS ==========
+    setupRealtimeListeners() {
+        // Listen for transaction changes
+        db.collection('transactions').onSnapshot(() => {
+            this.updateTransactionCounts();
+            this.loadDashboardStats();
+        });
+        
+        // Listen for user changes
+        db.collection('users').onSnapshot(() => {
+            this.updateUserCounts();
+            this.loadDashboardStats();
+        });
+        
+        // Listen for match changes
+        db.collection('matches').onSnapshot(() => {
+            this.updateMatchCounts();
+        });
+        
+        // Listen for chat changes
+        db.collection('chats').onSnapshot(() => {
+            this.updateChatCounts();
+        });
+    }
+
+    // ========== SECTION DATA LOADER ==========
+    async loadSectionData(section) {
+        switch (section) {
+            case 'adminDashboard':
+                await this.loadDashboardStats();
+                await this.loadRecentActivity();
+                break;
+            case 'allUsers':
+                await this.loadUsersTable();
+                break;
+            case 'allTransactions':
+                await this.loadTransactionsTable();
+                break;
+            case 'allBets':
+                await this.loadBetsTable();
+                break;
+            case 'companyProfit':
+                await this.loadProfitReport();
+                break;
+        }
+    }
+
+    async loadUsersTable() {
+        const tbody = document.getElementById('usersTableBody');
+        if (!tbody) return;
+        
+        try {
+            const snapshot = await db.collection('users')
+                .orderBy('createdAt', 'desc')
+                .limit(50)
+                .get();
+            
+            if (snapshot.empty) {
+                tbody.innerHTML = '<tr><td colspan="9" class="no-data">No users found</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            snapshot.forEach(doc => {
+                const user = { id: doc.id, ...doc.data() };
+                const joinDate = user.createdAt?.toDate?.() || new Date();
+                const initials = (user.fullName || user.email || 'U').charAt(0).toUpperCase();
+                
+                html += `
+                    <tr>
+                        <td><input type="checkbox" class="user-select" value="${user.id}"></td>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-avatar-small">${initials}</div>
+                                <div>
+                                    <strong>${user.fullName || user.username || 'N/A'}</strong>
+                                    <br>
+                                    <small>@${user.username || user.email?.split('@')[0]}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${user.email || 'N/A'}</td>
+                        <td>${user.phone || 'N/A'}</td>
+                        <td>TZS ${this.formatNumber(user.balance || 0)}</td>
+                        <td><span class="role-badge ${user.role || 'user'}">${user.role || 'user'}</span></td>
+                        <td><span class="status-badge ${user.status || 'active'}">${user.status || 'active'}</span></td>
+                        <td>${joinDate.toLocaleDateString()}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn" onclick="viewUserDetails('${user.id}')" title="View"><i class="fas fa-eye"></i></button>
+                                <button class="action-btn" onclick="editUser('${user.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn delete" onclick="deleteUser('${user.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading users table:', error);
+            tbody.innerHTML = '<tr><td colspan="9" class="error">Error loading users</td></tr>';
+        }
+    }
+
+    async loadTransactionsTable() {
+        // Similar to loadUsersTable but for transactions
+    }
+
+    async loadBetsTable() {
+        // Similar to loadUsersTable but for bets
+    }
+
+    async loadProfitReport() {
+        // Load detailed profit report
+    }
+
+    // ========== UTILITY METHODS ==========
+    formatNumber(num) {
+        return num?.toLocaleString() || '0';
+    }
+
+    getTimeAgo(date) {
+        const seconds = Math.floor((new Date() - date) / 1000);
+        
+        if (seconds < 60) return 'just now';
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+        if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+        return date.toLocaleDateString();
+    }
+
+    getTransactionIcon(type) {
+        const icons = {
+            deposit: 'fa-arrow-down',
+            withdrawal: 'fa-arrow-up',
+            bet: 'fa-ticket-alt',
+            win: 'fa-trophy',
+            refund: 'fa-undo-alt',
+            referral_bonus: 'fa-gift'
+        };
+        return icons[type] || 'fa-exchange-alt';
+    }
+}
+
+// ==================== INITIALIZATION ====================
+
+let adminSidebarManager = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait for auth
+    const checkAuth = setInterval(() => {
+        if (window.authManager?.userData) {
+            clearInterval(checkAuth);
+            
+            const userData = window.authManager.userData;
+            if (userData.role === 'admin' || userData.role === 'superadmin') {
+                adminSidebarManager = new AdminSidebarManager();
+                window.adminSidebarManager = adminSidebarManager;
+                
+                // Update admin name
+                document.getElementById('sidebarAdminName').textContent = userData.fullName || 'Admin';
+                document.getElementById('adminWelcomeName').textContent = userData.fullName?.split(' ')[0] || 'Admin';
+                
+                const initials = (userData.fullName || 'A').charAt(0).toUpperCase();
+                document.getElementById('sidebarAdminAvatar').textContent = initials;
+            }
+        }
+    }, 500);
+});
+
+// Make available globally
+window.AdminSidebarManager = AdminSidebarManager;
+
+
+
+function initSidebarDropdowns() {
+    console.log('🔽 Initializing sidebar dropdowns...');
+    
+    const dropdowns = document.querySelectorAll('.sidebar-dropdown');
+    
+    dropdowns.forEach(dropdown => {
+        const toggle = dropdown.querySelector('.dropdown-toggle');
+        const menu = dropdown.querySelector('.dropdown-menu');
+        
+        if (!toggle || !menu) {
+            console.warn('Dropdown elements not found:', dropdown);
+            return;
+        }
+        
+        // Remove any existing click listeners by cloning
+        const newToggle = toggle.cloneNode(true);
+        toggle.parentNode.replaceChild(newToggle, toggle);
+        
+        // Add click listener
+        newToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            console.log('Dropdown toggle clicked');
+            
+            // Toggle current dropdown
+            const isOpen = dropdown.classList.contains('open');
+            
+            // Close other dropdowns first
+            dropdowns.forEach(d => {
+                if (d !== dropdown) {
+                    d.classList.remove('open');
+                }
+            });
+            
+            // Toggle this dropdown
+            if (!isOpen) {
+                dropdown.classList.add('open');
+                console.log('Dropdown opened');
+            } else {
+                dropdown.classList.remove('open');
+                console.log('Dropdown closed');
+            }
+        });
+        
+        // Make dropdown items clickable
+        const items = menu.querySelectorAll('.dropdown-item');
+        items.forEach(item => {
+            const newItem = item.cloneNode(true);
+            item.parentNode.replaceChild(newItem, item);
+            
+            newItem.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const section = this.getAttribute('data-section');
+                const onclick = this.getAttribute('onclick');
+                
+                console.log('Dropdown item clicked:', section || onclick);
+                
+                // Handle navigation
+                if (section) {
+                    if (window.adminSidebarManager && typeof window.adminSidebarManager.navigateTo === 'function') {
+                        window.adminSidebarManager.navigateTo(section);
+                    } else if (typeof navigateTo === 'function') {
+                        navigateTo(section);
+                    } else {
+                        // Fallback navigation
+                        document.querySelectorAll('.content-section').forEach(s => {
+                            s.classList.remove('active');
+                            s.style.display = 'none';
+                        });
+                        const targetSection = document.getElementById(section);
+                        if (targetSection) {
+                            targetSection.classList.add('active');
+                            targetSection.style.display = 'block';
+                        }
+                    }
+                }
+                
+                // Handle onclick
+                if (onclick) {
+                    try {
+                        const func = new Function(onclick);
+                        func();
+                    } catch (error) {
+                        console.error('Error executing onclick:', error);
+                    }
+                }
+                
+                // Close dropdown on mobile
+                if (window.innerWidth <= 768) {
+                    dropdown.classList.remove('open');
+                }
+            });
+        });
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.sidebar-dropdown')) {
+            dropdowns.forEach(d => d.classList.remove('open'));
+        }
+    });
+    
+    console.log('✅ Sidebar dropdowns initialized');
+}
+
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(initSidebarDropdowns, 500);
+});
+
+// Also re-initialize when admin dashboard is shown
+document.addEventListener('sectionChanged', function(e) {
+    if (e.detail?.dashboard === 'admin-dashboard') {
+        setTimeout(initSidebarDropdowns, 200);
+    }
+});
+
+// Make globally available
+window.initSidebarDropdowns = initSidebarDropdowns;
+
+// Force open the User Management dropdown
+const userDropdown = document.querySelector('[data-dropdown="users"]')?.closest('.sidebar-dropdown');
+if (userDropdown) {
+    userDropdown.classList.add('open');
+    const menu = userDropdown.querySelector('.dropdown-menu');
+    if (menu) {
+        menu.style.display = 'block';
+        menu.style.visibility = 'visible';
+    }
+    console.log('✅ User Management dropdown opened');
+}
+
+// Make dropdown items clickable
+document.querySelectorAll('#usersDropdown .dropdown-item').forEach(item => {
+    item.style.display = 'flex';
+    item.style.cursor = 'pointer';
+    item.addEventListener('click', function(e) {
+        e.preventDefault();
+        const section = this.getAttribute('data-section');
+        console.log('Navigating to:', section);
+        if (section) {
+            document.querySelectorAll('.content-section').forEach(s => {
+                s.classList.remove('active');
+                s.style.display = 'none';
+            });
+            const target = document.getElementById(section);
+            if (target) {
+                target.classList.add('active');
+                target.style.display = 'block';
+            }
+        }
+    });
+});
+
+function navigateTo(sectionId) {
+    console.log('📍 Navigating to:', sectionId);
+    
+    // Hide all content sections
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
+        section.style.display = 'none';
+    });
+    
+    // Show the selected section
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+        targetSection.style.display = 'block';
+    } else {
+        console.error('Section not found:', sectionId);
+        return;
+    }
+    
+    // Update active states in sidebar
+    document.querySelectorAll('.sidebar-item, .dropdown-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    const activeMenuItem = document.querySelector(`[data-section="${sectionId}"]`);
+    if (activeMenuItem) {
+        activeMenuItem.classList.add('active');
+        
+        // Open parent dropdown
+        const parentDropdown = activeMenuItem.closest('.sidebar-dropdown');
+        if (parentDropdown) {
+            parentDropdown.classList.add('open');
+        }
+    }
+    
+    // Load section-specific data
+    if (sectionId === 'allUsers' && window.userManagement) {
+        window.userManagement.currentFilter = 'all';
+        window.userManagement.loadUsers();
+    } else if (sectionId === 'activeUsers' && window.userManagement) {
+        window.userManagement.currentFilter = 'active';
+        window.userManagement.loadUsers();
+    } else if (sectionId === 'blockedUsers' && window.userManagement) {
+        window.userManagement.currentFilter = 'blocked';
+        window.userManagement.loadUsers();
+    } else if (sectionId === 'vipUsers' && window.userManagement) {
+        window.userManagement.currentFilter = 'vip';
+        window.userManagement.loadUsers();
+    }
+}
+
+window.navigateTo = navigateTo;
+
+// ==================== COMPLETE USER MANAGEMENT SYSTEM ====================
+
+class UserManagementSystem {
+    constructor() {
+        this.currentPage = 1;
+        this.pageSize = 20;
+        this.totalUsers = 0;
+        this.currentFilter = 'all';
+        this.searchTerm = '';
+        this.roleFilter = 'all';
+        this.statusFilter = 'all';
+        this.users = [];
+        this.selectedUsers = new Set();
+        this.currentSection = 'allUsers';
+        this.init();
+    }
+
+    init() {
+        console.log('👥 Initializing User Management System...');
+        this.setupEventListeners();
+        this.setupSectionObserver();
+    }
+
+    setupEventListeners() {
+        // Search input with debounce
+        const searchInput = document.getElementById('userSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', this.debounce(() => {
+                this.searchTerm = searchInput.value.toLowerCase();
+                this.currentPage = 1;
+                this.loadUsers();
+            }, 500));
+        }
+
+        // Role filter
+        const roleFilter = document.getElementById('userRoleFilter');
+        if (roleFilter) {
+            roleFilter.addEventListener('change', () => {
+                this.roleFilter = roleFilter.value;
+                this.currentPage = 1;
+                this.loadUsers();
+            });
+        }
+
+        // Status filter
+        const statusFilter = document.getElementById('userStatusFilter');
+        if (statusFilter) {
+            statusFilter.addEventListener('change', () => {
+                this.statusFilter = statusFilter.value;
+                this.currentPage = 1;
+                this.loadUsers();
+            });
+        }
+
+        // Select all checkbox
+        const selectAll = document.getElementById('selectAllUsers');
+        if (selectAll) {
+            selectAll.addEventListener('change', (e) => {
+                this.toggleSelectAll(e.target.checked);
+            });
+        }
+    }
+
+    setupSectionObserver() {
+        // Watch for section changes
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.target.classList.contains('active')) {
+                    const sectionId = mutation.target.id;
+                    this.currentSection = sectionId;
+                    
+                    console.log('📍 Section changed to:', sectionId);
+                    
+                    if (sectionId === 'allUsers') {
+                        this.currentFilter = 'all';
+                        this.loadUsers();
+                    } else if (sectionId === 'activeUsers') {
+                        this.currentFilter = 'active';
+                        this.loadUsers();
+                    } else if (sectionId === 'blockedUsers') {
+                        this.currentFilter = 'blocked';
+                        this.loadUsers();
+                    } else if (sectionId === 'vipUsers') {
+                        this.currentFilter = 'vip';
+                        this.loadUsers();
+                    }
+                }
+            });
+        });
+
+        document.querySelectorAll('.content-section').forEach(section => {
+            observer.observe(section, { attributes: true, attributeFilter: ['class'] });
+        });
+    }
+
+    // ========== LOAD USERS ==========
+    async loadUsers() {
+        const tbody = this.getTableBody();
+        if (!tbody) return;
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9" class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i> Loading users...
+                </td>
+            </tr>
+        `;
+
+        try {
+            const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+            
+            let users = [];
+            snapshot.forEach(doc => {
+                users.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Apply filters
+            users = this.applyFilters(users);
+            
+            this.totalUsers = users.length;
+            this.users = users;
+            
+            // Paginate
+            const start = (this.currentPage - 1) * this.pageSize;
+            const paginatedUsers = users.slice(start, start + this.pageSize);
+            
+            this.renderUsersTable(paginatedUsers);
+            this.renderPagination();
+            this.updateStats();
+            this.updateCountBadges();
+            
+        } catch (error) {
+            console.error('Error loading users:', error);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="error-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Error loading users: ${error.message}</p>
+                        <button class="btn btn-secondary" onclick="userManagement.loadUsers()">
+                            <i class="fas fa-sync-alt"></i> Retry
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    getTableBody() {
+        if (this.currentSection === 'allUsers') {
+            return document.getElementById('usersTableBody');
+        } else if (this.currentSection === 'activeUsers') {
+            return document.getElementById('activeUsersTableBody');
+        } else if (this.currentSection === 'blockedUsers') {
+            return document.getElementById('blockedUsersTableBody');
+        } else if (this.currentSection === 'vipUsers') {
+            return document.getElementById('vipUsersTableBody');
+        }
+        return document.getElementById('usersTableBody');
+    }
+
+    applyFilters(users) {
+        let filtered = users;
+
+        // Filter by section type
+        if (this.currentFilter === 'active') {
+            filtered = filtered.filter(u => u.status !== 'blocked');
+        } else if (this.currentFilter === 'blocked') {
+            filtered = filtered.filter(u => u.status === 'blocked');
+        } else if (this.currentFilter === 'vip') {
+            filtered = filtered.filter(u => u.role === 'vip' || this.getVIPTier(u.balance) !== 'regular');
+        }
+
+        // Filter by role
+        if (this.roleFilter !== 'all') {
+            filtered = filtered.filter(u => u.role === this.roleFilter);
+        }
+
+        // Filter by status
+        if (this.statusFilter !== 'all') {
+            filtered = filtered.filter(u => u.status === this.statusFilter);
+        }
+
+        // Search filter
+        if (this.searchTerm) {
+            filtered = filtered.filter(u => 
+                (u.fullName && u.fullName.toLowerCase().includes(this.searchTerm)) ||
+                (u.username && u.username.toLowerCase().includes(this.searchTerm)) ||
+                (u.email && u.email.toLowerCase().includes(this.searchTerm)) ||
+                (u.phone && u.phone.includes(this.searchTerm))
+            );
+        }
+
+        return filtered;
+    }
+
+    // ========== RENDER USERS TABLE ==========
+    renderUsersTable(users) {
+        const tbody = this.getTableBody();
+        if (!tbody) return;
+
+        if (users.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="no-data">
+                        <i class="fas fa-users"></i>
+                        <p>No users found</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        let html = '';
+        users.forEach(user => {
+            const joinDate = user.createdAt?.toDate?.() || new Date();
+            const formattedDate = joinDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            
+            const initials = (user.fullName || user.email || 'U').charAt(0).toUpperCase();
+            const displayName = user.fullName || user.username || user.email?.split('@')[0] || 'User';
+            const vipTier = this.getVIPTier(user.balance);
+            
+            let roleDisplay = user.role || 'user';
+            let roleClass = user.role || 'user';
+            if (vipTier !== 'regular' && roleDisplay === 'user') {
+                roleDisplay = vipTier.toUpperCase();
+                roleClass = 'vip';
+            }
+
+            const isSelected = this.selectedUsers.has(user.id);
+            
+            // For active/blocked/vip sections, use simplified table
+            if (this.currentSection !== 'allUsers') {
+                html += this.renderSimplifiedUserRow(user, formattedDate, initials, displayName);
+            } else {
+                html += this.renderFullUserRow(user, formattedDate, initials, displayName, roleDisplay, roleClass, isSelected);
+            }
+        });
+
+        tbody.innerHTML = html;
+        this.updateSelectAllState();
+    }
+
+    renderFullUserRow(user, formattedDate, initials, displayName, roleDisplay, roleClass, isSelected) {
+        return `
+            <tr class="${user.status === 'blocked' ? 'blocked-row' : ''}">
+                <td>
+                    <input type="checkbox" class="user-select" value="${user.id}" 
+                           ${isSelected ? 'checked' : ''} onchange="userManagement.toggleUserSelect('${user.id}', this.checked)">
+                </td>
+                <td>
+                    <div class="user-cell">
+                        <div class="user-avatar-small" style="background: ${user.avatarColor || '#ffa62b'}">${initials}</div>
+                        <div class="user-info-cell">
+                            <strong>${this.escapeHtml(displayName)}</strong>
+                            <span class="user-username">@${user.username || user.email?.split('@')[0] || 'user'}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>${this.escapeHtml(user.email || 'N/A')}</td>
+                <td>${this.escapeHtml(user.phone || 'N/A')}</td>
+                <td class="balance-cell">TZS ${this.formatNumber(user.balance || 0)}</td>
+                <td><span class="role-badge ${roleClass}">${roleDisplay}</span></td>
+                <td><span class="status-badge ${user.status || 'active'}">${user.status || 'active'}</span></td>
+                <td>${formattedDate}</td>
+                <td>
+                    <div class="action-buttons">
+                        ${this.renderActionButtons(user)}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    renderSimplifiedUserRow(user, formattedDate, initials, displayName) {
+        return `
+            <tr class="${user.status === 'blocked' ? 'blocked-row' : ''}">
+                <td>
+                    <div class="user-cell">
+                        <div class="user-avatar-small" style="background: ${user.avatarColor || '#ffa62b'}">${initials}</div>
+                        <div class="user-info-cell">
+                            <strong>${this.escapeHtml(displayName)}</strong>
+                            <span class="user-username">@${user.username || user.email?.split('@')[0] || 'user'}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>${this.escapeHtml(user.email || 'N/A')}</td>
+                <td class="balance-cell">TZS ${this.formatNumber(user.balance || 0)}</td>
+                <td>${formattedDate}</td>
+                <td>${user.lastLogin?.toDate?.().toLocaleDateString() || 'Never'}</td>
+                <td>
+                    <div class="action-buttons">
+                        ${this.renderActionButtons(user)}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    renderActionButtons(user) {
+        return `
+            <button class="action-btn" onclick="userManagement.viewUserDetails('${user.id}')" title="View Details">
+                <i class="fas fa-eye"></i>
+            </button>
+            <button class="action-btn" onclick="userManagement.openEditUserModal('${user.id}')" title="Edit User">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="action-btn" onclick="userManagement.openAdjustBalanceModal('${user.id}', ${user.balance || 0})" title="Adjust Balance">
+                <i class="fas fa-coins"></i>
+            </button>
+            <button class="action-btn" onclick="userManagement.openResetPasswordModal('${user.id}', '${user.email}')" title="Reset Password">
+                <i class="fas fa-key"></i>
+            </button>
+            <button class="action-btn ${user.status === 'blocked' ? 'activate' : 'block'}" 
+                    onclick="userManagement.toggleUserStatus('${user.id}', '${user.status || 'active'}')" 
+                    title="${user.status === 'blocked' ? 'Activate User' : 'Block User'}">
+                <i class="fas ${user.status === 'blocked' ? 'fa-check-circle' : 'fa-ban'}"></i>
+            </button>
+            <button class="action-btn" onclick="userManagement.viewUserBets('${user.id}')" title="View Bets">
+                <i class="fas fa-ticket-alt"></i>
+            </button>
+            <button class="action-btn" onclick="userManagement.viewUserTransactions('${user.id}')" title="View Transactions">
+                <i class="fas fa-exchange-alt"></i>
+            </button>
+            <button class="action-btn delete" onclick="userManagement.deleteUser('${user.id}')" title="Delete User">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+    }
+
+    // ========== PAGINATION ==========
+    renderPagination() {
+        const container = document.getElementById('usersPagination');
+        if (!container) return;
+
+        const totalPages = Math.ceil(this.totalUsers / this.pageSize);
+        
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        
+        html += `
+            <button class="pagination-btn" onclick="userManagement.goToPage(${this.currentPage - 1})" 
+                    ${this.currentPage === 1 ? 'disabled' : ''}>
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        `;
+
+        const maxVisible = 5;
+        let startPage = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+        
+        if (endPage - startPage < maxVisible - 1) {
+            startPage = Math.max(1, endPage - maxVisible + 1);
+        }
+
+        if (startPage > 1) {
+            html += `<button class="pagination-btn" onclick="userManagement.goToPage(1)">1</button>`;
+            if (startPage > 2) {
+                html += `<span class="pagination-ellipsis">...</span>`;
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            html += `
+                <button class="pagination-btn ${i === this.currentPage ? 'active' : ''}" 
+                        onclick="userManagement.goToPage(${i})">${i}</button>
+            `;
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                html += `<span class="pagination-ellipsis">...</span>`;
+            }
+            html += `<button class="pagination-btn" onclick="userManagement.goToPage(${totalPages})">${totalPages}</button>`;
+        }
+
+        html += `
+            <button class="pagination-btn" onclick="userManagement.goToPage(${this.currentPage + 1})" 
+                    ${this.currentPage === totalPages ? 'disabled' : ''}>
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        `;
+
+        const start = (this.currentPage - 1) * this.pageSize + 1;
+        const end = Math.min(this.currentPage * this.pageSize, this.totalUsers);
+        html += `<span class="pagination-info">Showing ${start}-${end} of ${this.totalUsers}</span>`;
+
+        container.innerHTML = html;
+    }
+
+    goToPage(page) {
+        if (page < 1 || page > Math.ceil(this.totalUsers / this.pageSize)) return;
+        this.currentPage = page;
+        this.loadUsers();
+    }
+
+    // ========== USER ACTIONS ==========
+    
+    async viewUserDetails(userId) {
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (!userDoc.exists) {
+                showNotification('User not found', 'error');
+                return;
+            }
+
+            const user = userDoc.data();
+            const joinDate = user.createdAt?.toDate?.() || new Date();
+            const lastLogin = user.lastLogin?.toDate?.() || new Date();
+            
+            // Get bet stats
+            const betsSnapshot = await db.collection('bets')
+                .where('userId', '==', userId)
+                .get();
+            
+            let totalBets = 0;
+            let wonBets = 0;
+            let totalStake = 0;
+            let totalWinnings = 0;
+            
+            betsSnapshot.forEach(doc => {
+                const bet = doc.data();
+                totalBets++;
+                totalStake += bet.stake || 0;
+                if (bet.status === 'won') {
+                    wonBets++;
+                    totalWinnings += (bet.actualReturn || bet.potentialReturn || 0);
+                }
+            });
+
+            // Get transaction stats
+            const transSnapshot = await db.collection('transactions')
+                .where('userId', '==', userId)
+                .get();
+            
+            let totalDeposits = 0;
+            let totalWithdrawals = 0;
+            
+            transSnapshot.forEach(doc => {
+                const trans = doc.data();
+                if (trans.type === 'deposit' && trans.status === 'approved') {
+                    totalDeposits += trans.amount || 0;
+                } else if (trans.type === 'withdrawal' && trans.status === 'approved') {
+                    totalWithdrawals += trans.amount || 0;
+                }
+            });
+
+            const content = `
+                <div class="user-details-modal">
+                    <div class="user-profile-header">
+                        <div class="user-avatar-large" style="background: ${user.avatarColor || '#ffa62b'}">
+                            ${(user.fullName || user.email || 'U').charAt(0).toUpperCase()}
+                        </div>
+                        <div class="user-profile-info">
+                            <h3>${this.escapeHtml(user.fullName || 'N/A')}</h3>
+                            <p>@${user.username || user.email?.split('@')[0]}</p>
+                            <span class="role-badge ${user.role || 'user'}">${user.role || 'user'}</span>
+                            <span class="status-badge ${user.status || 'active'}">${user.status || 'active'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="user-stats-grid">
+                        <div class="user-stat-card">
+                            <i class="fas fa-wallet"></i>
+                            <span class="stat-label">Balance</span>
+                            <span class="stat-value">TZS ${this.formatNumber(user.balance || 0)}</span>
+                        </div>
+                        <div class="user-stat-card">
+                            <i class="fas fa-ticket-alt"></i>
+                            <span class="stat-label">Total Bets</span>
+                            <span class="stat-value">${totalBets}</span>
+                        </div>
+                        <div class="user-stat-card">
+                            <i class="fas fa-trophy"></i>
+                            <span class="stat-label">Won Bets</span>
+                            <span class="stat-value">${wonBets}</span>
+                        </div>
+                        <div class="user-stat-card">
+                            <i class="fas fa-chart-line"></i>
+                            <span class="stat-label">Win Rate</span>
+                            <span class="stat-value">${totalBets > 0 ? ((wonBets / totalBets) * 100).toFixed(1) : 0}%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="user-stats-grid">
+                        <div class="user-stat-card">
+                            <i class="fas fa-arrow-down"></i>
+                            <span class="stat-label">Total Deposits</span>
+                            <span class="stat-value">TZS ${this.formatNumber(totalDeposits)}</span>
+                        </div>
+                        <div class="user-stat-card">
+                            <i class="fas fa-arrow-up"></i>
+                            <span class="stat-label">Total Withdrawals</span>
+                            <span class="stat-value">TZS ${this.formatNumber(totalWithdrawals)}</span>
+                        </div>
+                        <div class="user-stat-card">
+                            <i class="fas fa-users"></i>
+                            <span class="stat-label">Referrals</span>
+                            <span class="stat-value">${user.referralCount || 0}</span>
+                        </div>
+                        <div class="user-stat-card">
+                            <i class="fas fa-calendar"></i>
+                            <span class="stat-label">Days Active</span>
+                            <span class="stat-value">${Math.ceil((Date.now() - joinDate) / (1000 * 60 * 60 * 24))}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="user-details-section">
+                        <h4><i class="fas fa-info-circle"></i> Personal Information</h4>
+                        <div class="detail-row"><span class="detail-label">Email:</span><span class="detail-value">${this.escapeHtml(user.email || 'N/A')}</span></div>
+                        <div class="detail-row"><span class="detail-label">Phone:</span><span class="detail-value">${this.escapeHtml(user.phone || 'N/A')}</span></div>
+                        <div class="detail-row"><span class="detail-label">Country:</span><span class="detail-value">${this.escapeHtml(user.country || 'N/A')}</span></div>
+                        <div class="detail-row"><span class="detail-label">Favorite Team:</span><span class="detail-value">${this.escapeHtml(user.favoriteTeam || 'N/A')}</span></div>
+                        <div class="detail-row"><span class="detail-label">Referral Code:</span><span class="detail-value">${user.referralCode || 'N/A'}</span></div>
+                        <div class="detail-row"><span class="detail-label">Referred By:</span><span class="detail-value">${user.referredBy || 'N/A'}</span></div>
+                    </div>
+                    
+                    <div class="user-details-section">
+                        <h4><i class="fas fa-clock"></i> Account Information</h4>
+                        <div class="detail-row"><span class="detail-label">Joined:</span><span class="detail-value">${joinDate.toLocaleString()}</span></div>
+                        <div class="detail-row"><span class="detail-label">Last Login:</span><span class="detail-value">${lastLogin.toLocaleString()}</span></div>
+                        <div class="detail-row"><span class="detail-label">User ID:</span><span class="detail-value">${userId}</span></div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button class="btn btn-primary" onclick="userManagement.openEditUserModal('${userId}'); closeModal('userDetailsModal');">
+                            <i class="fas fa-edit"></i> Edit User
+                        </button>
+                        <button class="btn btn-secondary" onclick="closeModal('userDetailsModal')">Close</button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('userDetailsContent').innerHTML = content;
+            openModal('userDetailsModal');
+
+        } catch (error) {
+            console.error('Error viewing user details:', error);
+            showNotification('Error loading user details', 'error');
+        }
+    }
+
+    async openEditUserModal(userId) {
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (!userDoc.exists) {
+                showNotification('User not found', 'error');
+                return;
+            }
+
+            const user = userDoc.data();
+            
+            document.getElementById('editUserId').value = userId;
+            document.getElementById('editFullName').value = user.fullName || '';
+            document.getElementById('editUsername').value = user.username || '';
+            document.getElementById('editEmail').value = user.email || '';
+            document.getElementById('editPhone').value = user.phone || '';
+            document.getElementById('editRole').value = user.role || 'user';
+            document.getElementById('editStatus').value = user.status || 'active';
+            
+            // Populate country dropdown
+            const countrySelect = document.getElementById('editCountry');
+            if (countrySelect && typeof countries !== 'undefined') {
+                countrySelect.innerHTML = '<option value="">Select Country</option>';
+                countries.forEach(c => {
+                    countrySelect.innerHTML += `<option value="${c.code}" ${c.code === user.country ? 'selected' : ''}>${c.name}</option>`;
+                });
+            }
+            
+            // Populate teams dropdown
+            const teamSelect = document.getElementById('editFavoriteTeam');
+            if (teamSelect && typeof footballTeams !== 'undefined') {
+                teamSelect.innerHTML = '<option value="">Select Team</option>';
+                footballTeams.forEach(t => {
+                    teamSelect.innerHTML += `<option value="${t.id}" ${t.id === user.favoriteTeam ? 'selected' : ''}>${t.name}</option>`;
+                });
+            }
+            
+            openModal('editUserModal');
+            
+        } catch (error) {
+            console.error('Error opening edit modal:', error);
+            showNotification('Error loading user data', 'error');
+        }
+    }
+
+    async saveUserEdit(e) {
+        e.preventDefault();
+        
+        const userId = document.getElementById('editUserId').value;
+        const updatedData = {
+            fullName: document.getElementById('editFullName').value,
+            username: document.getElementById('editUsername').value,
+            email: document.getElementById('editEmail').value,
+            phone: document.getElementById('editPhone').value,
+            country: document.getElementById('editCountry').value,
+            favoriteTeam: document.getElementById('editFavoriteTeam').value,
+            role: document.getElementById('editRole').value,
+            status: document.getElementById('editStatus').value,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        showLoading('Updating user...');
+        
+        try {
+            await db.collection('users').doc(userId).update(updatedData);
+            showNotification('User updated successfully', 'success');
+            closeModal('editUserModal');
+            this.loadUsers();
+        } catch (error) {
+            console.error('Error updating user:', error);
+            showNotification('Error updating user: ' + error.message, 'error');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    openAdjustBalanceModal(userId, currentBalance) {
+        document.getElementById('balanceUserId').value = userId;
+        document.getElementById('currentBalanceDisplay').textContent = `TZS ${this.formatNumber(currentBalance)}`;
+        document.getElementById('balanceAmount').value = '';
+        document.getElementById('balanceReason').value = '';
+        openModal('adjustBalanceModal');
+    }
+
+    async adjustUserBalance(e) {
+        e.preventDefault();
+        
+        const userId = document.getElementById('balanceUserId').value;
+        const action = document.getElementById('balanceAction').value;
+        const amount = parseFloat(document.getElementById('balanceAmount').value);
+        const reason = document.getElementById('balanceReason').value || 'Admin adjustment';
+        
+        if (isNaN(amount) || amount <= 0) {
+            showNotification('Please enter a valid amount', 'error');
+            return;
+        }
+
+        showLoading('Updating balance...');
+        
+        try {
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
+            const currentBalance = userDoc.data().balance || 0;
+            
+            let newBalance;
+            let adjustmentAmount;
+            
+            if (action === 'add') {
+                newBalance = currentBalance + amount;
+                adjustmentAmount = amount;
+            } else if (action === 'subtract') {
+                newBalance = currentBalance - amount;
+                adjustmentAmount = -amount;
+                if (newBalance < 0) {
+                    showNotification('Balance cannot go negative', 'error');
+                    hideLoading();
+                    return;
+                }
+            } else {
+                newBalance = amount;
+                adjustmentAmount = amount - currentBalance;
+            }
+
+            await db.runTransaction(async (transaction) => {
+                transaction.update(userRef, {
+                    balance: newBalance,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                const transRef = db.collection('transactions').doc();
+                transaction.set(transRef, {
+                    userId: userId,
+                    type: 'admin_adjustment',
+                    amount: adjustmentAmount,
+                    description: `Admin ${action}: ${reason}`,
+                    date: firebase.firestore.FieldValue.serverTimestamp(),
+                    adminId: window.authManager?.user?.uid || 'system',
+                    previousBalance: currentBalance,
+                    newBalance: newBalance
+                });
+            });
+
+            showNotification('Balance updated successfully', 'success');
+            closeModal('adjustBalanceModal');
+            this.loadUsers();
+            
+        } catch (error) {
+            console.error('Error adjusting balance:', error);
+            showNotification('Error updating balance: ' + error.message, 'error');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    openResetPasswordModal(userId, email) {
+        document.getElementById('resetUserEmail').textContent = email;
+        document.getElementById('resetPasswordModal').dataset.userId = userId;
+        openModal('resetPasswordModal');
+    }
+
+    async confirmResetPassword() {
+        const userId = document.getElementById('resetPasswordModal').dataset.userId;
+        
+        showLoading('Sending reset email...');
+        
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            const email = userDoc.data().email;
+            
+            await auth.sendPasswordResetEmail(email);
+            showNotification('Password reset email sent', 'success');
+            closeModal('resetPasswordModal');
+        } catch (error) {
+            console.error('Error sending reset email:', error);
+            showNotification('Error: ' + error.message, 'error');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    async toggleUserStatus(userId, currentStatus) {
+        const newStatus = currentStatus === 'blocked' ? 'active' : 'blocked';
+        const action = newStatus === 'active' ? 'activate' : 'block';
+        
+        if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+
+        showLoading(`${action}ing user...`);
+        
+        try {
+            await db.collection('users').doc(userId).update({
+                status: newStatus,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                [newStatus === 'blocked' ? 'blockedAt' : 'activatedAt']: firebase.firestore.FieldValue.serverTimestamp(),
+                [newStatus === 'blocked' ? 'blockedBy' : 'activatedBy']: window.authManager?.user?.uid || 'system'
+            });
+
+            showNotification(`User ${action}d successfully`, 'success');
+            this.loadUsers();
+        } catch (error) {
+            console.error('Error updating status:', error);
+            showNotification('Error updating status', 'error');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    async deleteUser(userId) {
+        if (!confirm('Are you sure you want to delete this user? This action cannot be undone!')) return;
+        
+        const secondConfirm = prompt('Type "DELETE" to confirm permanent deletion:');
+        if (secondConfirm !== 'DELETE') {
+            showNotification('Deletion cancelled', 'info');
+            return;
+        }
+
+        showLoading('Deleting user...');
+        
+        try {
+            const batch = db.batch();
+            
+            batch.delete(db.collection('users').doc(userId));
+            
+            const betsSnapshot = await db.collection('bets').where('userId', '==', userId).get();
+            betsSnapshot.forEach(doc => batch.delete(doc.ref));
+            
+            const transactionsSnapshot = await db.collection('transactions').where('userId', '==', userId).get();
+            transactionsSnapshot.forEach(doc => batch.delete(doc.ref));
+            
+            const accountsSnapshot = await db.collection('userBankAccounts').where('userId', '==', userId).get();
+            accountsSnapshot.forEach(doc => batch.delete(doc.ref));
+            
+            batch.delete(db.collection('chats').doc(userId));
+            
+            await batch.commit();
+
+            showNotification('User deleted successfully', 'success');
+            this.loadUsers();
+            
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            showNotification('Error deleting user: ' + error.message, 'error');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    async viewUserBets(userId) {
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            const userName = userDoc.data()?.fullName || 'User';
+            
+            document.getElementById('betHistoryUserName').textContent = userName;
+            const tbody = document.getElementById('betHistoryBody');
+            tbody.innerHTML = '<tr><td colspan="7" class="loading-state">Loading bets...</td></tr>';
+            openModal('betHistoryModal');
+
+            const betsSnapshot = await db.collection('bets')
+                .where('userId', '==', userId)
+                .orderBy('createdAt', 'desc')
+                .limit(50)
+                .get();
+
+            if (betsSnapshot.empty) {
+                tbody.innerHTML = '<tr><td colspan="7" class="no-data">No bets found</td></tr>';
+                return;
+            }
+
+            let html = '';
+            betsSnapshot.forEach(doc => {
+                const bet = doc.data();
+                const date = bet.createdAt?.toDate?.() || new Date();
+                const profit = bet.status === 'won' ? (bet.potentialReturn - bet.stake) : 
+                              (bet.status === 'lost' ? -bet.stake : 0);
+                
+                html += `
+                    <tr>
+                        <td>${this.escapeHtml(bet.match || 'Multi-bet')}</td>
+                        <td>${this.escapeHtml(bet.betAgainst || 'N/A')}</td>
+                        <td>TZS ${this.formatNumber(bet.stake)}</td>
+                        <td>${bet.percentage || (bet.totalPercentage * 100).toFixed(2)}%</td>
+                        <td style="color: ${profit >= 0 ? '#2ecc71' : '#e74c3c'};">
+                            ${profit >= 0 ? '+' : ''}TZS ${this.formatNumber(profit)}
+                        </td>
+                        <td><span class="status-badge ${bet.status}">${bet.status}</span></td>
+                        <td>${date.toLocaleDateString()}</td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading bets:', error);
+            document.getElementById('betHistoryBody').innerHTML = 
+                `<tr><td colspan="7" class="error-state">Error loading bets</td></tr>`;
+        }
+    }
+
+    async viewUserTransactions(userId) {
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            const userName = userDoc.data()?.fullName || 'User';
+            
+            document.getElementById('transactionHistoryUserName').textContent = userName;
+            const tbody = document.getElementById('transactionHistoryBody');
+            tbody.innerHTML = '<tr><td colspan="5" class="loading-state">Loading transactions...</td></tr>';
+            openModal('transactionHistoryModal');
+
+            const transactionsSnapshot = await db.collection('transactions')
+                .where('userId', '==', userId)
+                .orderBy('date', 'desc')
+                .limit(50)
+                .get();
+
+            if (transactionsSnapshot.empty) {
+                tbody.innerHTML = '<tr><td colspan="5" class="no-data">No transactions found</td></tr>';
+                return;
+            }
+
+            let html = '';
+            transactionsSnapshot.forEach(doc => {
+                const trans = doc.data();
+                const date = trans.date?.toDate?.() || new Date();
+                const amount = trans.type === 'withdrawal' ? -trans.amount : trans.amount;
+                
+                html += `
+                    <tr>
+                        <td><span class="badge ${trans.type}">${trans.type}</span></td>
+                        <td style="color: ${amount >= 0 ? '#2ecc71' : '#e74c3c'};">
+                            ${amount >= 0 ? '+' : ''}TZS ${this.formatNumber(Math.abs(trans.amount))}
+                        </td>
+                        <td>${this.escapeHtml(trans.description || '')}</td>
+                        <td><span class="status-badge ${trans.status || 'pending'}">${trans.status || 'pending'}</span></td>
+                        <td>${date.toLocaleDateString()}</td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading transactions:', error);
+            document.getElementById('transactionHistoryBody').innerHTML = 
+                `<tr><td colspan="5" class="error-state">Error loading transactions</td></tr>`;
+        }
+    }
+
+    // ========== BULK OPERATIONS ==========
+    
+    toggleUserSelect(userId, checked) {
+        if (checked) {
+            this.selectedUsers.add(userId);
+        } else {
+            this.selectedUsers.delete(userId);
+        }
+        this.updateSelectAllState();
+    }
+
+    toggleSelectAll(checked) {
+        const checkboxes = document.querySelectorAll('.user-select');
+        checkboxes.forEach(cb => {
+            cb.checked = checked;
+            if (checked) {
+                this.selectedUsers.add(cb.value);
+            } else {
+                this.selectedUsers.delete(cb.value);
+            }
+        });
+    }
+
+    updateSelectAllState() {
+        const selectAll = document.getElementById('selectAllUsers');
+        const checkboxes = document.querySelectorAll('.user-select');
+        if (selectAll && checkboxes.length > 0) {
+            selectAll.checked = checkboxes.length === this.selectedUsers.size;
+            selectAll.indeterminate = this.selectedUsers.size > 0 && this.selectedUsers.size < checkboxes.length;
+        }
+    }
+
+    // ========== FILTERS ==========
+    
+    filterUsers() {
+        this.currentPage = 1;
+        this.loadUsers();
+    }
+
+    resetFilters() {
+        document.getElementById('userSearchInput').value = '';
+        document.getElementById('userRoleFilter').value = 'all';
+        document.getElementById('userStatusFilter').value = 'all';
+        this.searchTerm = '';
+        this.roleFilter = 'all';
+        this.statusFilter = 'all';
+        this.currentPage = 1;
+        this.loadUsers();
+    }
+
+    // ========== EXPORT ==========
+    
+    exportUsers() {
+        if (this.users.length === 0) {
+            showNotification('No users to export', 'warning');
+            return;
+        }
+
+        let csv = 'Full Name,Username,Email,Phone,Country,Balance,Role,Status,Joined,Referral Count\n';
+        
+        this.users.forEach(user => {
+            const joinDate = user.createdAt?.toDate?.() || new Date();
+            csv += `"${user.fullName || ''}","${user.username || ''}","${user.email || ''}","${user.phone || ''}","${user.country || ''}",${user.balance || 0},"${user.role || 'user'}","${user.status || 'active'}","${joinDate.toISOString()}",${user.referralCount || 0}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        showNotification('Users exported successfully', 'success');
+    }
+
+    // ========== STATS & BADGES ==========
+    
+    async updateStats() {
+        try {
+            const snapshot = await db.collection('users').get();
+            const users = snapshot.docs.map(d => d.data());
+            
+            const total = users.length;
+            const active = users.filter(u => u.status !== 'blocked').length;
+            const newToday = users.filter(u => {
+                const created = u.createdAt?.toDate?.() || new Date();
+                return created > new Date(Date.now() - 86400000);
+            }).length;
+            
+            document.getElementById('statTotalUsers').textContent = total;
+            document.getElementById('statActiveUsers').textContent = active;
+            document.getElementById('statNewUsers').textContent = `+${newToday} today`;
+            document.getElementById('statActiveRate').textContent = `${((active / total) * 100).toFixed(1)}%`;
+            
+        } catch (error) {
+            console.error('Error updating stats:', error);
+        }
+    }
+
+    async updateCountBadges() {
+        try {
+            const snapshot = await db.collection('users').get();
+            const users = snapshot.docs.map(d => d.data());
+            
+            const total = users.length;
+            const active = users.filter(u => u.status !== 'blocked').length;
+            const blocked = users.filter(u => u.status === 'blocked').length;
+            const vip = users.filter(u => u.role === 'vip' || this.getVIPTier(u.balance) !== 'regular').length;
+            
+            document.getElementById('totalUsersCount').textContent = total;
+            document.getElementById('activeUsersCount').textContent = active;
+            document.getElementById('blockedUsersCount').textContent = blocked;
+            document.getElementById('vipUsersCount').textContent = vip;
+            
+        } catch (error) {
+            console.error('Error updating count badges:', error);
+        }
+    }
+
+    // ========== UTILITY METHODS ==========
+    
+    getVIPTier(balance) {
+        if (balance >= 1000000) return 'vvip';
+        if (balance >= 500000) return 'vip3';
+        if (balance >= 100000) return 'vip2';
+        if (balance >= 50000) return 'vip1';
+        return 'regular';
+    }
+
+    formatNumber(num) {
+        return num?.toLocaleString() || '0';
+    }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+}
+
+// ==================== ADD NEW USER ====================
+
+async function addNewUser(e) {
+    e.preventDefault();
+    
+    const formData = {
+        fullName: document.getElementById('addFullName').value,
+        username: document.getElementById('addUsername').value,
+        email: document.getElementById('addEmail').value,
+        password: document.getElementById('addPassword').value,
+        phone: document.getElementById('addPhone').value,
+        country: document.getElementById('addCountry').value,
+        favoriteTeam: document.getElementById('addFavoriteTeam').value,
+        role: document.getElementById('addRole').value,
+        initialBalance: parseFloat(document.getElementById('addBalance').value) || 0
+    };
+
+    if (!formData.fullName || !formData.email || !formData.password) {
+        showNotification('Please fill all required fields', 'error');
+        return;
+    }
+
+    if (formData.password.length < 6) {
+        showNotification('Password must be at least 6 characters', 'error');
+        return;
+    }
+
+    showLoading('Creating user...');
+    
+    try {
+        const userCredential = await auth.createUserWithEmailAndPassword(formData.email, formData.password);
+        const user = userCredential.user;
+        
+        const referralCode = generateReferralCode(formData.fullName);
+        
+        await db.collection('users').doc(user.uid).set({
+            uid: user.uid,
+            fullName: formData.fullName,
+            username: formData.username || formData.email.split('@')[0],
+            email: formData.email,
+            phone: formData.phone || '',
+            country: formData.country || '',
+            favoriteTeam: formData.favoriteTeam || '',
+            role: formData.role,
+            balance: formData.initialBalance,
+            status: 'active',
+            referralCode: referralCode,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
+            createdBy: window.authManager?.user?.uid || 'system'
+        });
+
+        showNotification('User created successfully', 'success');
+        closeModal('addUserModal');
+        document.getElementById('addUserForm').reset();
+        
+        if (userManagement) {
+            userManagement.loadUsers();
+        }
+        
+    } catch (error) {
+        console.error('Error creating user:', error);
+        let message = error.message;
+        if (error.code === 'auth/email-already-in-use') {
+            message = 'Email already in use';
+        } else if (error.code === 'auth/weak-password') {
+            message = 'Password is too weak';
+        }
+        showNotification('Error: ' + message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+function generateReferralCode(fullName) {
+    let namePart = fullName.split(' ')[0].toUpperCase().substring(0, 3);
+    if (namePart.length < 3) namePart = namePart.padEnd(3, 'X');
+    const randomDigits = Math.floor(1000 + Math.random() * 9000);
+    return `${namePart}${randomDigits}`;
+}
+
+function openAddUserModal() {
+    const countrySelect = document.getElementById('addCountry');
+    if (countrySelect && typeof countries !== 'undefined') {
+        countrySelect.innerHTML = '<option value="">Select Country</option>';
+        countries.forEach(c => {
+            countrySelect.innerHTML += `<option value="${c.code}">${c.name}</option>`;
+        });
+    }
+    
+    const teamSelect = document.getElementById('addFavoriteTeam');
+    if (teamSelect && typeof footballTeams !== 'undefined') {
+        teamSelect.innerHTML = '<option value="">Select Team</option>';
+        footballTeams.forEach(t => {
+            teamSelect.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+        });
+    }
+    
+    document.getElementById('addUserForm').reset();
+    openModal('addUserModal');
+}
+
+// ==================== GLOBAL FUNCTIONS ====================
+
+window.confirmResetPassword = function() {
+    if (userManagement) {
+        userManagement.confirmResetPassword();
+    }
+};
+
+window.adjustUserBalance = function(e) {
+    if (userManagement) {
+        userManagement.adjustUserBalance(e);
+    }
+};
+
+window.saveUserEdit = function(e) {
+    if (userManagement) {
+        userManagement.saveUserEdit(e);
+    }
+};
+
+// ==================== INITIALIZATION ====================
+
+let userManagement = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const checkAuth = setInterval(() => {
+        if (window.authManager?.userData) {
+            clearInterval(checkAuth);
+            
+            const userData = window.authManager.userData;
+            if (userData.role === 'admin' || userData.role === 'superadmin') {
+                userManagement = new UserManagementSystem();
+                window.userManagement = userManagement;
+                console.log('✅ User Management System initialized');
+            }
+        }
+    }, 500);
+});
+
+// Make functions globally available
+window.openAddUserModal = openAddUserModal;
+window.addNewUser = addNewUser;
+window.filterUsers = () => userManagement?.filterUsers();
+window.resetUserFilters = () => userManagement?.resetFilters();
+window.exportUsers = () => userManagement?.exportUsers();

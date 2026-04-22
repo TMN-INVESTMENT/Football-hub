@@ -1048,319 +1048,739 @@
     </nav>
 </div>
 
-    <!-- ==================== ADMIN DASHBOARD ==================== -->
-    <div id="admin-dashboard" class="dashboard" style="display: none;">
-        <!-- Top Navigation -->
-        <nav class="top-nav">
-            <div class="nav-brand">
-                <i class="fas fa-futbol"></i>
-                <h2>Football<span>Hub</span> Admin</h2>
+<!-- ==================== ADMIN DASHBOARD ==================== -->
+<div id="admin-dashboard" class="dashboard" style="display: none;">
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <i class="fas fa-futbol"></i>
+            <h2>Football<span>Hub</span> Admin</h2>
+        </div>
+        
+        <div class="user-menu">
+            <div class="user-info">
+                <div class="user-name" id="adminUserName">Loading...</div>
+                <div class="user-role">
+                    <span id="adminRoleBadge" class="role-badge badge-admin">Admin</span>
+                </div>
+            </div>
+            <div class="user-avatar" id="adminAvatar">A</div>
+            <button class="logout-btn" id="adminLogoutBtn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </nav>
+
+<!-- Admin Sidebar -->
+<div class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-header">
+        <div class="admin-profile">
+            <div class="admin-avatar" id="sidebarAdminAvatar">A</div>
+            <div class="admin-info">
+                <h4 id="sidebarAdminName">Admin</h4>
+                <span id="sidebarAdminRole">Administrator</span>
+            </div>
+        </div>
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    </div>
+    
+    <div class="sidebar-search">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search menu..." id="sidebarSearch">
+    </div>
+    
+    <div class="sidebar-menu">
+        <!-- Dashboard - Active by default -->
+        <div class="sidebar-item active" data-section="adminDashboard">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+            <span class="sidebar-badge" id="dashboardBadge">0</span>
+        </div>
+        
+        <div class="sidebar-divider"></div>
+        
+        <!-- ===== USER MANAGEMENT ===== -->
+        <div class="sidebar-section-title">
+            <span>USER MANAGEMENT</span>
+        </div>
+        
+        <div class="sidebar-item" data-section="allUsers">
+            <i class="fas fa-user-friends"></i>
+            <span>All Users</span>
+            <span class="count-badge" id="totalUsersCount">0</span>
+        </div>
+        
+        <div class="sidebar-item" data-section="activeUsers">
+            <i class="fas fa-user-check"></i>
+            <span>Active Users</span>
+            <span class="count-badge success" id="activeUsersCount">0</span>
+        </div>
+        
+        <div class="sidebar-item" data-section="blockedUsers">
+            <i class="fas fa-user-lock"></i>
+            <span>Blocked Users</span>
+            <span class="count-badge danger" id="blockedUsersCount">0</span>
+        </div>
+        
+        <div class="sidebar-item" data-section="vipUsers">
+            <i class="fas fa-crown"></i>
+            <span>VIP Users</span>
+            <span class="count-badge vip" id="vipUsersCount">0</span>
+        </div>
+        
+        <div class="sidebar-item" onclick="openAddUserModal()">
+            <i class="fas fa-user-plus"></i>
+            <span>Add New User</span>
+        </div>
+        
+        <div class="sidebar-divider"></div>
+        
+        <!-- ===== PLATFORM ===== -->
+        <div class="sidebar-section-title">
+            <span>PLATFORM</span>
+        </div>
+        
+        <div class="sidebar-item" data-section="adminChatSection">
+            <i class="fas fa-comments"></i>
+            <span>Support Chats</span>
+            <span class="count-badge danger" id="unreadChatsCount">0</span>
+        </div>
+        
+        <div class="sidebar-item" data-section="adminTransactionApproval">
+            <i class="fas fa-check-circle"></i>
+            <span>Approvals</span>
+            <span class="sidebar-badge" id="pendingApprovalBadge">0</span>
+        </div>
+        
+        <div class="sidebar-item" data-section="adminmatchesSection">
+            <i class="fas fa-futbol"></i>
+            <span>Matches</span>
+        </div>
+        
+        <div class="sidebar-item" data-section="adminBankingSettings">
+            <i class="fas fa-university"></i>
+            <span>Banking Settings</span>
+        </div>
+        
+        <div class="sidebar-item" onclick="SocialLinksHelper.loadAdminTable(); document.getElementById('adminSocialLinksModal').classList.add('active'); return false;">
+            <i class="fab fa-superpowers"></i>
+            <span>Social Links</span>
+        </div>
+        
+        <div class="sidebar-item" data-section="announcementAdminSection">
+            <i class="fas fa-bullhorn"></i>
+            <span>Announcements</span>
+        </div>
+        
+        <div class="sidebar-item" data-section="adminReports">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+        </div>
+        
+        <div class="sidebar-divider"></div>
+        
+        <!-- ===== SETTINGS ===== -->
+        <div class="sidebar-item" data-section="settings">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </div>
+    </div>
+    
+    <div class="sidebar-footer">
+        <div class="sidebar-item" id="adminLogoutSidebar">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </div>
+    </div>
+</div>
+
+    <!-- Main Content Area -->
+    <div class="admin-main-content">
+        
+        <!-- ===== DASHBOARD SECTION (New) ===== -->
+        <div class="content-section active" id="adminDashboard">
+            <div class="page-header">
+                <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+                <p class="page-subtitle">Welcome back, <span id="adminWelcomeName">Admin</span></p>
             </div>
             
-            <div class="user-menu">
-                <div class="user-info">
-                    <div class="user-name" id="adminUserName">Loading...</div>
-                    <div class="user-role">
-                        <span id="adminRoleBadge" class="role-badge badge-admin">Admin</span>
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon users">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Users</span>
+                        <span class="stat-value" id="statTotalUsers">0</span>
+                        <span class="stat-change positive" id="statNewUsers">+0 today</span>
                     </div>
                 </div>
-                <div class="user-avatar" id="adminAvatar">A</div>
-                <button class="logout-btn" id="adminLogoutBtn">
-                    <i class="fas fa-sign-out-alt"></i> Logout
+                
+                <div class="stat-card">
+                    <div class="stat-icon active">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Active Users</span>
+                        <span class="stat-value" id="statActiveUsers">0</span>
+                        <span class="stat-change" id="statActiveRate">0%</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon deposits">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Deposits</span>
+                        <span class="stat-value" id="statTotalDeposits">TZS 0</span>
+                        <span class="stat-change positive" id="statTodayDeposits">+0 today</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon withdrawals">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Withdrawals</span>
+                        <span class="stat-value" id="statTotalWithdrawals">TZS 0</span>
+                        <span class="stat-change negative" id="statTodayWithdrawals">-0 today</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card highlight">
+                    <div class="stat-icon profit">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Company Profit</span>
+                        <span class="stat-value" id="statCompanyProfit">TZS 0</span>
+                        <span class="stat-change" id="statProfitMargin">0% margin</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon pending">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Pending Approvals</span>
+                        <span class="stat-value" id="statPendingApprovals">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-line"></i> Revenue Overview</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-users"></i> User Growth</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="userGrowthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="activity-row">
+                <div class="activity-card">
+                    <div class="activity-header">
+                        <h3><i class="fas fa-history"></i> Recent Transactions</h3>
+                        <a href="#" class="view-all" data-section="adminTransactionApproval">View All</a>
+                    </div>
+                    <div class="activity-list" id="recentTransactions">
+                        <div class="loading-state">Loading...</div>
+                    </div>
+                </div>
+                
+                <div class="activity-card">
+                    <div class="activity-header">
+                        <h3><i class="fas fa-user-plus"></i> Recent Users</h3>
+                        <a href="#" class="view-all" data-section="allUsers">View All</a>
+                    </div>
+                    <div class="activity-list" id="recentUsers">
+                        <div class="loading-state">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== ORIGINAL ADMIN CHAT SECTION ===== -->
+        <div id="adminChatSection" class="content-section admin-chat-section">
+            <div class="dashboard-header">
+                <div>
+                    <h2><i class="fas fa-user-comments"></i> Admin Support Conversations</h2>
+                    <p>Manage users and platform content</p>
+                </div>
+                <button class="btn btn-primary" id="createUserBtn">
+                    <i class="fas fa-user-plus"></i> Add New User
                 </button>
             </div>
-        </nav>
-
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Admin Dashboard -->
-            
-            <!-- Admin Chat Section -->
-<div id="adminChatSection" class="content-section admin-chat-section active">
-    <div class="dashboard-header">
-                    <div>
-                        <h2><i class="fas fa-user-comments"></i> Admin Support Conversations</h2>
-                        <p>Manage users and platform content</p>
+            <div class="admin-chat-container">
+                <!-- Sidebar: list of all chats -->
+                <div class="chat-sidebar">
+                    <div class="sidebar-header">
+                        <h3><i class="fas fa-comments"></i> Active Chats</h3>
+                        <span class="chat-count" id="activeChatCount">0</span>
                     </div>
-                    <button class="btn btn-primary" id="createUserBtn">
-                        <i class="fas fa-user-plus"></i> Add New User
+                    <div id="adminChatList" class="chat-list">
+                        <!-- Dynamic chat items will be inserted here -->
+                        <div class="loading-chats">
+                            <i class="fas fa-spinner fa-spin"></i> Loading conversations...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main chat area -->
+                <div class="chat-main">
+                    <div class="chat-header" id="chatHeader">
+                        <div class="selected-user-info">
+                            <i class="fas fa-user-circle"></i>
+                            <span id="selectedUserName">Select a user to start chatting</span>
+                        </div>
+                    </div>
+
+                    <div id="adminChatMessages" class="chat-messages">
+                        <!-- Messages will appear here -->
+                        <div class="no-chat-selected">
+                            <i class="fas fa-comment-dots"></i>
+                            <p>Choose a conversation from the sidebar</p>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-area">
+                        <input type="text" id="adminChatInput" placeholder="Type your reply..." disabled>
+                        <button id="adminChatSend" class="send-btn" disabled>
+                            <i class="fas fa-paper-plane"></i> Send
+                        </button>
+                    </div>
+
+                    <!-- Quick responses (optional) -->
+                    <div class="quick-responses">
+                        <button class="quick-response" data-response="Thank you for your message. We'll get back to you shortly.">Standard reply</button>
+                        <button class="quick-response" data-response="Your issue has been escalated to the relevant team.">Escalate</button>
+                        <button class="quick-response" data-response="Please provide more details.">Need more info</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Make sure these sections exist in your admin-main-content -->
+
+
+<!-- ===== ALL USERS SECTION ===== -->
+<div class="content-section" id="allUsers">
+    <div class="page-header">
+        <h1><i class="fas fa-users"></i> All Users</h1>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="openAddUserModal()">
+                <i class="fas fa-user-plus"></i> Add User
+            </button>
+            <button class="btn btn-secondary" onclick="exportUsers()">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+    </div>
+    
+    <div class="filter-bar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="userSearchInput" placeholder="Search by name, email, or phone...">
+        </div>
+        <select id="userRoleFilter" class="filter-select">
+            <option value="all">All Roles</option>
+            <option value="user">Users</option>
+            <option value="vip">VIP Users</option>
+            <option value="admin">Admins</option>
+        </select>
+        <select id="userStatusFilter" class="filter-select">
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="blocked">Blocked</option>
+        </select>
+        <button class="btn btn-outline" onclick="filterUsers()">
+            <i class="fas fa-filter"></i> Filter
+        </button>
+        <button class="btn btn-outline" onclick="resetUserFilters()">
+            <i class="fas fa-times"></i> Reset
+        </button>
+    </div>
+    
+    <div class="table-container">
+        <table class="data-table" id="usersTable">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAllUsers"></th>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Balance</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="usersTableBody">
+                <tr><td colspan="9" class="loading-state">Loading users...</td></tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="pagination-container" id="usersPagination"></div>
+</div>
+
+<!-- ===== ACTIVE USERS SECTION ===== -->
+<div class="content-section" id="activeUsers">
+    <div class="page-header">
+        <h1><i class="fas fa-user-check"></i> Active Users</h1>
+    </div>
+    
+    <div class="filter-bar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="activeUserSearchInput" placeholder="Search active users...">
+        </div>
+        <button class="btn btn-outline" onclick="filterActiveUsers()">
+            <i class="fas fa-filter"></i> Filter
+        </button>
+    </div>
+    
+    <div class="table-container">
+        <table class="data-table" id="activeUsersTable">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Balance</th>
+                    <th>Joined</th>
+                    <th>Last Active</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="activeUsersTableBody">
+                <tr><td colspan="6" class="loading-state">Loading active users...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ===== BLOCKED USERS SECTION ===== -->
+<div class="content-section" id="blockedUsers">
+    <div class="page-header">
+        <h1><i class="fas fa-user-lock"></i> Blocked Users</h1>
+    </div>
+    
+    <div class="filter-bar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="blockedUserSearchInput" placeholder="Search blocked users...">
+        </div>
+        <button class="btn btn-outline" onclick="filterBlockedUsers()">
+            <i class="fas fa-filter"></i> Filter
+        </button>
+    </div>
+    
+    <div class="table-container">
+        <table class="data-table" id="blockedUsersTable">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Balance</th>
+                    <th>Joined</th>
+                    <th>Blocked Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="blockedUsersTableBody">
+                <tr><td colspan="6" class="loading-state">Loading blocked users...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ===== VIP USERS SECTION ===== -->
+<div class="content-section" id="vipUsers">
+    <div class="page-header">
+        <h1><i class="fas fa-crown"></i> VIP Users</h1>
+    </div>
+    
+    <div class="filter-bar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="vipUserSearchInput" placeholder="Search VIP users...">
+        </div>
+        <select id="vipLevelFilter" class="filter-select">
+            <option value="all">All VIP Levels</option>
+            <option value="vip1">VIP 1</option>
+            <option value="vip2">VIP 2</option>
+            <option value="vip3">VIP 3</option>
+            <option value="vvip">VVIP</option>
+        </select>
+        <button class="btn btn-outline" onclick="filterVipUsers()">
+            <i class="fas fa-filter"></i> Filter
+        </button>
+    </div>
+    
+    <div class="table-container">
+        <table class="data-table" id="vipUsersTable">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Balance</th>
+                    <th>VIP Level</th>
+                    <th>Total Bets</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="vipUsersTableBody">
+                <tr><td colspan="6" class="loading-state">Loading VIP users...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+            
+        <!-- ===== ORIGINAL ADMIN BANKING MANAGEMENT SECTION ===== -->
+        <div id="adminTransactionApproval" class="content-section">
+            <div class="admin-banking-container">
+                <div class="admin-tabs">
+                    <button class="admin-tab" onclick="switchAdminBankingTab('approvals')">
+                        <i class="fas fa-check-circle"></i> Approvals
+                        <span id="pendingApprovalBadge" class="badge">0</span>
+                    </button>
+                    <button class="admin-tab" onclick="switchAdminBankingTab('history')">
+                        <i class="fas fa-history"></i> Transaction History
                     </button>
                 </div>
-    <div class="admin-chat-container">
-        <!-- Sidebar: list of all chats -->
-        <div class="chat-sidebar">
-            <div class="sidebar-header">
-                <h3><i class="fas fa-comments"></i> Active Chats</h3>
-                <span class="chat-count" id="activeChatCount">0</span>
-            </div>
-            <div id="adminChatList" class="chat-list">
-                <!-- Dynamic chat items will be inserted here -->
-                <div class="loading-chats">
-                    <i class="fas fa-spinner fa-spin"></i> Loading conversations...
-                </div>
-            </div>
-        </div>
-
-        <!-- Main chat area -->
-        <div class="chat-main">
-            <div class="chat-header" id="chatHeader">
-                <div class="selected-user-info">
-                    <i class="fas fa-user-circle"></i>
-                    <span id="selectedUserName">Select a user to start chatting</span>
-                </div>
-            </div>
-
-            <div id="adminChatMessages" class="chat-messages">
-                <!-- Messages will appear here -->
-                <div class="no-chat-selected">
-                    <i class="fas fa-comment-dots"></i>
-                    <p>Choose a conversation from the sidebar</p>
-                </div>
-            </div>
-
-            <div class="chat-input-area">
-                <input type="text" id="adminChatInput" placeholder="Type your reply..." disabled>
-                <button id="adminChatSend" class="send-btn" disabled>
-                    <i class="fas fa-paper-plane"></i> Send
-                </button>
-            </div>
-
-            <!-- Quick responses (optional) -->
-            <div class="quick-responses">
-                <button class="quick-response" data-response="Thank you for your message. We'll get back to you shortly.">Standard reply</button>
-                <button class="quick-response" data-response="Your issue has been escalated to the relevant team.">Escalate</button>
-                <button class="quick-response" data-response="Please provide more details.">Need more info</button>
-            </div>
-        </div>
-    </div>
-</div>
-            
-            <!-- Admin Banking Management Section -->
-<div id="adminTransactionApproval" class="content-section">
-    <div class="admin-banking-container">
-        <div class="admin-tabs">
-            <button class="admin-tab" onclick="switchAdminBankingTab('approvals')">
-                <i class="fas fa-check-circle"></i> Approvals
-                <span id="pendingApprovalBadge" class="badge">0</span>
-            </button>
-            <button class="admin-tab" onclick="switchAdminBankingTab('history')">
-                <i class="fas fa-history"></i> Transaction History
-            </button>
-        </div>
-        
-        <!-- Approvals Tab -->
-        <div id="approvalsTab" class="admin-tab-content active">
-            <div class="approval-filters">
-                <select id="approvalFilter" class="form-input" onchange="loadPendingApprovals()">
-                    <option value="pending">Pending</option>
-                    <option value="approved">Approved</option>
-                    <option value="rejected">Rejected</option>
-                </select>
-            </div>
-            
-            <div id="approvalsList" class="approvals-list">
-                <!-- Approvals will be loaded here -->
-            </div>
-        </div>
-        
-        <!-- Admin Transaction History -->
-        <div id="adminHistoryTab" class="admin-tab-content">
-            <div class="admin-history-filters">
-                <input type="text" id="searchUser" class="form-input" placeholder="Search by User ID or Email">
-                <select id="historyType" class="form-input" onchange="loadAdminTransactionHistory()">
-                    <option value="all">All Types</option>
-                    <option value="deposit">Deposits</option>
-                    <option value="withdrawal">Withdrawals</option>
-                    <option value="fee">Fees</option>
-                </select>
-            </div>
-            <div id="adminTransactionHistory" class="transaction-table-container"></div>
-        </div>
-    </div>
-</div>
-            
-            <!-- Admin Banking Section -->
-    <div id="adminBankingSettings" class="content-section">
-    <h2 style="margin-bottom: 2rem; color: var(--primary);">
-        <i class="fas fa-cog"></i> Banking Administration
-    </h2>
-    <div class="banking-settings-container">
-        <!-- Header with Stats -->
-        <div class="settings-header">
-            <h2><i class="fas fa-university"></i> Bank Account Management</h2>
-            <div class="header-stats">
-                <div class="stat-item">
-                    <span class="stat-label">Total Accounts</span>
-                    <span class="stat-value" id="totalAccountsCount">0</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Active</span>
-                    <span class="stat-value" id="activeAccountsCount">0</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Add Account Form Section -->
-        <div class="add-account-section">
-            <h3><i class="fas fa-plus-circle"></i> Add New Account</h3>
-            <form id="addAccountForm" class="add-account-form">
-                <input type="hidden" id="accountId" value="">
-                <input type="hidden" id="formAction" value="add">
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="accountType">Account Type *</label>
-                        <select id="accountType" class="form-input" required onchange="bankAccountManager.onAccountTypeChange()">
-                            <option value="">Select Type</option>
-                            <option value="mobile">Mobile Money</option>
-                            <option value="bank">Bank Account</option>
+                <!-- Approvals Tab -->
+                <div id="approvalsTab" class="admin-tab-content active">
+                    <div class="approval-filters">
+                        <select id="approvalFilter" class="form-input" onchange="loadPendingApprovals()">
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
                         </select>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="accountProvider">Provider *</label>
-                        <select id="accountProvider" class="form-input" required>
-                            <option value="">Select Provider</option>
-                        </select>
+                    <div id="approvalsList" class="approvals-list">
+                        <!-- Approvals will be loaded here -->
                     </div>
                 </div>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="accountName">Account Name *</label>
-                        <input type="text" id="accountName" class="form-input" 
-                               placeholder="e.g., CRDB Main Account" required>
+                <!-- Admin Transaction History -->
+                <div id="adminHistoryTab" class="admin-tab-content">
+                    <div class="admin-history-filters">
+                        <input type="text" id="searchUser" class="form-input" placeholder="Search by User ID or Email">
+                        <select id="historyType" class="form-input" onchange="loadAdminTransactionHistory()">
+                            <option value="all">All Types</option>
+                            <option value="deposit">Deposits</option>
+                            <option value="withdrawal">Withdrawals</option>
+                            <option value="fee">Fees</option>
+                        </select>
+                    </div>
+                    <div id="adminTransactionHistory" class="transaction-table-container"></div>
+                </div>
+            </div>
+        </div>
+            
+        <!-- ===== ORIGINAL ADMIN BANKING SECTION ===== -->
+        <div id="adminBankingSettings" class="content-section">
+            <h2 style="margin-bottom: 2rem; color: var(--primary);">
+                <i class="fas fa-cog"></i> Banking Administration
+            </h2>
+            <div class="banking-settings-container">
+                <!-- Header with Stats -->
+                <div class="settings-header">
+                    <h2><i class="fas fa-university"></i> Bank Account Management</h2>
+                    <div class="header-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Accounts</span>
+                            <span class="stat-value" id="totalAccountsCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Active</span>
+                            <span class="stat-value" id="activeAccountsCount">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Account Form Section -->
+                <div class="add-account-section">
+                    <h3><i class="fas fa-plus-circle"></i> Add New Account</h3>
+                    <form id="addAccountForm" class="add-account-form">
+                        <input type="hidden" id="accountId" value="">
+                        <input type="hidden" id="formAction" value="add">
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="accountType">Account Type *</label>
+                                <select id="accountType" class="form-input" required onchange="bankAccountManager.onAccountTypeChange()">
+                                    <option value="">Select Type</option>
+                                    <option value="mobile">Mobile Money</option>
+                                    <option value="bank">Bank Account</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="accountProvider">Provider *</label>
+                                <select id="accountProvider" class="form-input" required>
+                                    <option value="">Select Provider</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="accountName">Account Name *</label>
+                                <input type="text" id="accountName" class="form-input" 
+                                       placeholder="e.g., CRDB Main Account" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="accountNumber">Account Number *</label>
+                                <input type="text" id="accountNumber" class="form-input" 
+                                       placeholder="e.g., 1234567890" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="accountInstructions">Payment Instructions</label>
+                            <textarea id="accountInstructions" class="form-input" rows="2" 
+                                      placeholder="Instructions for users (e.g., Send to this number)"></textarea>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="fas fa-save"></i> Save Account
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="bankAccountManager.resetForm()">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Accounts List Section -->
+                <div class="accounts-list-section">
+                    <div class="section-tabs">
+                        <button class="section-tab active" onclick="bankAccountManager.switchAccountTab('mobile')">
+                            <i class="fas fa-mobile-alt"></i> Mobile Money Accounts
+                            <span class="count" id="mobileCount">0</span>
+                        </button>
+                        <button class="section-tab" onclick="bankAccountManager.switchAccountTab('bank')">
+                            <i class="fas fa-university"></i> Bank Accounts
+                            <span class="count" id="bankCount">0</span>
+                        </button>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="accountNumber">Account Number *</label>
-                        <input type="text" id="accountNumber" class="form-input" 
-                               placeholder="e.g., 1234567890" required>
+                    <!-- Mobile Accounts Tab -->
+                    <div id="mobileAccountsTab" class="account-tab active">
+                        <div id="mobileAccountsList" class="accounts-grid">
+                            <div class="loading-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>Loading accounts...</p>
+                            </div>
+                        </div>
                     </div>
+                    
+                    <!-- Bank Accounts Tab -->
+                    <div id="bankAccountsTab" class="account-tab">
+                        <div id="bankAccountsList" class="accounts-grid">
+                            <div class="loading-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>Loading accounts...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Push Notification Section -->
+            <div id="pushNotificationSection" style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                <h3 style="color: var(--accent-color); margin-bottom: 1rem;">
+                    <i class="fas fa-bell"></i> Send Push Notification
+                </h3>
+                
+                <div class="form-group">
+                    <label>Notification Type</label>
+                    <select id="pushType" class="form-input">
+                        <option value="info">General Info</option>
+                        <option value="match">⚽ Match Update</option>
+                        <option value="announcement">📢 Announcement</option>
+                        <option value="message">💬 Admin Message</option>
+                        <option value="promo">🎁 Promotion</option>
+                    </select>
                 </div>
                 
                 <div class="form-group">
-                    <label for="accountInstructions">Payment Instructions</label>
-                    <textarea id="accountInstructions" class="form-input" rows="2" 
-                              placeholder="Instructions for users (e.g., Send to this number)"></textarea>
+                    <label>Title</label>
+                    <input type="text" id="pushTitle" class="form-input" placeholder="e.g., New Match Added">
                 </div>
                 
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" id="submitBtn">
-                        <i class="fas fa-save"></i> Save Account
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="bankAccountManager.resetForm()">
-                        <i class="fas fa-undo"></i> Reset
-                    </button>
+                <div class="form-group">
+                    <label>Message</label>
+                    <textarea id="pushMessage" class="form-input" rows="3" placeholder="Enter notification message..."></textarea>
                 </div>
-            </form>
-        </div>
-
-        <!-- Accounts List Section -->
-        <div class="accounts-list-section">
-            <div class="section-tabs">
-                <button class="section-tab active" onclick="bankAccountManager.switchAccountTab('mobile')">
-                    <i class="fas fa-mobile-alt"></i> Mobile Money Accounts
-                    <span class="count" id="mobileCount">0</span>
+                
+                <div class="form-group">
+                    <label>Target Audience</label>
+                    <select id="pushTarget" class="form-input">
+                        <option value="all">All Users</option>
+                        <option value="active">Active Users (last 7 days)</option>
+                        <option value="vip">VIP Users Only</option>
+                        <option value="single">Single User</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="singleUserField" style="display: none;">
+                    <label>User ID</label>
+                    <input type="text" id="pushUserId" class="form-input" placeholder="Enter user ID">
+                </div>
+                
+                <div class="form-group">
+                    <label>Additional Data (JSON)</label>
+                    <textarea id="pushData" class="form-input" rows="2" placeholder='{"matchId": "123", "url": "/matches"}'></textarea>
+                </div>
+                
+                <button class="btn btn-primary" onclick="sendPushNotification()">
+                    <i class="fas fa-paper-plane"></i> Send Notification
                 </button>
-                <button class="section-tab" onclick="bankAccountManager.switchAccountTab('bank')">
-                    <i class="fas fa-university"></i> Bank Accounts
-                    <span class="count" id="bankCount">0</span>
-                </button>
-            </div>
-            
-            <!-- Mobile Accounts Tab -->
-            <div id="mobileAccountsTab" class="account-tab active">
-                <div id="mobileAccountsList" class="accounts-grid">
-                    <!-- Mobile accounts will be loaded here -->
-                    <div class="loading-state">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <p>Loading accounts...</p>
+                
+                <div id="pushStats" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(3,1fr); gap: 0.5rem;">
+                    <div style="background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 5px; text-align: center;">
+                        <div style="font-size: 1.5rem; color: var(--accent-color);" id="totalDevices">0</div>
+                        <div style="font-size: 0.8rem; color: var(--gray-color);">Registered Devices</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 5px; text-align: center;">
+                        <div style="font-size: 1.5rem; color: #2ecc71;" id="androidDevices">0</div>
+                        <div style="font-size: 0.8rem; color: var(--gray-color);">Android</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 5px; text-align: center;">
+                        <div style="font-size: 1.5rem; color: #3498db;" id="iosDevices">0</div>
+                        <div style="font-size: 0.8rem; color: var(--gray-color);">iOS</div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Bank Accounts Tab -->
-            <div id="bankAccountsTab" class="account-tab">
-                <div id="bankAccountsList" class="accounts-grid">
-                    <!-- Bank accounts will be loaded here -->
-                    <div class="loading-state">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <p>Loading accounts...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Add to your admin banking section or create a new notifications tab -->
-<div id="pushNotificationSection" style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 10px;">
-    <h3 style="color: var(--accent-color); margin-bottom: 1rem;">
-        <i class="fas fa-bell"></i> Send Push Notification
-    </h3>
-    
-    <div class="form-group">
-        <label>Notification Type</label>
-        <select id="pushType" class="form-input">
-            <option value="info">General Info</option>
-            <option value="match">⚽ Match Update</option>
-            <option value="announcement">📢 Announcement</option>
-            <option value="message">💬 Admin Message</option>
-            <option value="promo">🎁 Promotion</option>
-        </select>
-    </div>
-    
-    <div class="form-group">
-        <label>Title</label>
-        <input type="text" id="pushTitle" class="form-input" placeholder="e.g., New Match Added">
-    </div>
-    
-    <div class="form-group">
-        <label>Message</label>
-        <textarea id="pushMessage" class="form-input" rows="3" placeholder="Enter notification message..."></textarea>
-    </div>
-    
-    <div class="form-group">
-        <label>Target Audience</label>
-        <select id="pushTarget" class="form-input">
-            <option value="all">All Users</option>
-            <option value="active">Active Users (last 7 days)</option>
-            <option value="vip">VIP Users Only</option>
-            <option value="single">Single User</option>
-        </select>
-    </div>
-    
-    <div class="form-group" id="singleUserField" style="display: none;">
-        <label>User ID</label>
-        <input type="text" id="pushUserId" class="form-input" placeholder="Enter user ID">
-    </div>
-    
-    <div class="form-group">
-        <label>Additional Data (JSON)</label>
-        <textarea id="pushData" class="form-input" rows="2" placeholder='{"matchId": "123", "url": "/matches"}'></textarea>
-    </div>
-    
-    <button class="btn btn-primary" onclick="sendPushNotification()">
-        <i class="fas fa-paper-plane"></i> Send Notification
-    </button>
-    
-    <div id="pushStats" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(3,1fr); gap: 0.5rem;">
-        <div style="background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 5px; text-align: center;">
-            <div style="font-size: 1.5rem; color: var(--accent-color);" id="totalDevices">0</div>
-            <div style="font-size: 0.8rem; color: var(--gray-color);">Registered Devices</div>
-        </div>
-        <div style="background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 5px; text-align: center;">
-            <div style="font-size: 1.5rem; color: #2ecc71;" id="androidDevices">0</div>
-            <div style="font-size: 0.8rem; color: var(--gray-color);">Android</div>
-        </div>
-        <div style="background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 5px; text-align: center;">
-            <div style="font-size: 1.5rem; color: #3498db;" id="iosDevices">0</div>
-            <div style="font-size: 0.8rem; color: var(--gray-color);">iOS</div>
-        </div>
-    </div>
-</div>
-</div>  
+        </div>  
 
-        <!-- Deposit Approvals -->
+        <!-- ===== ORIGINAL ADMIN REPORTS ===== -->
         <div class="content-section" id="adminReports">
             <h3 style="margin-bottom: 2rem;">Pending Deposit Approvals</h3>
             <div class="analytics-grid">
@@ -1387,291 +1807,281 @@
             </div>
         </div>
    
- 
-            <!-- Matches Section -->
-            <div class="content-section" id="adminmatchesSection">
-                <div class="dashboard-header">
-                        <h2><i class="fas fa-futbol"></i> Upcoming Matches</h2>
-                        <p>Predict outcomes and earn points</p>
+        <!-- ===== ORIGINAL MATCHES SECTION ===== -->
+        <div class="content-section" id="adminmatchesSection">
+            <div class="dashboard-header">
+                <h2><i class="fas fa-futbol"></i> Upcoming Matches</h2>
+                <p>Predict outcomes and earn points</p>
+            </div>
+            <div class="container">
+                <!-- Navigation Tabs -->
+                <div class="nav-tabs">
+                    <button class="tab-btn active" onclick="showSection('admin')">
+                        <i class="fas fa-user-shield"></i> Matches Management
+                    </button>
+                    <button class="tab-btn" onclick="showSection('refund')">
+                        <i class="fas fa-hand-holding-usd"></i> Refund System
+                    </button>
                 </div>
-                <div class="container">
-                    <!-- Navigation Tabs -->
-                    <div class="nav-tabs">
-                        <button class="tab-btn active" onclick="showSection('admin')">
-                            <i class="fas fa-user-shield"></i> Matches Management
-                        </button>
-                        <button class="tab-btn" onclick="showSection('refund')">
-                            <i class="fas fa-hand-holding-usd"></i> Refund System
-                        </button>
-                    </div>
-                
-                    <!-- Admin Panel Section -->
-                    <section id="admin" class="content-section">
-                        <h2 style="margin-bottom: 1.5rem; color: white;">Admin Panel</h2>
-                        <div class="admin-form">
-                            <h3 style="margin-bottom: 1.5rem; color: var(--accent-color);">
-                                <i class="fas fa-plus-circle"></i> Add New Match with Custom Odds
-                            </h3>
-                            <form id="addMatchForm">
-                                <div class="form-group">
-                                    <label class="form-label">Home Team</label>
-                                    <input type="text" id="homeTeam" class="form-input" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Away Team</label>
-                                    <input type="text" id="awayTeam" class="form-input" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Competition</label>
-                                    <select id="competition" class="form-input" required>
-                                        <option value="Premier League">Premier League</option>
-                                     <option value="UEFA Champions League (UCL)">UEFA Champions League (UCL)</option>
-                                     <option value="UEFA Europa League & Conference League">UEFA Europa League & Conference League</option>
-                                     <option value="Women's UCL">Women's UCL</option>
+            
+                <!-- Admin Panel Section -->
+                <section id="admin" class="content-section active">
+                    <h2 style="margin-bottom: 1.5rem; color: white;">Admin Panel</h2>
+                    <div class="admin-form">
+                        <h3 style="margin-bottom: 1.5rem; color: var(--accent-color);">
+                            <i class="fas fa-plus-circle"></i> Add New Match with Custom Odds
+                        </h3>
+                        <form id="addMatchForm">
+                            <div class="form-group">
+                                <label class="form-label">Home Team</label>
+                                <input type="text" id="homeTeam" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Away Team</label>
+                                <input type="text" id="awayTeam" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Competition</label>
+                                <select id="competition" class="form-input" required>
+                                    <option value="Premier League">Premier League</option>
+                                    <option value="UEFA Champions League (UCL)">UEFA Champions League (UCL)</option>
+                                    <option value="UEFA Europa League & Conference League">UEFA Europa League & Conference League</option>
+                                    <option value="Women's UCL">Women's UCL</option>
                                     <option value="NBC Premier League">NBC Premier League</option>
-                                        <option value="English Premier League EPL">English Premier League EPL</option>
-                                        <option value="Queensland Pro Series">Queensland Pro Series</option>
-                                        <option value="Simulated Reality League">Simulated Reality League</option>
-                                        <option value="La Liga">La Liga</option>
-                                        <option value="Bundesliga">Bundesliga</option>
-                                        <option value="Serie A">Serie A</option>
-                                        <option value="Champions League">Champions League</option>
-                                    </select>
-                                </div>
-                                
-                                <!-- Custom Odds Input Fields -->
-                                <div style="margin-bottom: 1.5rem;">
-                                    <label class="form-input">Win Percentages (%)</label>
-                                    <div class="odds-input-group">
-                                        <div>
-                                            <label style="color: var(--gray-color); font-size: 0.8rem;">Home Win %</label>
-                                            <input type="number" id="homePercentage" class="form-input" min="1" max="1000" value="2" required>
-                                        </div>
-                                        <div>
-                                            <label style="color: var(--gray-color); font-size: 0.8rem;">Draw %</label>
-                                            <input type="number" id="drawPercentage" class="form-input" min="1" max="1000" value="2" required>
-                                        </div>
-                                        <div>
-                                            <label style="color: var(--gray-color); font-size: 0.8rem;">Away Win %</label>
-                                            <input type="number" id="awayPercentage" class="form-input" min="1" max="1000" value="2" required>
-                                        </div>
+                                    <option value="English Premier League EPL">English Premier League EPL</option>
+                                    <option value="Queensland Pro Series">Queensland Pro Series</option>
+                                    <option value="Simulated Reality League">Simulated Reality League</option>
+                                    <option value="La Liga">La Liga</option>
+                                    <option value="Bundesliga">Bundesliga</option>
+                                    <option value="Serie A">Serie A</option>
+                                    <option value="Champions League">Champions League</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Custom Odds Input Fields -->
+                            <div style="margin-bottom: 1.5rem;">
+                                <label class="form-input">Win Percentages (%)</label>
+                                <div class="odds-input-group">
+                                    <div>
+                                        <label style="color: var(--gray-color); font-size: 0.8rem;">Home Win %</label>
+                                        <input type="number" id="homePercentage" class="form-input" min="1" max="1000" value="2" required>
                                     </div>
-                                    <div style="color: var(--gray-color); font-size: 0.85rem; margin-top: 0.5rem;">
-                                        Total: <span id="oddsTotal">100%</span> (Any total allowed)
+                                    <div>
+                                        <label style="color: var(--gray-color); font-size: 0.8rem;">Draw %</label>
+                                        <input type="number" id="drawPercentage" class="form-input" min="1" max="1000" value="2" required>
+                                    </div>
+                                    <div>
+                                        <label style="color: var(--gray-color); font-size: 0.8rem;">Away Win %</label>
+                                        <input type="number" id="awayPercentage" class="form-input" min="1" max="1000" value="2" required>
                                     </div>
                                 </div>
-                                
-                                <div class="form-group">
-                                    <label class="form-label">Date & Time</label>
-                                    <input type="datetime-local" id="matchDate" class="form-input" required>
+                                <div style="color: var(--gray-color); font-size: 0.85rem; margin-top: 0.5rem;">
+                                    Total: <span id="oddsTotal">100%</span> (Any total allowed)
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">Venue</label>
-                                    <input type="text" id="venue" class="form-input" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Match Status</label>
-                                    <select id="matchStatus" class="form-input">
-                                        <option value="upcoming">Upcoming</option>
-                                        <option value="live">Live</option>
-                                    </select>
-                                </div>
-                                <button type="submit" class="btn btn-primary" style="width: 100%;">
-                                    <i class="fas fa-plus"></i> Add Match
-                                </button>
-                            </form>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Date & Time</label>
+                                <input type="datetime-local" id="matchDate" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Venue</label>
+                                <input type="text" id="venue" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Match Status</label>
+                                <select id="matchStatus" class="form-input">
+                                    <option value="upcoming">Upcoming</option>
+                                    <option value="live">Live</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                                <i class="fas fa-plus"></i> Add Match
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <h3 style="margin: 2rem 0 1rem 0; color: var(--accent-color);">Set Match Results</h3>
+                    <div id="adminMatchesContainer" class="admin-grid">
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                            <div class="spinner"></div>
+                            <div style="margin-top: 1rem; color: var(--gray-color);">Loading admin matches...</div>
                         </div>
-                        
-                        <h3 style="margin: 2rem 0 1rem 0; color: var(--accent-color);">Set Match Results</h3>
-                        <div id="adminMatchesContainer" class="admin-grid">
-                            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                                <div class="spinner"></div>
-                                <div style="margin-top: 1rem; color: var(--gray-color);">Loading admin matches...</div>
+                    </div>
+                </section>
+                
+                <!-- Refund System Section -->
+                <section id="refund" class="content-section">
+                    <div class="refund-header">
+                        <div class="header-left">
+                            <h2><i class="fas fa-hand-holding-usd"></i> Refund System - Grouped by Match</h2>
+                            <p class="header-description">Manage refunds for lost bets by match</p>
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn-refresh" onclick="refundManager.loadRefundMatches()" id="refreshRefundBtn">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Refresh Data</span>
+                            </button>
+                            <div class="last-updated" id="refundLastUpdated">
+                                <i class="far fa-clock"></i>
+                                <span>Last updated: Never</span>
                             </div>
                         </div>
-                    </section>
+                    </div>
                     
-<!-- Refund System Section -->
-<section id="refund" class="content-section">
-    <div class="refund-header">
-        <div class="header-left">
-            <h2><i class="fas fa-hand-holding-usd"></i> Refund System - Grouped by Match</h2>
-            <p class="header-description">Manage refunds for lost bets by match</p>
-        </div>
-        <div class="header-actions">
-            <button class="btn-refresh" onclick="refundManager.loadRefundMatches()" id="refreshRefundBtn">
-                <i class="fas fa-sync-alt"></i>
-                <span>Refresh Data</span>
-            </button>
-            <div class="last-updated" id="refundLastUpdated">
-                <i class="far fa-clock"></i>
-                <span>Last updated: Never</span>
+                    <div class="refund-stats-summary" id="refundStatsSummary">
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-futbol"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Total Matches</span>
+                                <span class="stat-value" id="totalMatchesCount">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-ticket-alt"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Lost Bets</span>
+                                <span class="stat-value" id="totalLostBetsCount">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-users"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Affected Users</span>
+                                <span class="stat-value" id="totalUsersCount">0</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-coins"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-label">Total Stake</span>
+                                <span class="stat-value" id="totalStakeAmount">TZS 0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="refundMatchesContainer">
+                        <div class="loading-state">
+                            <i class="fas fa-spinner fa-pulse"></i>
+                            <p>Loading refund data...</p>
+                        </div>
+                    </div>
+                    
+                    <h3 style="margin: 2rem 0 1rem 0; color: var(--accent-color);">
+                        <i class="fas fa-history"></i> Refund History
+                    </h3>
+                    <div id="refundHistoryContainer"></div>
+                </section>
             </div>
         </div>
-    </div>
-    
-    <div class="refund-stats-summary" id="refundStatsSummary">
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-futbol"></i>
-            </div>
-            <div class="stat-info">
-                <span class="stat-label">Total Matches</span>
-                <span class="stat-value" id="totalMatchesCount">0</span>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-ticket-alt"></i>
-            </div>
-            <div class="stat-info">
-                <span class="stat-label">Lost Bets</span>
-                <span class="stat-value" id="totalLostBetsCount">0</span>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-users"></i>
-            </div>
-            <div class="stat-info">
-                <span class="stat-label">Affected Users</span>
-                <span class="stat-value" id="totalUsersCount">0</span>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-coins"></i>
-            </div>
-            <div class="stat-info">
-                <span class="stat-label">Total Stake</span>
-                <span class="stat-value" id="totalStakeAmount">TZS 0</span>
-            </div>
-        </div>
-    </div>
-    
-    <div id="refundMatchesContainer">
-        <div class="loading-state">
-            <i class="fas fa-spinner fa-pulse"></i>
-            <p>Loading refund data...</p>
-        </div>
-    </div>
-    
-    <h3 style="margin: 2rem 0 1rem 0; color: var(--accent-color);">
-        <i class="fas fa-history"></i> Refund History
-    </h3>
-    <div id="refundHistoryContainer"></div>
-</section>
-                </div>
-            </div>
-
         
-<!-- Admin Announcement Management -->
-<div id="announcementAdminSection" class="content-section">
-    <h2><i class="fas fa-bullhorn"></i> Manage Announcements</h2>
-    <!-- ADMIN PANEL (unchanged) -->
-    <div class="admin-header" id="adminToggle">
-        <h2>⚙️ Admin panel — manage announcements</h2>
-        <span class="toggle-btn" id="toggleBtn">▼</span>
-    </div>
-    <div class="admin-content" id="adminContent">
-        <h3 style="color:#f5c542; margin-bottom:15px;">➕ Add new announcement</h3>
-        <div class="form-group">
-            <label class="form-label">Announcement type</label>
-            <select id="announceType" class="form-input">
-                <option value="text">📄 Text announcement</option>
-                <option value="other">🖼️ Other (photo/video link)</option>
-                <option value="match">⚽ Today's Match to stake</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Title</label>
-            <input type="text" id="titleInput" placeholder="Title" class="form-input">
-        </div>
-        <div class="form-group">
-            <label class="form-label">Description</label>
-            <textarea id="descInput" rows="2" placeholder="Description" class="form-input"></textarea>
-        </div>
-        <div class="form-group" id="mediaLinkGroup" style="display:none;">
-            <label class="form-label">Media URL (photo/video)</label>
-            <input type="url" id="mediaUrlInput" placeholder="https://..." class="form-input">
-        </div>
-        <div id="matchFields" style="display:none; background:#1c3b2b; padding:20px; border-radius:30px; margin-bottom:20px;">
-            <div class="row-2">
-                <div class="form-group">
-                    <label class="form-label">Home team</label>
-                    <input type="text" id="homeTeam" class="form-input">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Away team</label>
-                    <input type="text" id="awayTeam" class="form-input">
-                </div>
+        <!-- ===== ORIGINAL ANNOUNCEMENT ADMIN SECTION ===== -->
+        <div id="announcementAdminSection" class="content-section">
+            <h2><i class="fas fa-bullhorn"></i> Manage Announcements</h2>
+            <!-- ADMIN PANEL (unchanged) -->
+            <div class="admin-header" id="adminToggle">
+                <h2>⚙️ Admin panel — manage announcements</h2>
+                <span class="toggle-btn" id="toggleBtn">▼</span>
             </div>
-            <div class="row-2">
+            <div class="admin-content" id="adminContent">
+                <h3 style="color:#f5c542; margin-bottom:15px;">➕ Add new announcement</h3>
                 <div class="form-group">
-                    <label class="form-label">Home logo URL</label>
-                    <input type="url" id="homeLogo" class="form-input">
+                    <label class="form-label">Announcement type</label>
+                    <select id="announceType" class="form-input">
+                        <option value="text">📄 Text announcement</option>
+                        <option value="other">🖼️ Other (photo/video link)</option>
+                        <option value="match">⚽ Today's Match to stake</option>
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Away logo URL</label>
-                    <input type="url" id="awayLogo" class="form-input">
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Stake team (home/away/draw)</label>
-                <input type="text" id="stakeTeam" placeholder="e.g. home" class="form-input">
-            </div>
-            <div class="row-2">
-                <div class="form-group">
-                    <label class="form-label">Odds</label>
-                    <input type="text" id="odds" class="form-input">
+                    <label class="form-label">Title</label>
+                    <input type="text" id="titleInput" placeholder="Title" class="form-input">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Match date & time</label>
-                    <input type="datetime-local" id="matchDateTime" class="form-input">
+                    <label class="form-label">Description</label>
+                    <textarea id="descInput" rows="2" placeholder="Description" class="form-input"></textarea>
                 </div>
+                <div class="form-group" id="mediaLinkGroup" style="display:none;">
+                    <label class="form-label">Media URL (photo/video)</label>
+                    <input type="url" id="mediaUrlInput" placeholder="https://..." class="form-input">
+                </div>
+                <div id="matchFields" style="display:none; background:#1c3b2b; padding:20px; border-radius:30px; margin-bottom:20px;">
+                    <div class="row-2">
+                        <div class="form-group">
+                            <label class="form-label">Home team</label>
+                            <input type="text" id="homeTeamAnnounce" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Away team</label>
+                            <input type="text" id="awayTeamAnnounce" class="form-input">
+                        </div>
+                    </div>
+                    <div class="row-2">
+                        <div class="form-group">
+                            <label class="form-label">Home logo URL</label>
+                            <input type="url" id="homeLogo" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Away logo URL</label>
+                            <input type="url" id="awayLogo" class="form-input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Stake team (home/away/draw)</label>
+                        <input type="text" id="stakeTeam" placeholder="e.g. home" class="form-input">
+                    </div>
+                    <div class="row-2">
+                        <div class="form-group">
+                            <label class="form-label">Odds</label>
+                            <input type="text" id="odds" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Match date & time</label>
+                            <input type="datetime-local" id="matchDateTime" class="form-input">
+                        </div>
+                    </div>
+                </div>
+                <button class="btn" id="addAnnouncementBtn">📌 Publish announcement</button>
+                <input type="hidden" id="editId" value="">
+                <h3 style="color:#f5c542; margin:40px 0 15px;">📋 Existing announcements (admin)</h3>
+                <div class="admin-list" id="adminListContainer">Loading...</div>
             </div>
         </div>
-        <button class="btn" id="addAnnouncementBtn">📌 Publish announcement</button>
-        <input type="hidden" id="editId" value="">
-        <h3 style="color:#f5c542; margin:40px 0 15px;">📋 Existing announcements (admin)</h3>
-        <div class="admin-list" id="adminListContainer">Loading...</div>
-    </div>
-</div>
-</div>
+        
+    </div><!-- End admin-main-content -->
 
-<!-- Admin Bottom Navigation -->
-<nav class="bottom-nav">
-    <a href="#" class="nav-item" data-section="adminChatSection">
-        <i class="fas fa-comments nav-icon"></i>
-        <span class="nav-label">Chat</span>
-    </a>
-    
-    <a href="#" class="nav-item active" data-section="adminTransactionApproval">
-        <i class="fas fa-flag nav-icon"></i>
-        <span class="nav-label">Approval</span>
-    </a>
-    
-    <a href="#" class="nav-item" data-section="adminmatchesSection">
-        <i class="fas fa-futbol nav-icon"></i>
-        <span class="nav-label">Matches</span>
-    </a>
-    
-    <a href="#" class="nav-item" data-section="adminBankingSettings">
-        <i class="fas fa-chart-bar nav-icon"></i>
-        <span class="nav-label">Banking Settings</span>
-    </a>
-    
-<a href="#" class="nav-item" onclick="SocialLinksHelper.loadAdminTable(); document.getElementById('adminSocialLinksModal').classList.add('active'); return false;">
-    <i class="fab fa-superpowers nav-icon"></i>
-    <span class="nav-label">Social Links</span>
-</a>
-    
-    <a href="#" class="nav-item" data-section="announcementAdminSection">
-        <i class="fas fa-cog nav-icon"></i>
-        <span class="nav-label">Announcement</span>
-    </a>
-</nav>
-</div>
+    <!-- Bottom Navigation Bar -->
+    <nav class="admin-bottom-nav">
+        <a href="#" class="bottom-nav-item active" data-section="adminDashboard">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="#" class="bottom-nav-item" data-section="adminChatSection">
+            <i class="fas fa-comments"></i>
+            <span>Chat</span>
+        </a>
+        <a href="#" class="bottom-nav-item" data-section="adminTransactionApproval">
+            <i class="fas fa-check-circle"></i>
+            <span>Approvals</span>
+        </a>
+        <a href="#" class="bottom-nav-item" data-section="adminmatchesSection">
+            <i class="fas fa-futbol"></i>
+            <span>Matches</span>
+        </a>
+        <a href="#" class="bottom-nav-item" data-section="adminBankingSettings">
+            <i class="fas fa-university"></i>
+            <span>Banking</span>
+        </a>
+        <a href="#" class="bottom-nav-item" onclick="SocialLinksHelper.loadAdminTable(); document.getElementById('adminSocialLinksModal').classList.add('active'); return false;">
+            <i class="fab fa-superpowers"></i>
+            <span>Social</span>
+        </a>
+        <a href="#" class="bottom-nav-item" data-section="announcementAdminSection">
+            <i class="fas fa-bullhorn"></i>
+            <span>Announce</span>
+        </a>
+    </nav>
+</div><!-- End admin-dashboard -->
     <!-- ==================== SUPER ADMIN DASHBOARD ==================== -->
     <div id="super-admin-dashboard" class="dashboard" style="display: none;">
         <!-- Top Navigation -->
