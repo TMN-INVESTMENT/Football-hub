@@ -22,6 +22,129 @@ auth.setPersistence(firebase.auth.Auth.Persistence.NONE)
 
 console.log("🚀 Firebase services initialized successfully!");
 
+// ==================== FIRESTORE READ THROTTLE ====================
+const readThrottle = {
+    lastReads: new Map(),
+    MIN_INTERVAL: 5000, // 5 seconds between reads
+    
+    canRead(key) {
+        const lastTime = this.lastReads.get(key) || 0;
+        const now = Date.now();
+        if (now - lastTime < this.MIN_INTERVAL) {
+            console.log(`⏳ Throttled read for ${key} (${Math.round((now - lastTime) / 1000)}s since last read)`);
+            return false;
+        }
+        this.lastReads.set(key, now);
+        return true;
+    },
+    
+    clear() {
+        this.lastReads.clear();
+    }
+};
+
+// ==================== FIRESTORE QUOTA MANAGER ====================
+const FirestoreManager = {
+    // Track active listeners
+    activeListeners: [],
+    isPageVisible: true,
+    lastReadTimestamps: new Map(),
+    
+    // Minimum time between reads for the same collection
+    MIN_READ_INTERVAL: 30000, // 30 seconds
+    
+    // Initialize quota management
+    init() {
+        console.log('🛡️ Firestore Quota Manager initialized');
+        
+        // Pause listeners when page is not visible
+        document.addEventListener('visibilitychange', () => {
+            this.isPageVisible = !document.hidden;
+            console.log(`📱 Page ${this.isPageVisible ? 'visible' : 'hidden'} - ${this.isPageVisible ? 'resuming' : 'pausing'} listeners`);
+            
+            if (!this.isPageVisible) {
+                this.pauseAllListeners();
+            } else {
+                this.resumeAllListeners();
+            }
+        });
+        
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            this.cleanupAll();
+        });
+    },
+    
+    // Register a listener for management
+    registerListener(name, unsubscribeFunction) {
+        this.activeListeners.push({ name, unsubscribe: unsubscribeFunction });
+        console.log(`📡 Registered listener: ${name} (Total: ${this.activeListeners.length})`);
+    },
+    
+    // Pause all non-critical listeners
+    pauseAllListeners() {
+        let paused = 0;
+        this.activeListeners.forEach(listener => {
+            if (listener.unsubscribe && typeof listener.unsubscribe === 'function') {
+                // Store the unsubscribe for later
+                listener._paused = true;
+                listener.unsubscribe();
+                listener.unsubscribe = null;
+                paused++;
+            }
+        });
+        console.log(`⏸️ Paused ${paused} listeners to save quota`);
+    },
+    
+    // Resume paused listeners (re-initiate them)
+    // Note: You'll need to re-setup listeners that were paused
+    resumeAllListeners() {
+        console.log('▶️ Listeners would resume on next data refresh');
+        // Re-load current section data
+        this.refreshCurrentView();
+    },
+    
+    // Refresh current visible data
+    refreshCurrentView() {
+        if (window.statusUpdateManager) {
+            window.statusUpdateManager.updateAllMatchStatuses();
+        }
+        if (window.bettingSystem?.loadMatches) {
+            window.bettingSystem.loadMatches();
+        }
+    },
+    
+    // Check if we can read (throttle prevention)
+    canRead(collectionName) {
+        const lastRead = this.lastReadTimestamps.get(collectionName) || 0;
+        const now = Date.now();
+        
+        if (now - lastRead < this.MIN_READ_INTERVAL) {
+            const secondsLeft = Math.round((this.MIN_READ_INTERVAL - (now - lastRead)) / 1000);
+            console.log(`⏳ Throttled: ${collectionName} (${secondsLeft}s until next read)`);
+            return false;
+        }
+        
+        this.lastReadTimestamps.set(collectionName, now);
+        return true;
+    },
+    
+    // Clean all
+    cleanupAll() {
+        this.activeListeners.forEach(listener => {
+            if (listener.unsubscribe && typeof listener.unsubscribe === 'function') {
+                listener.unsubscribe();
+            }
+        });
+        this.activeListeners = [];
+        console.log('🧹 All listeners cleaned up');
+    }
+};
+
+// Initialize quota manager
+FirestoreManager.init();
+window.FirestoreManager = FirestoreManager;
+
 // ==================== FIRESTORE PERSISTENCE (OFFLINE CACHE) ====================
 function enableFirestorePersistence() {
     if (!db || typeof db.enablePersistence !== 'function') {
@@ -3610,7 +3733,7 @@ class BankingSystem {
         this.pendingTransaction = null;
         this.bankAccounts = [];
         this.feeSettings = {
-            withdrawalFee: 15,
+            withdrawalFee: 8,
             minDeposit: 1000,
             minWithdrawal: 5000
         };
@@ -4580,7 +4703,7 @@ async approveTransaction(transactionId) {
                 
                 // Bonus percentages
                 const BONUS_CONFIG = {
-                    1: { percentage: 10, rate: 0.10, label: 'Level 1 (10%)' },
+                    1: { percentage: 10, rate: 0.10, label: 'Level 1 (15%)' },
                     2: { percentage: 2, rate: 0.02, label: 'Level 2 (2%)' },
                     3: { percentage: 1, rate: 0.01, label: 'Level 3 (1%)' }
                 };
@@ -4588,7 +4711,7 @@ async approveTransaction(transactionId) {
                 let totalBonuses = 0;
                 const bonusesDistributed = [];
                 
-                // Process Level 1 Bonus (10%)
+                // Process Level 1 Bonus (15%)
                 if (level1Referrer) {
                     const bonusAmount = transaction.amount * BONUS_CONFIG[1].rate;
                     if (bonusAmount > 0) {
@@ -4628,7 +4751,7 @@ async approveTransaction(transactionId) {
                             userId: level1Referrer,
                             type: 'referral_bonus',
                             amount: bonusAmount,
-                            description: `10% Level 1 referral bonus from ${userData.fullName || userData.username || 'User'}'s first deposit of TZS ${transaction.amount.toFixed(2)}`,
+                            description: `15% Level 1 referral bonus from ${userData.fullName || userData.username || 'User'}'s first deposit of TZS ${transaction.amount.toFixed(2)}`,
                             date: firebase.firestore.FieldValue.serverTimestamp(),
                             relatedUserId: transaction.userId,
                             level: 1
@@ -4639,7 +4762,7 @@ async approveTransaction(transactionId) {
                         batch.set(notifRef, {
                             userId: level1Referrer,
                             title: '🎉 Level 1 Referral Bonus!',
-                            message: `You earned TZS ${bonusAmount.toFixed(2)} (10%) from ${userData.fullName || userData.username || 'User'}'s first deposit!`,
+                            message: `You earned TZS ${bonusAmount.toFixed(2)} (15%) from ${userData.fullName || userData.username || 'User'}'s first deposit!`,
                             type: 'success',
                             read: false,
                             createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -5958,7 +6081,7 @@ document.head.appendChild(styleSheet);
 // Calculate withdrawal deduction (15% fee)
 function calculateWithdrawalDeduction() {
     const amount = parseFloat(document.getElementById('withdrawAmount').value) || 0;
-    const fee = amount * 0.15; // 15% fee
+    const fee = amount * 0.08; // 8% fee
     const netAmount = amount - fee;
     
     document.getElementById('calcWithdrawAmount').textContent = `TZS ${amount.toFixed(2)}`;
@@ -5982,60 +6105,142 @@ function updateBankDetails() {
         document.getElementById('withdrawAccountNumber').value = '';
     }
 }
-
-// Submit withdrawal request
-async function submitWithdrawalRequest() {
+async function submitWithdrawalRequest(e) {
+    e?.preventDefault();
+    
     const userData = window.authManager?.userData;
     if (!userData) {
         showNotification('Please login first', 'error');
         return;
     }
     
-    // Get form values
     const amount = parseFloat(document.getElementById('withdrawAmount').value);
     const bankId = document.getElementById('withdrawBank').value;
     const accountName = document.getElementById('withdrawAccountName').value.trim();
     const accountNumber = document.getElementById('withdrawAccountNumber').value.trim();
     const mobile = document.getElementById('withdrawMobile').value.trim();
     
-    // Validate inputs
+    // Basic validation - NO Firestore reads yet
     if (!amount || amount < 5000) {
-        showNotification('Minimum withdrawal amount is TZS 5,000', 'error');
+        showNotification('Minimum withdrawal is TZS 5,000', 'error');
         return;
     }
     
-    if (amount > userData.balance) {
-        showNotification('Insufficient balance', 'error');
-        return;
-    }
-    
-    if (!bankId) {
-        showNotification('Please select an account', 'error');
-        return;
-    }
-    
-    if (!accountName || !accountNumber || !mobile) {
+    if (!bankId || !accountName || !accountNumber || !mobile) {
         showNotification('Please fill all fields', 'error');
         return;
     }
     
-    // Calculate fees
-    const fee = amount * 0.15;
-    const netAmount = amount - fee;
+    // Quick balance check - use local data, no Firestore read
+    if (amount > (userData.balance || 0)) {
+        showNotification('Insufficient balance', 'error');
+        return;
+    }
+    
+    // Cache key for this user's capital (store locally to avoid repeated reads)
+    const capitalCacheKey = `capital_${userData.uid}`;
+    const capitalCacheExpiry = 300000; // 5 minutes cache
+    
+    showLoading('Checking eligibility...');
     
     try {
-        showLoading('Processing withdrawal request...');
+        let totalDeposits = 0;
         
-        // Get provider from selected option (no extra query)
-        const select = document.getElementById('withdrawBank');
-        const selectedOption = select.options[select.selectedIndex];
-        const provider = selectedOption.getAttribute('data-provider') || 'Unknown';
+        // CHECK CACHE FIRST to avoid unnecessary reads
+        const cachedCapital = sessionStorage.getItem(capitalCacheKey);
+        const cacheTimestamp = sessionStorage.getItem(`${capitalCacheKey}_time`);
         
-        // Determine account type based on provider (for record)
-        const mobileProviders = ['vodacom', 'airtel', 'lipa', 'halotel', 'yas', 'pesa'];
-        const accountType = mobileProviders.includes(provider) ? 'mobile' : 'bank';
+        if (cachedCapital && cacheTimestamp && (Date.now() - parseInt(cacheTimestamp)) < capitalCacheExpiry) {
+            totalDeposits = parseFloat(cachedCapital);
+            console.log('📦 Using cached capital:', totalDeposits);
+        } else {
+            // ONLY ONE read - get approved deposits
+            const depositsSnapshot = await db.collection('transactions')
+                .where('userId', '==', userData.uid)
+                .where('type', '==', 'deposit')
+                .where('status', '==', 'approved')
+                .get();
+            
+            depositsSnapshot.forEach(doc => {
+                totalDeposits += doc.data().amount || 0;
+            });
+            
+            // Cache the result
+            sessionStorage.setItem(capitalCacheKey, totalDeposits.toString());
+            sessionStorage.setItem(`${capitalCacheKey}_time`, Date.now().toString());
+            console.log('💾 Capital cached:', totalDeposits);
+        }
         
-        // Create withdrawal request data
+        // CALCULATE available profit
+        const availableProfit = userData.balance - totalDeposits;
+        
+        console.log('💰 Capital check:', {
+            balance: userData.balance,
+            totalDeposits: totalDeposits,
+            availableProfit: availableProfit,
+            requested: amount
+        });
+        
+        // Capital protection check
+        if (availableProfit <= 0) {
+            hideLoading();
+            showNotification(
+                '❌ No withdrawable profit available. You can only withdraw profits earned above your total deposits of TZS ' + totalDeposits.toFixed(2),
+                'error'
+            );
+            return;
+        }
+        
+        if (amount > availableProfit) {
+            hideLoading();
+            showNotification(
+                `❌ Maximum withdrawable profit is TZS ${availableProfit.toFixed(2)}. Your capital of TZS ${totalDeposits.toFixed(2)} is protected.`,
+                'error'
+            );
+            return;
+        }
+        
+        // Calculate 8% fee
+        const feePercent = this.feeSettings?.withdrawalFee || 8;
+        const fee = amount * (feePercent / 100);
+        const netAmount = amount - fee;
+        
+        if (netAmount <= 0) {
+            hideLoading();
+            showNotification('Withdrawal amount too low after fee deduction', 'error');
+            return;
+        }
+        
+        hideLoading();
+        
+        // Show confirmation
+        const confirmed = confirm(
+            `📊 Withdrawal Summary:\n\n` +
+            `🛡️ Protected Capital (MTAJI): TZS ${totalDeposits.toFixed(2)}\n` +
+            `📈 Available Profit: TZS ${availableProfit.toFixed(2)}\n` +
+            `💵 Amount: TZS ${amount.toFixed(2)}\n` +
+            `📉 Fee (${feePercent}%): TZS ${fee.toFixed(2)}\n` +
+            `🏦 You'll Receive: TZS ${netAmount.toFixed(2)}\n\n` +
+            `Your capital remains safe!\n\nProceed?`
+        );
+        
+        if (!confirmed) return;
+        
+        showLoading('Processing withdrawal...');
+        
+        // Get bank account details
+        let provider = 'Unknown';
+        let accountType = 'bank';
+        
+        if (bankId) {
+            const bankAccount = this.bankAccounts?.find(a => a.id === bankId);
+            if (bankAccount) {
+                provider = bankAccount.provider || 'Unknown';
+                const mobileProviders = ['vodacom', 'airtel', 'lipa', 'halotel', 'yas', 'pesa'];
+                accountType = mobileProviders.includes(provider.toLowerCase()) ? 'mobile' : 'bank';
+            }
+        }
+        
         const withdrawalData = {
             userId: userData.uid,
             userEmail: userData.email,
@@ -6043,7 +6248,7 @@ async function submitWithdrawalRequest() {
             amount: amount,
             fee: fee,
             netAmount: netAmount,
-            bankId: bankId, // Reference to user's account document
+            bankId: bankId,
             bankName: accountName,
             bankProvider: provider,
             bankType: accountType,
@@ -6052,12 +6257,16 @@ async function submitWithdrawalRequest() {
             mobile: mobile,
             status: 'pending',
             type: 'withdrawal',
+            // Capital protection info
+            capitalAtTime: totalDeposits,
+            profitAtTime: availableProfit,
+            remainingCapital: totalDeposits, // Capital stays untouched
+            withdrawalFeePercent: feePercent,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         
-        // Use transaction to ensure data consistency
+        // Use transaction for consistency (minimal reads)
         await db.runTransaction(async (transaction) => {
-            // Verify user still has sufficient balance
             const userRef = db.collection('users').doc(userData.uid);
             const userDoc = await transaction.get(userRef);
             
@@ -6066,11 +6275,12 @@ async function submitWithdrawalRequest() {
             }
             
             const currentBalance = userDoc.data().balance || 0;
+            
             if (currentBalance < amount) {
                 throw new Error('Insufficient balance');
             }
             
-            // Deduct amount immediately
+            // Update balance
             transaction.update(userRef, {
                 balance: firebase.firestore.FieldValue.increment(-amount),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -6093,32 +6303,37 @@ async function submitWithdrawalRequest() {
         document.getElementById('withdrawAccountNumber').value = '';
         document.getElementById('withdrawMobile').value = '';
         
-        // Reset calculator displays
-        document.getElementById('calcWithdrawAmount').textContent = 'TZS 0';
-        document.getElementById('calcFee').textContent = 'TZS 0';
-        document.getElementById('calcNetAmount').textContent = 'TZS 0';
-        
-        // Update balance display
-        if (window.bankingSystem) {
-            window.bankingSystem.updateBalanceDisplay();
+        // Reset calculator
+        if (document.getElementById('calcWithdrawAmount')) {
+            document.getElementById('calcWithdrawAmount').textContent = 'TZS 0';
+            document.getElementById('calcFee').textContent = 'TZS 0';
+            document.getElementById('calcNetAmount').textContent = 'TZS 0';
         }
+        
+        // Update displays
+        this.updateBalanceDisplay();
         
         hideLoading();
-        showNotification('Withdrawal request submitted for approval!', 'success');
+        showNotification('✅ Withdrawal request submitted! Your capital is protected.', 'success');
         
         // Show receipt
-        if (window.bankingSystem) {
-            window.bankingSystem.showReceipt({
-                ...withdrawalData,
-                type: 'withdrawal',
-                status: 'pending'
-            });
+        if (typeof this.showReceipt === 'function') {
+            this.showReceipt({ ...withdrawalData, status: 'pending' });
         }
+        
+        // Clear cache to force refresh on next withdrawal
+        sessionStorage.removeItem(capitalCacheKey);
+        sessionStorage.removeItem(`${capitalCacheKey}_time`);
         
     } catch (error) {
         hideLoading();
-        console.error("Error submitting withdrawal:", error);
-        showNotification('Error: ' + error.message, 'error');
+        console.error('Error submitting withdrawal:', error);
+        
+        if (error.code === 'resource-exhausted') {
+            showNotification('⚠️ System busy. Please try again in a few seconds.', 'warning');
+        } else {
+            showNotification('Error: ' + error.message, 'error');
+        }
     }
 }
 
@@ -7216,46 +7431,87 @@ window.updateWithdrawAccountDetails = function() {
 };
 
 window.submitWithdrawalRequest = async function() {
+    if (window.bankingSystem) {
+        await window.bankingSystem.submitWithdrawalRequest();
+        return;
+    }
+    
     const userData = window.authManager?.userData;
     if (!userData) return showNotification('Please login', 'error');
 
     const amount = parseFloat(document.getElementById('withdrawAmount').value);
+    if (!amount || amount < 5000) return showNotification('Minimum withdrawal TZS 5,000', 'error');
+    if (amount > (userData.balance || 0)) return showNotification('Insufficient balance', 'error');
+    
     const bankId = document.getElementById('withdrawBank').value;
     const accountName = document.getElementById('withdrawAccountName').value.trim();
     const accountNumber = document.getElementById('withdrawAccountNumber').value.trim();
     const mobile = document.getElementById('withdrawMobile').value.trim();
+    
+    if (!bankId || !accountName || !accountNumber || !mobile) {
+        return showNotification('All fields required', 'error');
+    }
 
-    if (!amount || amount < 5000) return showNotification('Minimum withdrawal TZS 5,000', 'error');
-    if (amount > userData.balance) return showNotification('Insufficient balance', 'error');
-    if (!bankId || !accountName || !accountNumber || !mobile) return showNotification('All fields required', 'error');
+    // Throttle check
+    if (!readThrottle.canRead('withdrawal_' + userData.uid)) {
+        return showNotification('Please wait a moment before trying again', 'warning');
+    }
 
-    const fee = amount * 0.15;
-    const net = amount - fee;
-
+    showLoading('Checking eligibility...');
+    
     try {
-        showLoading('Submitting withdrawal...');
+        // SINGLE optimized query - only approved deposits
+        const depositsSnapshot = await db.collection('transactions')
+            .where('userId', '==', userData.uid)
+            .where('type', '==', 'deposit')
+            .where('status', '==', 'approved')
+            .get();
+        
+        let totalDeposits = 0;
+        depositsSnapshot.forEach(doc => {
+            totalDeposits += doc.data().amount || 0;
+        });
+        
+        const availableProfit = userData.balance - totalDeposits;
+        
+        if (availableProfit <= 0) {
+            hideLoading();
+            return showNotification(`No withdrawable profit. Capital: TZS ${totalDeposits.toFixed(2)}`, 'error');
+        }
+        
+        if (amount > availableProfit) {
+            hideLoading();
+            return showNotification(`Max withdrawable: TZS ${availableProfit.toFixed(2)}`, 'error');
+        }
+        
+        hideLoading();
+        
+        const fee = amount * 0.08;
+        const net = amount - fee;
+        
+        if (!confirm(`Withdraw TZS ${amount.toFixed(2)}?\nFee (8%): TZS ${fee.toFixed(2)}\nReceive: TZS ${net.toFixed(2)}\n\nCapital TZS ${totalDeposits.toFixed(2)} is protected.\nProceed?`)) {
+            return;
+        }
+        
+        showLoading('Processing...');
+        
         const select = document.getElementById('withdrawBank');
         const opt = select.options[select.selectedIndex];
-        const provider = opt.getAttribute('data-provider') || 'Unknown';
+        const provider = opt?.getAttribute('data-provider') || 'Unknown';
         const mobileProviders = ['vodacom','airtel','lipa','halotel','yas','pesa'];
-        const type = mobileProviders.includes(provider) ? 'mobile' : 'bank';
+        const type = mobileProviders.includes(provider?.toLowerCase()) ? 'mobile' : 'bank';
 
         const withdrawalData = {
             userId: userData.uid,
             userEmail: userData.email,
             userName: userData.fullName || userData.username,
-            amount,
-            fee,
-            netAmount: net,
-            bankId,
-            bankName: accountName,
-            bankProvider: provider,
-            bankType: type,
-            accountName,
-            accountNumber,
-            mobile,
-            status: 'pending',
-            type: 'withdrawal',
+            amount, fee, netAmount: net,
+            bankId, bankName: accountName, bankProvider: provider, bankType: type,
+            accountName, accountNumber, mobile,
+            status: 'pending', type: 'withdrawal',
+            capitalAtTime: totalDeposits,
+            profitAtTime: availableProfit,
+            withdrawalFeePercent: 8,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
@@ -7270,11 +7526,9 @@ window.submitWithdrawalRequest = async function() {
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            const transRef = db.collection('transactions').doc();
-            tx.set(transRef, withdrawalData);
+            tx.set(db.collection('transactions').doc(), withdrawalData);
         });
 
-        // Update local balance
         if (window.authManager.userData) {
             window.authManager.userData.balance -= amount;
         }
@@ -7285,21 +7539,46 @@ window.submitWithdrawalRequest = async function() {
         document.getElementById('withdrawAccountName').value = '';
         document.getElementById('withdrawAccountNumber').value = '';
         document.getElementById('withdrawMobile').value = '';
-        window.calculateWithdrawalDeduction();
-
+        
+        if (typeof window.calculateWithdrawalDeduction === 'function') {
+            window.calculateWithdrawalDeduction();
+        }
+        
         if (window.bankingSystem) window.bankingSystem.updateBalanceDisplay();
 
         hideLoading();
-        showNotification('Withdrawal request submitted!', 'success');
+        showNotification('✅ Withdrawal submitted! Capital protected.', 'success');
 
-        if (window.bankingSystem) {
-            window.bankingSystem.showReceipt({ ...withdrawalData, status: 'pending' });
-        }
     } catch (error) {
         hideLoading();
-        showNotification('Error: ' + error.message, 'error');
+        if (error.code === 'resource-exhausted') {
+            showNotification('⚠️ System busy. Try again in a moment.', 'warning');
+        } else {
+            showNotification('Error: ' + error.message, 'error');
+        }
     }
 };
+
+// Add this near the top of your code
+let isPageVisible = true;
+
+document.addEventListener('visibilitychange', () => {
+    isPageVisible = !document.hidden;
+    console.log(`Page visibility: ${isPageVisible ? 'visible' : 'hidden'}`);
+    
+    if (!isPageVisible) {
+        // Detach non-critical listeners when page is hidden
+        if (window.chatSystem?.unsubscribeMessages) {
+            window.chatSystem.unsubscribeMessages();
+            window.chatSystem.unsubscribeMessages = null;
+        }
+    } else {
+        // Re-attach listeners when page becomes visible
+        if (window.chatSystem?.init && window.authManager?.user) {
+            window.chatSystem.init();
+        }
+    }
+});
 
 // ==================== INITIALIZATION ====================
 // Replace the old initialization intervals with these:
@@ -7397,14 +7676,39 @@ init() {
         }
     }
     
-    listenForUserMessages(userId) {
-        const messagesRef = db.collection('chats').doc(userId)
-            .collection('messages')
-            .orderBy('timestamp');
-        this.unsubscribeMessages = messagesRef.onSnapshot(snapshot => {
-            this.displayUserMessages(snapshot);
-        });
+    // In ChatSystem class
+listenForUserMessages(userId) {
+    // Clean up old listener
+    if (this.unsubscribeMessages) {
+        this.unsubscribeMessages();
+        this.unsubscribeMessages = null;
     }
+    
+    // Register with quota manager
+    const messagesRef = db.collection('chats').doc(userId)
+        .collection('messages')
+        .orderBy('timestamp')
+        .limit(50); // 🔑 LIMIT to 50 messages instead of all
+    
+    this.unsubscribeMessages = messagesRef.onSnapshot(
+        (snapshot) => {
+            this.displayUserMessages(snapshot);
+        },
+        (error) => {
+            if (error.code === 'resource-exhausted') {
+                console.warn('⚠️ Chat quota exceeded - will retry in 30s');
+                if (this.unsubscribeMessages) {
+                    this.unsubscribeMessages();
+                    this.unsubscribeMessages = null;
+                }
+                // Retry after 30 seconds
+                setTimeout(() => this.listenForUserMessages(userId), 30000);
+            }
+        }
+    );
+    
+    FirestoreManager.registerListener('chat_messages', this.unsubscribeMessages);
+}
     
     displayUserMessages(snapshot) {
         const container = document.getElementById('userChatMessages');
@@ -8094,7 +8398,7 @@ async function loadReferrals() {
                     <td colspan="4" class="no-data">
                         <i class="fas fa-users" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem; display: block;"></i>
                         <p>No referrals yet</p>
-                        <small>Share your code to earn 10% commission on their first deposit!</small>
+                        <small>Share your code to earn 15% commission on their first deposit!</small>
                     </td>
                 </tr>
             `;
@@ -8619,7 +8923,7 @@ async function loadReferralsData() {
                 <td colspan="4" style="padding: 1rem;">
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; text-align: center;">
                         <div>
-                            <div style="color: #2ecc71; font-weight: bold;">Level 1 (10%)</div>
+                            <div style="color: #2ecc71; font-weight: bold;">Level 1 (15%)</div>
                             <div>${earningsByLevel[1].count} referrals</div>
                             <div style="color: #2ecc71;">TZS ${earningsByLevel[1].total.toFixed(2)}</div>
                         </div>
@@ -8644,7 +8948,7 @@ async function loadReferralsData() {
                     <td colspan="4" style="text-align: center; padding: 2rem; color: var(--gray-color);">
                         <i class="fas fa-users" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem; display: block;"></i>
                         <p>No referrals yet</p>
-                        <small>Share your code to earn 10% commission on first deposits!</small>
+                        <small>Share your code to earn 15% commission on first deposits!</small>
                     </td>
                 </tr>
             `;
@@ -8749,7 +9053,7 @@ async function loadReferralsTable(referredUsersSnapshot, earningsMap) {
                 <td colspan="4" style="text-align: center; padding: 2rem; color: var(--gray-color);">
                     <i class="fas fa-users" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem; display: block;"></i>
                     <p>No referrals yet</p>
-                    <small>Share your code to start earning 10% commission!</small>
+                    <small>Share your code to start earning 15% commission!</small>
                 </td>
             </tr>
         `;
@@ -10869,7 +11173,7 @@ const translations = {
         requestWithdrawal: "Request Withdrawal",
         currentBalance: "Current Balance",
         amountToWithdraw: "Amount to Withdraw (TZS)",
-        serviceFee: "Service Fee (15%)",
+        serviceFee: "Service Fee (8%)",
         youWillReceive: "You'll Receive",
         selectAccount: "Select Account",
         accountFullName: "Account Full Name",
@@ -10982,7 +11286,7 @@ const translations = {
         livePredictions: "Live Match Predictions: Predict outcomes of upcoming matches and earn points.",
         vipMultiBets: "VIP Multi-Bets: Combine multiple selections for higher returns.",
         secureWallet: "Secure Wallet: Easy deposits and withdrawals with 15% fee on withdrawals.",
-        referralProgram: "Referral Program: Earn 10% commission on your friends' first deposits.",
+        referralProgram: "Referral Program: Earn 15% commission on your friends' first deposits.",
         support247: "24/7 Support: Real‑time chat with our support team.",
         ourValues: "Our Values",
         valuesText: "Transparency: Clear rules and instant payouts. Community: A place for fans to connect. Innovation: Continuously improving the platform.",
@@ -10999,7 +11303,7 @@ const translations = {
         faqRules: "What are the betting rules?",
         faqRulesAnswer: "You bet on match outcomes (Home Win, Draw, Away Win). If the actual result is OPPOSITE to your selection, you win a percentage of your stake based on the match odds. If the result matches your bet, you lose the stake. Multi‑bets combine several selections – all must win to get the combined payout.",
         faqReferral: "How does the referral program work?",
-        faqReferralAnswer: "Share your unique referral code or link. When a friend signs up and makes their FIRST deposit, you earn 10% of that deposit instantly. There's no limit on referrals – the more you refer, the more you earn.",
+        faqReferralAnswer: "Share your unique referral code or link. When a friend signs up and makes their FIRST deposit, you earn 15% of that deposit instantly. There's no limit on referrals – the more you refer, the more you earn.",
         faqPassword: "I forgot my password. What should I do?",
         faqPasswordAnswer: "Click 'Forgot Password?' on the login page. Enter your email, and we'll send a reset link. Follow the instructions to set a new password.",
         faqBlocked: "Why is my account blocked?",
@@ -11046,7 +11350,7 @@ const translations = {
         termsBetting: "5. Betting Rules",
         termsBettingText: "Users win when the match result is opposite to their selected outcome. Payouts are based on the odds percentages set for each match. The Platform reserves the right to void any bet if fraud is suspected.",
         termsReferral: "6. Referral Program",
-        termsReferralText: "Referrers earn 10% commission on the first deposit of referred users. Commission is credited instantly upon deposit approval. Abuse of the referral system may result in forfeiture of earnings.",
+        termsReferralText: "Referrers earn 15% commission on the first deposit of referred users. Commission is credited instantly upon deposit approval. Abuse of the referral system may result in forfeiture of earnings.",
         termsProhibited: "7. Prohibited Activities",
         termsProhibitedText: "You may not use the Platform for any illegal activity, attempt to manipulate the system, or engage in any form of fraud. Violation may lead to account suspension and forfeiture of funds.",
         termsLiability: "8. Limitation of Liability",
@@ -11212,8 +11516,8 @@ const translations = {
         
         // Referrals
         myReferrals: "My Referrals",
-        earnCommission: "Earn 10% Commission!",
-        referralDescription: "When someone signs up with your code and makes their FIRST deposit, you earn 10% of their deposit amount instantly!",
+        earnCommission: "Earn 15% Commission!",
+        referralDescription: "When someone signs up with your code and makes their FIRST deposit, you earn 15% of their deposit amount instantly!",
         totalReferrals: "Total Referrals",
         activeReferrals: "Active Referrals",
         totalEarnings: "Total Earnings",
@@ -11227,8 +11531,8 @@ const translations = {
         dateJoined: "Date Joined",
         earnings: "Earnings",
         noReferrals: "No referrals yet",
-        shareCode: "Share your code to start earning 10% commission!",
-        earningsInfo: "Earnings are 10% of your referral's first deposit only. Additional deposits don't earn commission.",
+        shareCode: "Share your code to start earning 15% commission!",
+        earningsInfo: "Earnings are 15% of your referral's first deposit only. Additional deposits don't earn commission.",
         copied: "Copied!",
         
         // Bank cards
@@ -11520,7 +11824,7 @@ const translations = {
         livePredictions: "Utabiri wa Mechi za Moja kwa Moja: Tabiri matokeo ya mechi zijazo na upate pointi.",
         vipMultiBets: "Dau za VIP za Mechi Nyingi: Changanya uteuzi mwingi kwa faida kubwa.",
         secureWallet: "Pochi Salama: Weka na toa pesa kwa urahisi na ada ya 15% kwa utoaji.",
-        referralProgram: "Mpango wa Rufaa: Pata 10% ya amana ya kwanza ya marafiki zako.",
+        referralProgram: "Mpango wa Rufaa: Pata 15% ya amana ya kwanza ya marafiki zako.",
         support247: "Msaada wa 24/7: Mazungumzo ya moja kwa moja na timu yetu ya usaidizi.",
         ourValues: "Maadili Yetu",
         valuesText: "Uwazi: Sheria wazi na malipo ya haraka. Jumuiya: Mahali pa mashabiki kuungana. Ubunifu: Kuendelea kuboresha jukwaa.",
@@ -11537,7 +11841,7 @@ const translations = {
         faqRules: "Sheria za dau ni zipi?",
         faqRulesAnswer: "Unaweka dau kwenye matokeo ya mechi (Washinde Nyumbani, Sare, Washinde Ugenini). Ikiwa matokeo halisi ni KINYUME cha uteuzi wako, unashinda asilimia ya dau lako kulingana na uwezekano wa mechi. Ikiwa matokeo yanalingana na dau lako, unapoteza dau. Dau za mechi nyingi zinachanganya uteuzi kadhaa - zote lazima zishinde ili kupata malipo yaliyounganishwa.",
         faqReferral: "Mpango wa rufaa unafanyaje kazi?",
-        faqReferralAnswer: "Shiriki msimbo wako wa kipekee wa rufaa au kiungo. Rafiki anapojisajili na kufanya amana yao YA KWANZA, unapata 10% ya amana hiyo mara moja. Hakuna kikomo cha rufaa - kadri unavyorejelea wengi, ndivyo unavyopata zaidi.",
+        faqReferralAnswer: "Shiriki msimbo wako wa kipekee wa rufaa au kiungo. Rafiki anapojisajili na kufanya amana yao YA KWANZA, unapata 15% ya amana hiyo mara moja. Hakuna kikomo cha rufaa - kadri unavyorejelea wengi, ndivyo unavyopata zaidi.",
         faqPassword: "Nimesahau nywila yangu. Nifanye nini?",
         faqPasswordAnswer: "Bonyeza 'Umesahau nywila?' kwenye ukurasa wa kuingia. Weka barua pepe yako, na tutakutumia kiungo cha kuweka upya. Fuata maagizo kuweka nywila mpya.",
         faqBlocked: "Kwa nini akaunti yangu imefungwa?",
@@ -11584,7 +11888,7 @@ const translations = {
         termsBetting: "5. Sheria za Dau",
         termsBettingText: "Watumiaji hushinda wakati matokeo ya mechi ni kinyume cha uteuzi wao. Malipo yanategemea asilimia za uwezekano zilizowekwa kwa kila mechi. Jukwaa linahifadhi haki ya kubatilisha dau lolote ikiwa utapeli unashukiwa.",
         termsReferral: "6. Mpango wa Rufaa",
-        termsReferralText: "Warejeleaji hupata 10% ya amana ya kwanza ya watumiaji waliojelewa. Komisheni huongezwa mara moja baada ya idhini ya amana. Matumizi mabaya ya mfumo wa rufaa yanaweza kusababisha kunyang'anywa mapato.",
+        termsReferralText: "Warejeleaji hupata 15% ya amana ya kwanza ya watumiaji waliojelewa. Komisheni huongezwa mara moja baada ya idhini ya amana. Matumizi mabaya ya mfumo wa rufaa yanaweza kusababisha kunyang'anywa mapato.",
         termsProhibited: "7. Shughuli Zilizokatazwa",
         termsProhibitedText: "Huwezi kutumia Jukwaa kwa shughuli yoyote haramu, kujaribu kudanganya mfumo, au kushiriki katika aina yoyote ya ulaghai. Ukiukaji unaweza kusababisha kusimamishwa kwa akaunti na kunyang'anywa fedha.",
         termsLiability: "8. Kikomo cha Dhima",
@@ -11750,8 +12054,8 @@ const translations = {
         
         // Referrals
         myReferrals: "Rufaa Zangu",
-        earnCommission: "Pata 10% ya Komisheni!",
-        referralDescription: "Mtu anapojisajili kwa msimbo wako na kufanya amana yao YA KWANZA, unapata 10% ya amana yao mara moja!",
+        earnCommission: "Pata 15% ya Komisheni!",
+        referralDescription: "Mtu anapojisajili kwa msimbo wako na kufanya amana yao YA KWANZA, unapata 15% ya amana yao mara moja!",
         totalReferrals: "Jumla ya Rufaa",
         activeReferrals: "Rufaa Zinazotumika",
         totalEarnings: "Jumla ya Mapato",
@@ -11765,8 +12069,8 @@ const translations = {
         dateJoined: "Tarehe ya Kujiunga",
         earnings: "Mapato",
         noReferrals: "Hakuna rufaa bado",
-        shareCode: "Shiriki msimbo wako kuanza kupata 10% ya komisheni!",
-        earningsInfo: "Mapato ni 10% ya amana ya kwanza ya mtu uliyemrejelea tu. Amana za ziada hazileti komisheni.",
+        shareCode: "Shiriki msimbo wako kuanza kupata 15% ya komisheni!",
+        earningsInfo: "Mapato ni 15% ya amana ya kwanza ya mtu uliyemrejelea tu. Amana za ziada hazileti komisheni.",
         copied: "Imenakiliwa!",
         
         // Bank cards
@@ -14516,6 +14820,12 @@ function showSection(sectionId) {
     }
 }
 
+document.addEventListener('sectionChanged', (e) => {
+    if (e.detail.sectionId === 'walletSection') {
+        setTimeout(updateProtectedCapitalDisplay, 200);
+    }
+});
+
 // Method 2: Event listener for section changes (more reliable)
 // Add this to your existing event listeners
 document.addEventListener('sectionChanged', (e) => {
@@ -15701,8 +16011,7 @@ if (window.bettingSystem && typeof window.bettingSystem.loadMyBets === 'function
                         </button>
                     </div>
                 </div>
-            `;
-
+            `; 
             this.showDetailsModal(modalContent);
 
         } catch (error) {
@@ -16631,10 +16940,10 @@ document.addEventListener('sectionChanged', () => {
 class ReferralBonusSystem {
     constructor() {
         this.bonusLevels = {
-            1: 0.10,  // Level 1: 10%
-            2: 0.02,  // Level 2: 2%
-            3: 0.01   // Level 3: 1%
-        };
+    1: 0.15, // Level 1: 15%
+    2: 0.02, // Level 2: 2%
+    3: 0.01 // Level 3: 1%
+};
         this.realtimeListeners = [];
     }
 
@@ -17245,7 +17554,7 @@ async function loadReferralsData() {
                     <td colspan="4" style="text-align: center; padding: 2rem; color: var(--gray-color);">
                         <i class="fas fa-users" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem; display: block;"></i>
                         <p>No referrals yet</p>
-                        <small>Share your code to start earning 10% commission on first deposits!</small>
+                        <small>Share your code to start earning 15% commission on first deposits!</small>
                     </td>
                 </tr>
             `;
@@ -19109,73 +19418,71 @@ class StatusUpdateManager {
 
     // ========== MATCH STATUS LISTENER ==========
     
-    async setupMatchStatusListener() {
-        console.log('📡 Setting up match status listener...');
+// In StatusUpdateManager class
+async setupMatchStatusListener() {
+    console.log('📡 Setting up match status POLLING (not listener)...');
+    
+    // 🔑 Use setInterval instead of onSnapshot to save reads
+    const checkMatches = async () => {
+        // Only check when page is visible
+        if (document.hidden) return;
         
-        const matchesRef = db.collection('matches');
+        // Throttle check
+        if (!FirestoreManager.canRead('matches_status')) return;
         
-        // Listen for match status changes
-        const unsubscribe = matchesRef.onSnapshot(async (snapshot) => {
-            const batch = db.batch();
-            let updatesCount = 0;
+        try {
             const now = new Date();
-
-            snapshot.docChanges().forEach(change => {
-                const match = { id: change.doc.id, ...change.doc.data() };
-                const matchDate = this.getMatchDate(match);
-                
-                let newStatus = null;
-                let shouldUpdate = false;
-
-                // UPCOMING → LIVE (match time reached)
-                if (match.status === 'upcoming' && matchDate <= now) {
-                    const timeSinceStart = now - matchDate;
-                    if (timeSinceStart >= 0 && timeSinceStart <= this.MATCH_DURATION) {
-                        newStatus = 'live';
-                        shouldUpdate = true;
-                        console.log(`⚽ Match ${match.id} is now LIVE: ${match.homeTeam} vs ${match.awayTeam}`);
-                        this.showMatchStatusNotification(match, 'live');
-                    }
-                }
-
-                // LIVE → FINISHED (after 2 hours)
-                if (match.status === 'live' && matchDate) {
-                    const timeSinceStart = now - matchDate;
-                    if (timeSinceStart > this.MATCH_DURATION) {
-                        newStatus = 'finished';
-                        shouldUpdate = true;
-                        console.log(`🏁 Match ${match.id} marked as FINISHED: ${match.homeTeam} vs ${match.awayTeam}`);
-                        this.showMatchStatusNotification(match, 'finished');
-                    }
-                }
-
-                // FINISHED without result → needs result
-                if (match.status === 'finished' && !match.result) {
-                    // Don't change status, just notify
-                    console.log(`⚠️ Match ${match.id} is finished but has no result`);
-                }
-
-                if (shouldUpdate && newStatus) {
-                    batch.update(change.doc.ref, {
-                        status: newStatus,
-                        statusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        previousStatus: match.status
+            
+            // Check upcoming → live (only matches starting now)
+            const upcomingSnapshot = await db.collection('matches')
+                .where('status', '==', 'upcoming')
+                .where('date', '<=', now)
+                .limit(10) // 🔑 LIMIT
+                .get();
+            
+            if (!upcomingSnapshot.empty) {
+                const batch = db.batch();
+                upcomingSnapshot.forEach(doc => {
+                    batch.update(doc.ref, {
+                        status: 'live',
+                        statusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    updatesCount++;
-                }
-            });
-
-            if (updatesCount > 0) {
+                });
                 await batch.commit();
-                console.log(`✅ Updated ${updatesCount} match statuses`);
-                this.refreshAllMatchDisplays();
             }
-        }, (error) => {
-            console.error('Match status listener error:', error);
-        });
-
-        this.listeners.set('matches', unsubscribe);
-    }
+            
+            // Check live → finished (matches older than 2 hours)
+            const twoHoursAgo = new Date(now - 7200000);
+            const liveSnapshot = await db.collection('matches')
+                .where('status', '==', 'live')
+                .where('date', '<=', twoHoursAgo)
+                .limit(10) // 🔑 LIMIT
+                .get();
+            
+            if (!liveSnapshot.empty) {
+                const batch = db.batch();
+                liveSnapshot.forEach(doc => {
+                    batch.update(doc.ref, {
+                        status: 'finished',
+                        statusUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                });
+                await batch.commit();
+            }
+        } catch (error) {
+            if (error.code !== 'resource-exhausted') {
+                console.error('Match status check error:', error);
+            }
+        }
+    };
+    
+    // Initial check
+    checkMatches();
+    
+    // Check every 60 seconds instead of real-time
+    if (this.statusCheckInterval) clearInterval(this.statusCheckInterval);
+    this.statusCheckInterval = setInterval(checkMatches, 60000);
+}
 
     // ========== BET STATUS LISTENER ==========
     
@@ -22386,7 +22693,7 @@ async function loadReferralsData() {
                 <td colspan="4" style="padding: 1rem;">
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; text-align: center;">
                         <div>
-                            <div style="color: var(--accent-color); font-weight: bold;">Level 1 (10%)</div>
+                            <div style="color: var(--accent-color); font-weight: bold;">Level 1 (15%)</div>
                             <div>${stats.earningsByLevel[1].count} referrals</div>
                             <div style="color: #2ecc71;">TZS ${stats.earningsByLevel[1].total.toFixed(2)}</div>
                         </div>
@@ -22604,3 +22911,144 @@ function switchToSignupWithReferral(referralCode) {
 }
 
 window.switchToSignupWithReferral = switchToSignupWithReferral;
+
+async function updateProtectedCapitalDisplay() {
+    const userData = window.authManager?.userData;
+    if (!userData) return;
+    
+    const capitalEl = document.getElementById('protectedCapital');
+    if (!capitalEl) return;
+    
+    try {
+        const transactionsSnapshot = await db.collection('transactions')
+            .where('userId', '==', userData.uid)
+            .get();
+        
+        let totalDeposits = 0;
+        
+        transactionsSnapshot.forEach(doc => {
+            const trans = doc.data();
+            if (trans.type === 'deposit' && trans.status === 'approved') {
+                totalDeposits += trans.amount || 0;
+            }
+        });
+        
+        capitalEl.textContent = `TZS ${totalDeposits.toFixed(2)}`;
+        
+        // Also update withdrawable profit
+        const profitEl = document.getElementById('withdrawableProfit');
+        if (profitEl) {
+            const profit = userData.balance - totalDeposits;
+            profitEl.textContent = `TZS ${Math.max(0, profit).toFixed(2)}`;
+        }
+    } catch (error) {
+        console.error('Error updating capital:', error);
+    }
+}
+
+// Add a button or function to reset if quota is hit
+window.resetFirestoreQuota = function() {
+    console.log('🧹 Resetting Firestore listeners to free quota...');
+    
+    // Clean up all listeners
+    if (window.chatSystem) window.chatSystem.cleanup();
+    if (window.statusUpdateManager) window.statusUpdateManager.cleanup();
+    if (window.referralBonusSystem) window.referralBonusSystem.cleanup();
+    if (window._announcementUnsubscribe) window._announcementUnsubscribe();
+    
+    FirestoreManager.cleanupAll();
+    
+    // Clear caches
+    sessionStorage.clear();
+    
+    // Reload after 5 seconds
+    showNotification('Resetting connection... Reloading in 5 seconds', 'info');
+    setTimeout(() => location.reload(), 5000);
+};
+
+// ✅ ONLY load transactions when wallet/history section is visible
+document.addEventListener('sectionChanged', (e) => {
+    if (e.detail.sectionId === 'historySection' || e.detail.sectionId === 'walletSection') {
+        // One-time read, not a listener
+        if (window.bankingSystem?.loadTransactionHistory) {
+            window.bankingSystem.loadTransactionHistory();
+        }
+    }
+});
+
+// ✅ ONLY load bets when myBets section is visible
+document.addEventListener('sectionChanged', (e) => {
+    if (e.detail.sectionId === 'mybetSection') {
+        if (window.bettingSystem?.loadMyBets) {
+            window.bettingSystem.loadMyBets();
+        }
+    }
+});
+
+// Replace the existing announcement listener with this optimized version
+function setupOptimizedAnnouncementListener() {
+    // Clean up existing listener
+    if (window._announcementUnsubscribe) {
+        window._announcementUnsubscribe();
+    }
+    
+    // Only listen when user is on a relevant page
+    const shouldListen = () => {
+        const announcementsSection = document.getElementById('announcementsContainer');
+        const adminAnnouncements = document.getElementById('adminListContainer');
+        return (announcementsSection && announcementsSection.offsetParent !== null) ||
+            (adminAnnouncements && adminAnnouncements.offsetParent !== null);
+    };
+    
+    if (!shouldListen()) {
+        console.log('⏭️ Skipping announcement listener - not on relevant page');
+        return;
+    }
+    
+    const q = db.collection('announcements')
+        .orderBy('createdAt', 'desc')
+        .limit(20); // 🔑 LIMIT to 20 instead of all
+    
+    window._announcementUnsubscribe = q.onSnapshot(
+        (snapshot) => {
+            // Process announcements...
+            const allAnnouncements = [];
+            const activeAnnouncements = [];
+            
+            snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                allAnnouncements.push({ id: docSnap.id, data: { ...data, id: docSnap.id } });
+                if (data.active !== false) {
+                    activeAnnouncements.push({ id: docSnap.id, data });
+                }
+            });
+            
+            // Update UI (existing code)
+            if (typeof buildSlides === 'function') buildSlides(activeAnnouncements);
+            if (typeof startAutoPlay === 'function') startAutoPlay();
+            
+            const announcementsContainer = document.getElementById('announcementsContainer');
+            if (announcementsContainer) {
+                announcementsContainer.innerHTML = activeAnnouncements.map(ann =>
+                    typeof renderUserCard === 'function' ? renderUserCard(ann.data) : ''
+                ).join('') || '<div style="color:white;">No active announcements</div>';
+            }
+        },
+        (error) => {
+            if (error.code === 'resource-exhausted') {
+                console.warn('⚠️ Announcement quota exceeded - retrying in 60s');
+                if (window._announcementUnsubscribe) {
+                    window._announcementUnsubscribe();
+                    window._announcementUnsubscribe = null;
+                }
+                setTimeout(setupOptimizedAnnouncementListener, 60000);
+            }
+        }
+    );
+    
+    FirestoreManager.registerListener('announcements', window._announcementUnsubscribe);
+}
+
+// Replace the original announcement listener call with this
+// Find: db.collection('announcements').orderBy('createdAt', 'desc').onSnapshot(...)
+// Replace with: setupOptimizedAnnouncementListener()
